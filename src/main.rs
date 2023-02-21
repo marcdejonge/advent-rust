@@ -33,7 +33,6 @@ fn load_file<T: ExecutableDay>() -> String {
 }
 
 fn execute_day<T: ExecutableDay>() {
-    println!();
     println!("Executing Day {}", T::get_code());
 
     let file_load_start_time = Instant::now();
@@ -53,18 +52,25 @@ fn execute_day<T: ExecutableDay>() {
     println!(" ├── Part 2 calculated in {}ms: {}", part2_calc_start_time.elapsed().as_millis(), part2);
 
     println!(" └── Total time: {}ms", file_load_start_time.elapsed().as_millis());
+    println!();
+}
+
+macro_rules! days {
+    ( $day: expr, $( $x: ident), * ) => {{
+        let mut index = 1..;
+        if($day == 0) {
+            $($x::execute();)*
+        } else $(
+            if($day == index.next().unwrap()) {
+                $x::execute();
+            } else
+        )* {
+            println!("Day {} has not been implemented, only 1 to {} are valid", $day, index.next().unwrap() - 1);
+        }
+    }};
 }
 
 fn main() {
     let args = Args::parse();
-
-    match args.day {
-        0 => {
-            day1::execute();
-            day2::execute();
-        }
-        1 => day1::execute(),
-        2 => day2::execute(),
-        _ => { println!("Day {} has not been implemented, only 1 to 2 are valid", args.day) }
-    }
+    days!(args.day, day1, day2)
 }
