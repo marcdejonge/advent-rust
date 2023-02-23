@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.4", features = ["derive"] }
 regex = "1.7.1"
+num-format = { version = "0.4.3", features = ["with-system-locale"] }

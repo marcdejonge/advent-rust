@@ -3,11 +3,13 @@ use std::fs::read_to_string;
 use std::time::Instant;
 
 use clap::Parser;
+use num_format::{Locale, ToFormattedString};
 
 mod iter_utils;
 
 mod day1;
 mod day2;
+mod day3;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -33,25 +35,26 @@ fn load_file<T: ExecutableDay>() -> String {
 }
 
 fn execute_day<T: ExecutableDay>() {
+    let format = Locale::en;
     println!("Executing Day {}", T::get_code());
 
     let file_load_start_time = Instant::now();
     let file_contents = load_file::<T>();
-    println!(" ├── File loaded in {}ms", file_load_start_time.elapsed().as_millis());
+    println!(" ├── File loaded \x1b[3min {}µs\x1b[0m", file_load_start_time.elapsed().as_micros().to_formatted_string(&format));
 
     let parse_file_start_time = Instant::now();
     let input = T::parse_input(&file_contents);
-    println!(" ├── Input parsed in in {}ms", parse_file_start_time.elapsed().as_millis());
+    println!(" ├── Input parsed \x1b[3min {}µs\x1b[0m", parse_file_start_time.elapsed().as_micros().to_formatted_string(&format));
 
     let part1_calc_start_time = Instant::now();
     let part1 = T::calculate_part1(&input);
-    println!(" ├── Part 1 calculated in {}ms: {}", part1_calc_start_time.elapsed().as_millis(), part1);
+    println!(" ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m", part1_calc_start_time.elapsed().as_micros().to_formatted_string(&format), part1);
 
     let part2_calc_start_time = Instant::now();
     let part2 = T::calculate_part2(&input);
-    println!(" ├── Part 2 calculated in {}ms: {}", part2_calc_start_time.elapsed().as_millis(), part2);
+    println!(" ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m", part2_calc_start_time.elapsed().as_micros().to_formatted_string(&format), part2);
 
-    println!(" └── Total time: {}ms", file_load_start_time.elapsed().as_millis());
+    println!(" └── Total time: \x1b[3m{}µs\x1b[0m", file_load_start_time.elapsed().as_micros().to_formatted_string(&format));
     println!();
 }
 
@@ -72,5 +75,5 @@ macro_rules! days {
 
 fn main() {
     let args = Args::parse();
-    days!(args.day, day1, day2)
+    days!(args.day, day1, day2, day3)
 }
