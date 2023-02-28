@@ -6,7 +6,7 @@ use crate::{ExecutableDay, execute_day};
 
 pub(crate) fn execute() { execute_day::<Day>(); }
 
-struct Day {}
+struct Day;
 
 impl ExecutableDay for Day {
     type Input = Vec<(RangeInclusive<u32>, RangeInclusive<u32>)>;
@@ -50,13 +50,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
-        let input = Day::parse_input("2-4,6-8
-2-3,4-5
-5-7,7-9
-2-8,3-7
-6-6,4-6
-2-6,4-8");
+    fn example_input() {
+        let input = Day::parse_input("2-4,6-8\n2-3,4-5\n5-7,7-9\n2-8,3-7\n6-6,4-6\n2-6,4-8");
         assert_eq!(2, Day::calculate_part1(&input));
         assert_eq!(4, Day::calculate_part2(&input));
     }

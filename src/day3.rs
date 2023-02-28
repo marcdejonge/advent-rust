@@ -4,7 +4,7 @@ use crate::{ExecutableDay, execute_day};
 
 pub(crate) fn execute() { execute_day::<Day>(); }
 
-struct Day {}
+struct Day;
 
 impl ExecutableDay for Day {
     type Input = Vec<Vec<u32>>;
@@ -43,13 +43,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
-        let input = Day::parse_input("vJrwpWtwJgWrhcsFMMfFFhFp
-jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
-PmmdzqPrVvPwwTWBwg
-wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
-ttgJtRGJQctTZtZT
-CrZsJsPPZsGzwwsLwLmpwMDw");
+    fn example_input() {
+        let input = Day::parse_input("vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw");
         assert_eq!(157, Day::calculate_part1(&input));
         assert_eq!(70, Day::calculate_part2(&input));
     }

@@ -1,10 +1,10 @@
 use crate::{ExecutableDay, execute_day};
 
-pub(crate) fn execute() { execute_day::<Day2>(); }
+pub(crate) fn execute() { execute_day::<Day>(); }
 
-struct Day2 {}
+struct Day;
 
-impl ExecutableDay for Day2 {
+impl ExecutableDay for Day {
     type Input = Vec<String>;
     type Output = i32;
 
@@ -42,5 +42,17 @@ impl ExecutableDay for Day2 {
             "C Z" => 7,
             _ => panic!("Unexpected game {}", line)
         }).sum()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn example_input() {
+        let input = Day::parse_input("A Y\nB X\nC Z");
+        assert_eq!(15, Day::calculate_part1(&input));
+        assert_eq!(12, Day::calculate_part2(&input));
     }
 }
