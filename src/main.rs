@@ -59,6 +59,46 @@ fn execute_day<T: ExecutableDay>() {
     println!();
 }
 
+#[macro_export] macro_rules! day {
+    ( $day: tt, $input: ty, $output: ty {
+        parse_input($file_input: ident) $parseImpl: block
+        calculate_part1($part1Input: ident) $part1Impl: block
+        calculate_part2($part2Input: ident) $part2Impl: block
+        example_input($example: expr => $examplePart1: expr, $examplePart2: expr)
+    }) => {
+        use $crate::{ExecutableDay, execute_day};
+
+        pub(crate) fn execute() { execute_day::<Day>() }
+
+        struct Day;
+
+        impl ExecutableDay for Day {
+            type Input = $input;
+            type Output = $output;
+
+            fn get_code() -> i32 { $day }
+
+            fn parse_input($file_input: &str) -> Self::Input { $parseImpl }
+
+            fn calculate_part1($part1Input: &Self::Input) -> Self::Output { $part1Impl }
+
+            fn calculate_part2($part2Input: &Self::Input) -> Self::Output { $part2Impl }
+        }
+        
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn example_input() {
+                let input = Day::parse_input($example);
+                assert_eq!($examplePart1, Day::calculate_part1(&input));
+                assert_eq!($examplePart2, Day::calculate_part2(&input));
+            }
+        }
+    }
+}
+
 macro_rules! days {
     ( $day: expr, $( $x: ident), * ) => {{
         let mut index = 1..;
