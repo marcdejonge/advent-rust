@@ -65,7 +65,7 @@ fn execute_day<T: ExecutableDay>() {
         parse_input($file_input: ident) $parseImpl: block
         calculate_part1($part1Input: ident) $part1Impl: block
         calculate_part2($part2Input: ident) $part2Impl: block
-        example_input($example: expr => $examplePart1: expr, $examplePart2: expr)
+        $(test $test_name:ident($example: expr => $examplePart1: expr, $examplePart2: expr))*
     }) => {
         use $crate::{ExecutableDay, execute_day};
 
@@ -90,12 +90,14 @@ fn execute_day<T: ExecutableDay>() {
         mod tests {
             use super::*;
 
+            $(
             #[test]
-            fn example_input() {
+            fn $test_name() {
                 let input = Day::parse_input($example);
                 assert_eq!($examplePart1, Day::calculate_part1(&input));
                 assert_eq!($examplePart2, Day::calculate_part2(&input));
             }
+            )*
         }
     }
 }

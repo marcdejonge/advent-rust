@@ -7,7 +7,7 @@ crate::day!(5, (Vec<Vec<char>>, Vec<Command>), String {
     parse_input(input) {
         let mut lines = input.lines();
         let stack_lines = lines.by_ref().take_while(|&line| line != "").collect();
-        let command_lines = lines.filter_map(|line| line.parse::<Commad>().ok()).rev().collect();
+        let command_lines = lines.filter_map(|line| line.parse::<Command>().ok()).rev().collect();
 
         (parse_stacks(stack_lines), command_lines)
     }
@@ -15,7 +15,7 @@ crate::day!(5, (Vec<Vec<char>>, Vec<Command>), String {
     calculate_part1(input) { calculate(input, true) }
     calculate_part2(input) { calculate(input, false) }
 
-    example_input(
+    test example_input(
         "    [D]
 [N] [C]
 [Z] [M] [P]

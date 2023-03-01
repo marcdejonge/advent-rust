@@ -33,5 +33,5 @@ crate::day!(2, Vec<String>, i32 {
         }).sum()
     }
 
-    example_input("A Y\nB X\nC Z" => 15, 12)
+    test example_input("A Y\nB X\nC Z" => 15, 12)
 });

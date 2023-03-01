@@ -26,7 +26,7 @@ crate::day!(3, Vec<Vec<u32>>, u32 {
         }).sum()
     }
 
-    example_input(
+    test example_input(
        "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw"
         => 157, 70
     )
