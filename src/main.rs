@@ -11,6 +11,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -84,7 +85,7 @@ fn execute_day<T: ExecutableDay>() {
 
             fn calculate_part2($part2Input: &Self::Input) -> Self::Output { $part2Impl }
         }
-        
+
         #[cfg(test)]
         mod tests {
             use super::*;
@@ -116,5 +117,5 @@ macro_rules! days {
 
 fn main() {
     let args = Args::parse();
-    days!(args.day, day1, day2, day3, day4)
+    days!(args.day, day1, day2, day3, day4, day5)
 }
