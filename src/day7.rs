@@ -1,8 +1,5 @@
 use std::str::FromStr;
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
 crate::day!(7, Vec<u32>, u32 {
     parse_input(input) {
         TraverseWithStack { iter: input.lines().filter_map(|line| line.parse::<Command>().ok()), stack: Vec::new() }.collect()
@@ -22,32 +19,31 @@ crate::day!(7, Vec<u32>, u32 {
 
 #[derive(Debug, PartialEq, Eq)]
 enum Command {
-    Cd(String),
+    CdUp,
+    CdDown,
     File(u32),
 }
 
 impl FromStr for Command {
-    type Err = String;
+    type Err = ();
 
     fn from_str(line: &str) -> Result<Self, Self::Err> {
-        lazy_static!( static ref LINE_PARSER: Regex = Regex::new("(\\S+) (\\S+)( (\\S+))?").unwrap(); );
-        let captures = LINE_PARSER.captures(line).ok_or(format!("Cannot parse line: {}", line))?;
-        let name = &captures[2];
-        match &captures[1] {
-            "$" => if name == "cd" {
-                Ok(Command::Cd(captures[4].to_string()))
-            } else {
-                Err(format!("Other command than cd"))
-            },
-            "dir" => Err(format!("directories should be ignored")),
-            _ => captures[1].parse::<u32>().map(|size| Command::File(size)).map_err(|_| format!("Invalid line: {}", line)),
+        if line == "$ cd .." {
+            Ok(Command::CdUp)
+        } else if line.starts_with("$ cd ") {
+            Ok(Command::CdDown)
+        } else if line.starts_with("$") || line.starts_with("dir ") {
+            Err(())
+        } else {
+            let (file_size, _) = line.find(' ').map(|ix| line.split_at(ix)).ok_or(())?;
+            file_size.parse::<u32>().map(|size| Command::File(size)).map_err(|_| ())
         }
     }
 }
 
-pub struct TraverseWithStack<I, S> {
-    pub iter: I,
-    pub stack: Vec<S>,
+struct TraverseWithStack<I, S> {
+    iter: I,
+    stack: Vec<S>,
 }
 
 impl<I> TraverseWithStack<I, u32> {
@@ -58,10 +54,6 @@ impl<I> TraverseWithStack<I, u32> {
         }
         return Some(current);
     }
-
-    fn push_dir(&mut self) {
-        self.stack.push(0);
-    }
 }
 
 impl<I> Iterator for TraverseWithStack<I, u32> where I: Iterator<Item=Command> {
@@ -71,10 +63,8 @@ impl<I> Iterator for TraverseWithStack<I, u32> where I: Iterator<Item=Command> {
         loop {
             if let Some(ref command) = self.iter.next() {
                 match command {
-                    Command::Cd(dir_name) => match dir_name.as_str() {
-                        ".." => return self.pop(),
-                        _ => self.push_dir(),
-                    }
+                    Command::CdUp => return self.pop(),
+                    Command::CdDown => self.stack.push(0),
                     Command::File(file_size) => if let Some(current) = self.stack.last_mut() {
                         *current += file_size;
                     }
