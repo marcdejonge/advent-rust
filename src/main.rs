@@ -13,12 +13,16 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[arg(short, long, default_value_t = 0)]
     day: usize,
+
+    #[arg(short, long, default_value = "")]
+    postfix: String,
 }
 
 trait ExecutableDay {
@@ -31,18 +35,18 @@ trait ExecutableDay {
     fn calculate_part2(input: &Self::Input) -> Self::Output;
 }
 
-fn load_file<T: ExecutableDay>() -> String {
-    let file_name = format!("input/day{:02}.txt", T::get_code());
+fn load_file<T: ExecutableDay>(postfix: &str) -> String {
+    let file_name = format!("input/day{:02}{}.txt", T::get_code(), postfix);
     let error = format!("Could not find file {}", file_name);
     read_to_string(file_name).expect(&error)
 }
 
-fn execute_day<T: ExecutableDay>() {
+fn execute_day<T: ExecutableDay>(postfix: &str) {
     let format = Locale::en;
     println!("Executing Day {}", T::get_code());
 
     let file_load_start_time = Instant::now();
-    let file_contents = load_file::<T>();
+    let file_contents = load_file::<T>(postfix);
     println!(" ├── File loaded \x1b[3min {}µs\x1b[0m", file_load_start_time.elapsed().as_micros().to_formatted_string(&format));
 
     let parse_file_start_time = Instant::now();
@@ -70,7 +74,7 @@ fn execute_day<T: ExecutableDay>() {
     }) => {
         use $crate::{ExecutableDay, execute_day};
 
-        pub(crate) fn execute() { execute_day::<Day>() }
+        pub(crate) fn execute(postfix: &str) { execute_day::<Day>(postfix) }
 
         struct Day;
 
@@ -104,13 +108,13 @@ fn execute_day<T: ExecutableDay>() {
 }
 
 macro_rules! days {
-    ( $day: expr, $( $x: ident), * ) => {{
+    ( $day: expr, $postfix: expr, $( $x: ident), * ) => {{
         let mut index = 1..;
         if($day == 0) {
-            $($x::execute();)*
+            $($x::execute($postfix);)*
         } else $(
             if($day == index.next().unwrap()) {
-                $x::execute();
+                $x::execute($postfix);
             } else
         )* {
             println!("Day {} has not been implemented, only 1 to {} are valid", $day, index.next().unwrap() - 1);
@@ -120,5 +124,5 @@ macro_rules! days {
 
 fn main() {
     let args = Args::parse();
-    days!(args.day, day1, day2, day3, day4, day5, day6)
+    days!(args.day, args.postfix.as_str(), day1, day2, day3, day4, day5, day6, day7)
 }
