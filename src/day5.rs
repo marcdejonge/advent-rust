@@ -15,18 +15,7 @@ crate::day!(5, (Vec<Vec<char>>, Vec<Command>), String {
     calculate_part1(input) { calculate(input, true) }
     calculate_part2(input) { calculate(input, false) }
 
-    test example_input(
-        "    [D]
-[N] [C]
-[Z] [M] [P]
- 1   2   3
-
-move 1 from 2 to 1
-move 3 from 1 to 3
-move 2 from 2 to 1
-move 1 from 1 to 2"
-        => "CMZ", "MCD"
-    )
+    test example_input(include_str!("example_input/day5.txt") => "CMZ", "MCD")
 });
 
 fn parse_stacks(lines: Vec<&str>) -> Vec<Vec<char>> {

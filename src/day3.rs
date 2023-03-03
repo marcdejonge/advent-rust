@@ -26,8 +26,5 @@ crate::day!(3, Vec<Vec<u32>>, u32 {
         }).sum()
     }
 
-    test example_input(
-       "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw"
-        => 157, 70
-    )
+    test example_input(include_str!("example_input/day3.txt") => 157, 70)
 });
