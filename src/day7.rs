@@ -35,8 +35,11 @@ impl FromStr for Command {
         } else if line.starts_with("$") || line.starts_with("dir ") {
             Err(())
         } else {
-            let (file_size, _) = line.find(' ').map(|ix| line.split_at(ix)).ok_or(())?;
-            file_size.parse::<u32>().map(|size| Command::File(size)).map_err(|_| ())
+            let file_size = line.find(' ').map(|ix| &line[..ix]).ok_or(())?;
+            file_size
+                .parse::<u32>()
+                .map(|size| Command::File(size))
+                .map_err(|_| ())
         }
     }
 }
@@ -56,7 +59,10 @@ impl<I> TraverseWithStack<I, u32> {
     }
 }
 
-impl<I> Iterator for TraverseWithStack<I, u32> where I: Iterator<Item=Command> {
+impl<I> Iterator for TraverseWithStack<I, u32>
+where
+    I: Iterator<Item = Command>,
+{
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -65,8 +71,10 @@ impl<I> Iterator for TraverseWithStack<I, u32> where I: Iterator<Item=Command> {
                 match command {
                     Command::CdUp => return self.pop(),
                     Command::CdDown => self.stack.push(0),
-                    Command::File(file_size) => if let Some(current) = self.stack.last_mut() {
-                        *current += file_size;
+                    Command::File(file_size) => {
+                        if let Some(current) = self.stack.last_mut() {
+                            *current += file_size;
+                        }
                     }
                 }
             } else {

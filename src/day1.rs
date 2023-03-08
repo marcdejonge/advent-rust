@@ -1,6 +1,6 @@
 use std::collections::BinaryHeap;
 
-use crate::iter_utils::Chunkable;
+use crate::iter_utils::ChunkedTrait;
 
 crate::day!(1, Vec<i32>, i32 {
     parse_input(input) {

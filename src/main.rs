@@ -47,25 +47,73 @@ fn execute_day<T: ExecutableDay>(postfix: &str) {
 
     let file_load_start_time = Instant::now();
     let file_contents = load_file::<T>(postfix);
-    println!(" ├── File loaded \x1b[3min {}µs\x1b[0m", file_load_start_time.elapsed().as_micros().to_formatted_string(&format));
+    println!(
+        " ├── File loaded \x1b[3min {}µs\x1b[0m",
+        file_load_start_time
+            .elapsed()
+            .as_micros()
+            .to_formatted_string(&format)
+    );
 
     let parse_file_start_time = Instant::now();
     let input = T::parse_input(&file_contents);
-    println!(" ├── Input parsed \x1b[3min {}µs\x1b[0m", parse_file_start_time.elapsed().as_micros().to_formatted_string(&format));
+    println!(
+        " ├── Input parsed \x1b[3min {}µs\x1b[0m",
+        parse_file_start_time
+            .elapsed()
+            .as_micros()
+            .to_formatted_string(&format)
+    );
 
     let part1_calc_start_time = Instant::now();
     let part1 = T::calculate_part1(&input);
-    println!(" ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m", part1_calc_start_time.elapsed().as_micros().to_formatted_string(&format), part1);
+    println!(
+        " ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+        part1_calc_start_time
+            .elapsed()
+            .as_micros()
+            .to_formatted_string(&format),
+        part1
+    );
 
     let part2_calc_start_time = Instant::now();
     let part2 = T::calculate_part2(&input);
-    println!(" ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m", part2_calc_start_time.elapsed().as_micros().to_formatted_string(&format), part2);
+    println!(
+        " ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+        part2_calc_start_time
+            .elapsed()
+            .as_micros()
+            .to_formatted_string(&format),
+        part2
+    );
 
-    println!(" └── Total time: \x1b[3m{}µs\x1b[0m", file_load_start_time.elapsed().as_micros().to_formatted_string(&format));
+    println!(
+        " └── Total time: \x1b[3m{}µs\x1b[0m",
+        file_load_start_time
+            .elapsed()
+            .as_micros()
+            .to_formatted_string(&format)
+    );
     println!();
 }
 
-#[macro_export] macro_rules! day {
+#[macro_export]
+macro_rules! day {
+    ( $day: tt, $input: ty, $output: ty ) => {
+        crate::day!($day, $input, $output {
+            parse_input(_input) {
+                todo!()
+            }
+
+            calculate_part1(_input) {
+                todo!()
+            }
+
+            calculate_part2(_input) {
+                todo!()
+            }
+        });
+    };
     ( $day: tt, $input: ty, $output: ty {
         parse_input($file_input: ident) $parseImpl: block
         calculate_part1($part1Input: ident) $part1Impl: block
@@ -91,19 +139,12 @@ fn execute_day<T: ExecutableDay>(postfix: &str) {
             fn calculate_part2($part2Input: &Self::Input) -> Self::Output { $part2Impl }
         }
 
-        #[cfg(test)]
-        mod tests {
-            use super::*;
-
-            $(
-            #[test]
-            fn $test_name() {
-                let input = Day::parse_input($example);
-                assert_eq!($examplePart1, Day::calculate_part1(&input));
-                assert_eq!($examplePart2, Day::calculate_part2(&input));
-            }
-            )*
-        }
+        $(#[test]
+        fn $test_name() {
+            let input = Day::parse_input($example);
+            assert_eq!($examplePart1, Day::calculate_part1(&input));
+            assert_eq!($examplePart2, Day::calculate_part2(&input));
+        })*
     }
 }
 
