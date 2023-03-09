@@ -5,6 +5,7 @@ use std::time::Instant;
 use clap::Parser;
 use num_format::{Locale, ToFormattedString};
 
+mod grid;
 mod iter_utils;
 
 mod day1;
