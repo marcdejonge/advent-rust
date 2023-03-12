@@ -25,69 +25,67 @@ impl<T> Grid<T> {
     }
 
     #[inline]
-    pub fn for_all_lines<C>(
+    pub fn for_all_lines<C, LC>(
         &self,
-        context: &C,
-        each_line: fn(&mut C),
-        each_cell: fn(&mut C, &T, usize),
-    ) -> [C; 4]
-    where
+        result: &mut C,
+        line_context: &LC,
+        each_cell: fn(&mut C, &mut LC, &T, usize),
+        combine: fn(&mut C, C),
+    ) where
         C: Clone + Sync + Send,
+        LC: Clone + Sync,
         T: Sync + Send,
     {
-        scope(|s| {
-            let horizontal_thread = s.spawn(|_| {
-                let mut ctx = context.clone();
-                for y in 0..self.height {
-                    each_line(&mut ctx);
-                    for index in (y * self.width)..((y + 1) * self.width) {
-                        each_cell(&mut ctx, self.items.get(index).unwrap(), index)
-                    }
-                }
-                ctx
-            });
-
-            let horizontal_rev_thread = s.spawn(|_| {
-                let mut ctx = context.clone();
-                for y in 0..self.height {
-                    each_line(&mut ctx);
-                    for index in ((y * self.width)..((y + 1) * self.width)).rev() {
-                        each_cell(&mut ctx, self.items.get(index).unwrap(), index)
-                    }
-                }
-                ctx
-            });
-
-            let vertical_thread = s.spawn(|_| {
-                let mut ctx = context.clone();
-                for x in 0..self.width {
-                    each_line(&mut ctx);
-                    for index in (x..(self.height * self.width)).step_by(self.width) {
-                        each_cell(&mut ctx, self.items.get(index).unwrap(), index)
-                    }
-                }
-                ctx
-            });
-
-            let vertical_rev_thread = s.spawn(|_| {
-                let mut ctx = context.clone();
-                for x in 0..self.width {
-                    each_line(&mut ctx);
-                    for index in (x..(self.height * self.width)).step_by(self.width).rev() {
-                        each_cell(&mut ctx, self.items.get(index).unwrap(), index)
-                    }
-                }
-                ctx
-            });
-
+        let thread_results = scope(|s| {
             [
-                horizontal_thread.join().unwrap(),
-                horizontal_rev_thread.join().unwrap(),
-                vertical_thread.join().unwrap(),
-                vertical_rev_thread.join().unwrap(),
+                s.spawn(|_| {
+                    let mut ctx = result.clone();
+                    for y in 0..self.height {
+                        let mut lc = line_context.clone();
+                        for index in (y * self.width)..((y + 1) * self.width) {
+                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
+                        }
+                    }
+                    ctx
+                }),
+                s.spawn(|_| {
+                    let mut ctx = result.clone();
+                    for y in 0..self.height {
+                        let mut lc = line_context.clone();
+                        for index in ((y * self.width)..((y + 1) * self.width)).rev() {
+                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
+                        }
+                    }
+                    ctx
+                }),
+                s.spawn(|_| {
+                    let mut ctx = result.clone();
+                    for x in 0..self.width {
+                        let mut lc = line_context.clone();
+                        for index in (x..(self.height * self.width)).step_by(self.width) {
+                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
+                        }
+                    }
+                    ctx
+                }),
+                s.spawn(|_| {
+                    let mut ctx = result.clone();
+                    for x in 0..self.width {
+                        let mut lc = line_context.clone();
+                        for index in (x..(self.height * self.width)).step_by(self.width).rev() {
+                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
+                        }
+                    }
+                    ctx
+                }),
             ]
+            .map(|thread| thread.join().unwrap())
         })
-        .unwrap()
+        .unwrap();
+
+        for thread_result in thread_results {
+            combine(result, thread_result)
+        }
     }
 
     pub fn len(&self) -> usize {

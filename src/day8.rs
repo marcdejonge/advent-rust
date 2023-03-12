@@ -17,54 +17,44 @@ crate::day!(8, Grid<u8>, usize {
     }
 
     calculate_part1(tree_heights) {
-        let mut ctx = Part1Context { is_reachable: BitSet::new(), max: 0u8 };
-        tree_heights.for_all_lines(&mut ctx, |ctx| {
-            ctx.max = 0u8;
-        }, |ctx, &height, ix| {
-                if height > ctx.max {
-                    ctx.max = height;
-                    ctx.is_reachable.insert(ix);
+        let mut reachable = BitSet::new();
+
+        tree_heights.for_all_lines(&mut reachable, &0u8,
+            |reachable, max, &height, ix| { // for each cell
+                if height > *max {
+                    *max = height;
+                    reachable.insert(ix);
                 }
-            })
-        .iter().fold(BitSet::new(), |mut acc, ctx| {
-            acc.union_with(&ctx.is_reachable);
-            acc
-        }).len()
+            },
+            |reachable, thread_reachable| { // combine thread results
+                reachable.union_with(&thread_reachable);
+            }
+        );
+
+        reachable.len()
     }
 
     calculate_part2(tree_heights) {
-        // The context contains the scores, the last_seen and the current step
-        let ctx = Part2Context { scores: vec![1usize; tree_heights.len()], last_seen: [0usize; 11], step: 0usize};
-        tree_heights.for_all_lines(&ctx, |ctx| {
-            ctx.last_seen.iter_mut().for_each(|x| *x = 0);
-            ctx.step = 0;
-        }, |ctx, &height, ix| {
-                ctx.scores[ix] = ctx.step - ctx.last_seen[height as usize];
+        let mut scores = vec![1usize; tree_heights.len()];
+        let last_seen = [0usize; 11];
+
+        tree_heights.for_all_lines(&mut scores, &last_seen,
+            |scores, last_seen, &height, ix| { // for each cell
+                scores[ix] = last_seen[0] - last_seen[height as usize];
                 for blocked_height in 0..=height {
-                    ctx.last_seen[blocked_height as usize] = ctx.step
+                    last_seen[blocked_height as usize] = last_seen[0]
                 }
-                ctx.step += 1;
-        })
-        .iter().fold(ctx.scores, |mut acc, ctx| {
-            for ix in 0..tree_heights.len() {
-                acc[ix] *= ctx.scores[ix];
+                last_seen[0] += 1;
+            },
+            |scores, thread_scores| { // combine thread results
+                for ix in 0..scores.len() {
+                    scores[ix] *= thread_scores[ix];
+                }
             }
-            acc
-        }).iter().max().cloned().unwrap()
+        );
+
+        scores.iter().max().cloned().unwrap()
     }
 
     test example_input(include_str!("example_input/day8.txt") => 21, 8)
 });
-
-#[derive(Clone)]
-struct Part1Context {
-    is_reachable: BitSet,
-    max: u8,
-}
-
-#[derive(Clone)]
-struct Part2Context {
-    scores: Vec<usize>,
-    last_seen: [usize; 11],
-    step: usize,
-}
