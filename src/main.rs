@@ -16,6 +16,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -177,6 +178,7 @@ fn main() {
         day5,
         day6,
         day7,
-        day8
+        day8,
+        day9
     )
 }
