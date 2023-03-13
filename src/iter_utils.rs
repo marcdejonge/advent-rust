@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 pub(crate) struct Chunked<I, T>
 where
     I: Iterator<Item = T>,
@@ -40,13 +42,7 @@ where
 
         loop {
             match self.iter.next() {
-                None => {
-                    return if sub_list.is_empty() {
-                        None
-                    } else {
-                        Some(sub_list)
-                    }
-                }
+                None => return if sub_list.is_empty() { None } else { Some(sub_list) },
                 Some(item) => {
                     if item == self.match_item {
                         return Some(sub_list);
@@ -111,4 +107,34 @@ where
         self.last_result = Some(next);
         result
     }
+}
+
+pub fn max_n<const N: usize, T>(it: impl Iterator<Item = T>) -> [T; N]
+where
+    T: Default + Copy + PartialOrd + Debug,
+{
+    let mut result: [T; N] = [Default::default(); N];
+
+    for item in it {
+        if item > result[N - 1] {
+            result[N - 1] = item;
+            for ix in (0..(N - 1)).rev() {
+                if item > result[ix] {
+                    result[ix + 1] = result[ix];
+                    result[ix] = item;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    result
+}
+
+#[test]
+fn test_max_n() {
+    assert_eq!(max_n(0..100), [99, 98, 97]);
+    assert_eq!(max_n((0..100).step_by(5)), [95, 90]);
+    assert_eq!(max_n((0..100).step_by(5).rev()), [95, 90, 85, 80]);
 }
