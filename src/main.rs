@@ -13,6 +13,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -56,30 +57,21 @@ fn execute_day<T: ExecutableDay>(postfix: &str) {
     let file_contents = load_file::<T>(postfix);
     println!(
         " ├── File loaded \x1b[3min {}µs\x1b[0m",
-        file_load_start_time
-            .elapsed()
-            .as_micros()
-            .to_formatted_string(&format)
+        file_load_start_time.elapsed().as_micros().to_formatted_string(&format)
     );
 
     let parse_file_start_time = Instant::now();
     let input = T::parse_input(&file_contents);
     println!(
         " ├── Input parsed \x1b[3min {}µs\x1b[0m",
-        parse_file_start_time
-            .elapsed()
-            .as_micros()
-            .to_formatted_string(&format)
+        parse_file_start_time.elapsed().as_micros().to_formatted_string(&format)
     );
 
     let part1_calc_start_time = Instant::now();
     let part1 = T::calculate_part1(&input);
     println!(
         " ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
-        part1_calc_start_time
-            .elapsed()
-            .as_micros()
-            .to_formatted_string(&format),
+        part1_calc_start_time.elapsed().as_micros().to_formatted_string(&format),
         part1
     );
 
@@ -87,19 +79,13 @@ fn execute_day<T: ExecutableDay>(postfix: &str) {
     let part2 = T::calculate_part2(&input);
     println!(
         " ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
-        part2_calc_start_time
-            .elapsed()
-            .as_micros()
-            .to_formatted_string(&format),
+        part2_calc_start_time.elapsed().as_micros().to_formatted_string(&format),
         part2
     );
 
     println!(
         " └── Total time: \x1b[3m{}µs\x1b[0m",
-        file_load_start_time
-            .elapsed()
-            .as_micros()
-            .to_formatted_string(&format)
+        file_load_start_time.elapsed().as_micros().to_formatted_string(&format)
     );
     println!();
 }
@@ -186,6 +172,7 @@ fn main() {
         day9,
         day10,
         day11,
-        day12
+        day12,
+        day13
     )
 }
