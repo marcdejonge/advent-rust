@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use fxhash::FxBuildHasher;
+
 crate::day!(3, Vec<Vec<u32>>, u32 {
     parse_input(file_input) {
         file_input.lines().map(|line| line.chars().map(|c| match c {
@@ -12,7 +14,7 @@ crate::day!(3, Vec<Vec<u32>>, u32 {
     calculate_part1(input) {
         input.iter().map(|line| {
             let (left, right) = line.split_at(line.len() / 2);
-            let set: HashSet<_> = left.iter().copied().collect();
+            let set: HashSet<_, FxBuildHasher> = left.iter().copied().collect();
             right.iter().filter(|&c| set.contains(c)).last().unwrap()
         }).sum()
     }
@@ -21,7 +23,7 @@ crate::day!(3, Vec<Vec<u32>>, u32 {
         input.chunks(3).map(|lines| {
             let set = lines[0].iter().copied().collect::<HashSet<_>>()
                 .intersection(&lines[1].iter().copied().collect())
-                .copied().collect::<HashSet<_>>();
+                .copied().collect::<HashSet<_, FxBuildHasher>>();
             lines[2].iter().filter(|&c| set.contains(c)).last().unwrap()
         }).sum()
     }

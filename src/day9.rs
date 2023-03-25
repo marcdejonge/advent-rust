@@ -1,3 +1,4 @@
+use fxhash::FxBuildHasher;
 use std::collections::HashSet;
 
 use rusttype::{Point, Vector};
@@ -61,7 +62,7 @@ fn calculate_from<const N: usize>(
     snake: [Point<i32>; N],
     steps: &Vec<(Vector<i32>, i32)>,
 ) -> usize {
-    let mut places = HashSet::new();
+    let mut places = HashSet::with_hasher(FxBuildHasher::default());
     let mut snake = snake.clone();
     for &(direction, count) in steps {
         for _ in 0..count {
