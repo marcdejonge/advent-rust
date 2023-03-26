@@ -1,9 +1,11 @@
+use std::cell::RefCell;
+
 use crate::iter_utils::{max_n, ChunkedTrait};
 
-crate::day!(11, Vec<Monkey>, u64 {
+crate::day!(11, Vec<RefCell<Monkey>>, u64 {
     parse_input(input) {
         input.lines().chunk_by("").enumerate().map(|(index, lines)| {
-            parse_monkey(index, lines)
+            RefCell::new(parse_monkey(index, lines))
         }).collect()
     }
 
@@ -46,16 +48,11 @@ fn parse_monkey(index: usize, lines: Vec<&str>) -> Monkey {
             .split(", ")
             .map(|str| str.parse::<u64>().expect("Expected only numbers"))
             .collect(),
-        operation_type: operation_line
-            .chars()
-            .next()
-            .expect("Expected some operation"),
+        operation_type: operation_line.chars().next().expect("Expected some operation"),
         amount: if operation_line == "* old" {
             0
         } else {
-            operation_line[2..]
-                .parse::<u64>()
-                .expect("Expected a number")
+            operation_line[2..].parse::<u64>().expect("Expected a number")
         },
         test_divisible_by: lines[3]
             .strip_prefix("  Test: divisible by ")
@@ -76,43 +73,43 @@ fn parse_monkey(index: usize, lines: Vec<&str>) -> Monkey {
     }
 }
 
-fn calculate_mod(monkeys: &Vec<Monkey>) -> u64 {
-    monkeys
-        .iter()
-        .fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
+fn calculate_mod(monkeys: &Vec<RefCell<Monkey>>) -> u64 {
+    monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.borrow().test_divisible_by)
 }
 
-fn execute_round(monkeys: &mut Vec<Monkey>, div: u64, modulus: u64) {
-    for index in 0..monkeys.len() {
-        let monkey = monkeys.get(index).expect("");
-        let mut true_monkey_items = monkeys.get(monkey.true_monkey).expect("").items.clone();
-        let mut false_monkey_items = monkeys.get(monkey.false_monkey).expect("").items.clone();
-        let mut monkey = monkey.clone();
-        for &old in &monkey.items {
+fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
+    for monkey_cell in monkeys {
+        let mut monkey = monkey_cell.borrow_mut();
+        let mut true_monkey = monkeys
+            .get(monkey.true_monkey)
+            .expect("Can't find reference true monkey")
+            .borrow_mut();
+        let mut false_monkey = monkeys
+            .get(monkey.false_monkey)
+            .expect("Can't find reference falso monkey")
+            .borrow_mut();
+        for &old in monkey.items.iter() {
             let amount = if monkey.amount == 0 { old } else { monkey.amount };
             let new = (if monkey.operation_type == '+' { old + amount } else { old * amount })
                 % modulus
                 / div;
             if (new % monkey.test_divisible_by) == 0 {
-                true_monkey_items.push(new)
+                true_monkey.items.push(new)
             } else {
-                false_monkey_items.push(new)
+                false_monkey.items.push(new)
             };
-            monkey.inspected_items += 1;
         }
 
-        monkeys[monkey.true_monkey].items = true_monkey_items;
-        monkeys[monkey.false_monkey].items = false_monkey_items;
-        monkey.items = Vec::new();
-        monkeys[index] = monkey;
+        monkey.inspected_items += monkey.items.len() as u64;
+        monkey.items.clear();
     }
 }
 
-fn calculate(mut monkeys: Vec<Monkey>, rounds: u32, div: u64) -> u64 {
+fn calculate(monkeys: Vec<RefCell<Monkey>>, rounds: u32, div: u64) -> u64 {
     let modulus = calculate_mod(&monkeys);
     for _ in 0..rounds {
-        execute_round(monkeys.as_mut(), div, modulus);
+        execute_round(&monkeys, div, modulus);
     }
-    let [first, second] = max_n(monkeys.iter().map(|m| m.inspected_items));
+    let [first, second] = max_n(monkeys.iter().map(|m| m.borrow().inspected_items));
     first * second
 }
