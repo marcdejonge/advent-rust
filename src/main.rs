@@ -1,3 +1,4 @@
+#![feature(test)]
 use std::fmt::Display;
 use std::fs::read_to_string;
 use std::time::Instant;
@@ -49,7 +50,7 @@ fn load_file<T: ExecutableDay>(postfix: &str) -> String {
     read_to_string(file_name).expect(&error)
 }
 
-fn execute_day<T: ExecutableDay>(postfix: &str) {
+fn execute_day<T: ExecutableDay>(postfix: &str) -> u128 {
     let format = Locale::en;
     println!("Executing Day {}", T::get_code());
 
@@ -88,6 +89,8 @@ fn execute_day<T: ExecutableDay>(postfix: &str) {
         file_load_start_time.elapsed().as_micros().to_formatted_string(&format)
     );
     println!();
+
+    file_load_start_time.elapsed().as_micros()
 }
 
 #[macro_export]
@@ -115,7 +118,7 @@ macro_rules! day {
     }) => {
         use $crate::{ExecutableDay, execute_day};
 
-        pub(crate) fn execute(postfix: &str) { execute_day::<Day>(postfix) }
+        pub(crate) fn execute(postfix: &str) -> u128 { execute_day::<Day>(postfix) }
 
         struct Day;
 
@@ -138,6 +141,17 @@ macro_rules! day {
             assert_eq!($examplePart1, Day::calculate_part1(&input));
             assert_eq!($examplePart2, Day::calculate_part2(&input));
         })*
+
+        #[cfg(test)]
+        mod benchmark {
+            extern crate test;
+            use test::Bencher;
+
+            #[bench]
+            fn bench_full_solution(b: &mut Bencher) {
+                b.iter(|| super::execute(""))
+            }
+        }
     }
 }
 
