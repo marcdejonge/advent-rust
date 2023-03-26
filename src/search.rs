@@ -45,9 +45,9 @@ where
 pub fn a_star_search<'a, G: SearchGraph<'a>>(graph: &'a G) -> Option<Vec<&'a G::Node>> {
     let start_node = graph.start_node();
 
-    let mut current_states = HashMap::with_hasher(FxBuildHasher::default());
+    let mut current_states = HashMap::with_capacity_and_hasher(1000, FxBuildHasher::default());
     current_states.insert(start_node, (G::Score::default(), None)); // the value is the score + where the node came from
-    let mut open_set = PriorityQueue::with_hasher(FxBuildHasher::default());
+    let mut open_set = PriorityQueue::with_capacity_and_hasher(1000, FxBuildHasher::default());
     open_set.push(start_node, Reverse(G::Score::default())); // open_set uses the f_score as priority
 
     while let Some((node, _)) = open_set.pop() {
