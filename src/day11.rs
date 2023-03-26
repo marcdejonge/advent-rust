@@ -86,7 +86,7 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
             .borrow_mut();
         let mut false_monkey = monkeys
             .get(monkey.false_monkey)
-            .expect("Can't find reference falso monkey")
+            .expect("Can't find reference false monkey")
             .borrow_mut();
         for &old in monkey.items.iter() {
             let amount = if monkey.amount == 0 { old } else { monkey.amount };
