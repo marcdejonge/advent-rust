@@ -2,19 +2,19 @@ use std::cell::RefCell;
 
 use crate::iter_utils::{max_n, ChunkedTrait};
 
-crate::day!(11, Vec<RefCell<Monkey>>, u64 {
+crate::day!(11, Vec<Monkey>, u64 {
     parse_input(input) {
         input.lines().chunk_by("").enumerate().map(|(index, lines)| {
-            RefCell::new(parse_monkey(index, lines))
+            parse_monkey(index, lines)
         }).collect()
     }
 
     calculate_part1(input) {
-        calculate(input.clone(), 20, 3)
+        calculate(input, 20, 3)
     }
 
     calculate_part2(input) {
-        calculate(input.clone(), 10000, 1)
+        calculate(input, 10000, 1)
     }
 
     test example_input(include_str!("example_input/day11.txt") => 10605, 2713310158)
@@ -73,8 +73,8 @@ fn parse_monkey(index: usize, lines: Vec<&str>) -> Monkey {
     }
 }
 
-fn calculate_mod(monkeys: &Vec<RefCell<Monkey>>) -> u64 {
-    monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.borrow().test_divisible_by)
+fn calculate_mod(monkeys: &Vec<Monkey>) -> u64 {
+    monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
 }
 
 fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
@@ -105,11 +105,12 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
     }
 }
 
-fn calculate(monkeys: Vec<RefCell<Monkey>>, rounds: u32, div: u64) -> u64 {
-    let modulus = calculate_mod(&monkeys);
+fn calculate(monkeys: &Vec<Monkey>, rounds: u32, div: u64) -> u64 {
+    let modulus = calculate_mod(monkeys);
+    let calc_monkeys = monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
     for _ in 0..rounds {
-        execute_round(&monkeys, div, modulus);
+        execute_round(&calc_monkeys, div, modulus);
     }
-    let [first, second] = max_n(monkeys.iter().map(|m| m.borrow().inspected_items));
+    let [first, second] = max_n(calc_monkeys.iter().map(|m| m.borrow().inspected_items));
     first * second
 }
