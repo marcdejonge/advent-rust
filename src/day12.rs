@@ -2,12 +2,14 @@ use crate::search::a_star_search;
 
 crate::day!(12, Graph, usize {
     parse_input(input) {
-        let nodes = input.lines().enumerate().flat_map(|(line_index, line)| {
+        let nodes: Vec<_> = input.lines().enumerate().flat_map(|(line_index, line)| {
             line.chars().enumerate().map(move |(char_index, char)| {
-                Node::new(char, char_index as isize, line_index as isize)
+                Node::new(char, char_index, line_index)
             })
         }).collect();
-        Graph { nodes, width: input.find("\n").unwrap_or(input.len()) as isize }
+        let width = nodes.iter().map(|n| n.x).max().unwrap() + 1;
+        let height = nodes.iter().map(|n| n.y).max().unwrap() + 1;
+        Graph { nodes, width, height }
     }
 
     calculate_part1(input) {
@@ -65,23 +67,26 @@ crate::day!(12, Graph, usize {
 
 struct Graph {
     nodes: Vec<Node>,
-    width: isize,
+    width: usize,
+    height: usize,
 }
 
 impl Graph {
     fn neighbours<'a>(&'a self, node: &'a Node) -> Vec<(&'a Node, u32)> {
-        [-1, 1, -self.width, self.width]
-            .iter()
-            .filter_map(|step| {
-                let index = node.y * self.width + node.x + step;
-                if index >= 0 {
-                    self.nodes.get(index as usize)
-                } else {
-                    None
-                }
-            })
-            .map(|n| (n, 1))
-            .collect()
+        let mut neighbours = Vec::with_capacity(4);
+        if node.x > 0 {
+            neighbours.push((self.nodes.get (node.y * self.width + (node.x - 1)).unwrap(), 1));
+        }
+        if node.x < (self.width - 1) {
+            neighbours.push((self.nodes.get (node.y * self.width + (node.x + 1)).unwrap(), 1));
+        }
+        if node.y > 0 {
+            neighbours.push((self.nodes.get ((node.y - 1) * self.width + node.x).unwrap(), 1));
+        }
+        if node.y < (self.height - 1) {
+            neighbours.push((self.nodes.get ((node.y + 1) * self.width + node.x).unwrap(), 1));
+        }
+        neighbours
     }
 }
 
@@ -89,12 +94,12 @@ impl Graph {
 struct Node {
     c: char,
     height: i32,
-    x: isize,
-    y: isize,
+    x: usize,
+    y: usize,
 }
 
 impl Node {
-    fn new(c: char, x: isize, y: isize) -> Node {
+    fn new(c: char, x: usize, y: usize) -> Node {
         match c {
             'S' => Node { c, x, y, height: 0 },
             'E' => Node { c, x, y, height: 26 },
