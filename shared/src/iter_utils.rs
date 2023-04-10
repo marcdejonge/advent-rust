@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-pub(crate) struct Chunked<I, T>
+pub struct Chunked<I, T>
 where
     I: Iterator<Item = T>,
 {
@@ -8,7 +8,7 @@ where
     match_item: T,
 }
 
-pub(crate) trait ChunkedTrait {
+pub trait ChunkedTrait {
     fn chunk_by<T>(self, split_item: T) -> Chunked<Self, T>
     where
         Self: Iterator<Item = T> + Sized;
@@ -56,7 +56,7 @@ where
 }
 
 // implementation to generate .zip_with_next() function for all iterators
-pub(crate) struct ZipWithNext<I, T>
+pub struct ZipWithNext<I, T>
 where
     I: Iterator<Item = T>,
     T: Copy,
@@ -65,7 +65,7 @@ where
     last_result: Option<T>,
 }
 
-pub(crate) trait ZipWithNextTrait {
+pub trait ZipWithNextTrait {
     fn zip_with_next<T>(self) -> ZipWithNext<Self, T>
     where
         Self: Iterator<Item = T> + Sized,

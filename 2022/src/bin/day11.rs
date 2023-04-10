@@ -1,24 +1,31 @@
+use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::iter_utils::{max_n, ChunkedTrait};
 use std::cell::RefCell;
 
-use crate::iter_utils::{max_n, ChunkedTrait};
+struct Day {
+    monkeys: Vec<Monkey>,
+}
 
-crate::day!(11, Vec<Monkey>, u64 {
-    parse_input(input) {
-        input.lines().chunk_by("").enumerate().map(|(index, lines)| {
-            parse_monkey(index, lines)
-        }).collect()
+impl FromIterator<String> for Day {
+    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+        Day {
+            monkeys: iter
+                .into_iter()
+                .chunk_by("".to_owned())
+                .enumerate()
+                .map(|(index, lines)| parse_monkey(index, lines))
+                .collect(),
+        }
     }
+}
 
-    calculate_part1(input) {
-        calculate(input, 20, 3)
-    }
+impl ExecutableDay for Day {
+    type Output = u64;
 
-    calculate_part2(input) {
-        calculate(input, 10000, 1)
-    }
+    fn calculate_part1(&self) -> Self::Output { self.calculate(20, 3) }
 
-    test example_input(include_str!("example_input/day11.txt") => 10605, 2713310158)
-});
+    fn calculate_part2(&self) -> Self::Output { self.calculate(10000, 1) }
+}
 
 #[derive(Debug, Clone)]
 struct Monkey {
@@ -31,7 +38,7 @@ struct Monkey {
     inspected_items: u64,
 }
 
-fn parse_monkey(index: usize, lines: Vec<&str>) -> Monkey {
+fn parse_monkey(index: usize, lines: Vec<String>) -> Monkey {
     if lines.len() != 6 {
         panic!("Expected 6 lines for each monkey")
     }
@@ -73,10 +80,6 @@ fn parse_monkey(index: usize, lines: Vec<&str>) -> Monkey {
     }
 }
 
-fn calculate_mod(monkeys: &Vec<Monkey>) -> u64 {
-    monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
-}
-
 fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
     for monkey_cell in monkeys {
         let mut monkey = monkey_cell.borrow_mut();
@@ -105,12 +108,28 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
     }
 }
 
-fn calculate(monkeys: &Vec<Monkey>, rounds: u32, div: u64) -> u64 {
-    let modulus = calculate_mod(monkeys);
-    let calc_monkeys = monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
-    for _ in 0..rounds {
-        execute_round(&calc_monkeys, div, modulus);
+impl Day {
+    fn calculate_mod(&self) -> u64 {
+        self.monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
     }
-    let [first, second] = max_n(calc_monkeys.iter().map(|m| m.borrow().inspected_items));
-    first * second
+
+    fn calculate(&self, rounds: u32, div: u64) -> u64 {
+        let modulus = self.calculate_mod();
+        let calc_monkeys = self.monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
+        for _ in 0..rounds {
+            execute_round(&calc_monkeys, div, modulus);
+        }
+        let [first, second] = max_n(calc_monkeys.iter().map(|m| m.borrow().inspected_items));
+        first * second
+    }
+}
+
+fn main() { execute_day::<Day>() }
+
+#[cfg(test)]
+mod tests {
+    use advent_lib::day_test;
+
+    day_test!( 11, example => 10605, 2713310158 );
+    day_test!( 11 => 108240, 25712998901 );
 }

@@ -1,12 +1,24 @@
-use crate::grid::Grid;
-use crate::iter_utils::ZipWithNextTrait;
-use crate::vec2::{LineSegment, Vec2};
+use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::grid::Grid;
+use advent_lib::iter_utils::ZipWithNextTrait;
+use advent_lib::vec2::{LineSegment, Vec2};
 
-crate::day!(14, Grid<Place>, usize {
-    parse_input(input) {
-        let lines: Vec<LineSegment<i32>> = input.lines().flat_map(|line| {
-            line.split(" -> ").map(|str| str.parse().unwrap()).zip_with_next().map(|pair| pair.into())
-        }).collect();
+struct Day {
+    grid: Grid<Place>,
+}
+
+impl FromIterator<String> for Day {
+    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+        let lines: Vec<LineSegment<i32>> = iter
+            .into_iter()
+            .flat_map(|line| {
+                line.split(" -> ")
+                    .map(|str| str.parse().unwrap())
+                    .zip_with_next()
+                    .map(|pair| pair.into())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
         let max_height = lines.iter().map(|line| line.end.y).max().unwrap() + 2;
         let mut grid = Grid::new_empty((500 - max_height)..=(500 + max_height), 0..=max_height);
@@ -20,15 +32,17 @@ crate::day!(14, Grid<Place>, usize {
             }
         }
 
-        grid
+        Day { grid }
     }
+}
 
-    calculate_part1(input) {
-        SandDroppingGrid::new(input).count()
-    }
+impl ExecutableDay for Day {
+    type Output = usize;
 
-    calculate_part2(input) {
-        let mut grid = SandDroppingGrid::new(input);
+    fn calculate_part1(&self) -> Self::Output { SandDroppingGrid::new(&self.grid).count() }
+
+    fn calculate_part2(&self) -> Self::Output {
+        let mut grid = SandDroppingGrid::new(&self.grid);
         let y = *grid.grid.y_range().end();
         for x in grid.grid.x_range() {
             let place = grid.grid.get_mut(x, y).unwrap();
@@ -36,9 +50,7 @@ crate::day!(14, Grid<Place>, usize {
         }
         grid.count()
     }
-
-    test example_input("498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9" => 24, 93)
-});
+}
 
 struct SandDroppingGrid {
     grid: Grid<Place>,
@@ -101,4 +113,14 @@ impl From<Place> for char {
             Place::LINE => '#',
         }
     }
+}
+
+fn main() { execute_day::<Day>() }
+
+#[cfg(test)]
+mod tests {
+    use advent_lib::day_test;
+
+    day_test!( 14, example => 24, 93 );
+    day_test!( 14 => 843, 27625 );
 }

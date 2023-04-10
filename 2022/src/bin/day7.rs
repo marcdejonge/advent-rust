@@ -1,21 +1,40 @@
 use std::str::FromStr;
 
-crate::day!(7, Vec<u32>, u32 {
-    parse_input(input) {
-        TraverseWithStack { iter: input.lines().filter_map(|line| line.parse::<Command>().ok()), stack: Vec::new() }.collect()
+use advent_lib::day::*;
+
+struct Day {
+    dir_sizes: Vec<u32>,
+}
+
+impl FromIterator<String> for Day {
+    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+        Day {
+            dir_sizes: TraverseWithStack {
+                iter: iter.into_iter().filter_map(|line| line.parse::<Command>().ok()),
+                stack: Vec::new(),
+            }
+            .collect(),
+        }
+    }
+}
+
+impl ExecutableDay for Day {
+    type Output = u32;
+
+    fn calculate_part1(&self) -> Self::Output {
+        self.dir_sizes.iter().filter(|&&size| size < 100000).sum()
     }
 
-    calculate_part1(input) {
-        input.iter().filter(|&&size| size < 100000).sum()
+    fn calculate_part2(&self) -> Self::Output {
+        let min_size = self.dir_sizes.last().unwrap_or(&0) - 40000000;
+        self.dir_sizes
+            .iter()
+            .filter(|&&size| size >= min_size)
+            .min()
+            .expect("Could not find any")
+            .clone()
     }
-
-    calculate_part2(input) {
-        let min_size = input.last().unwrap_or(&0) - 40000000;
-        input.iter().filter(|&&size| size >= min_size).min().expect("Could not find any").clone()
-    }
-
-    test example(include_str!("example_input/day7.txt") => 95437, 24933642)
-});
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum Command {
@@ -36,10 +55,7 @@ impl FromStr for Command {
             Err(())
         } else {
             let file_size = line.find(' ').map(|ix| &line[..ix]).ok_or(())?;
-            file_size
-                .parse::<u32>()
-                .map(|size| Command::File(size))
-                .map_err(|_| ())
+            file_size.parse::<u32>().map(|size| Command::File(size)).map_err(|_| ())
         }
     }
 }
@@ -82,4 +98,14 @@ where
             }
         }
     }
+}
+
+fn main() { execute_day::<Day>() }
+
+#[cfg(test)]
+mod tests {
+    use advent_lib::day_test;
+
+    day_test!( 7, example => 95437, 24933642 );
+    day_test!( 7 => 1086293, 366028 );
 }

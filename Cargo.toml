@@ -1,17 +1,2 @@
-[package]
-name = "advent2022-rust"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-clap = { version = "4.1.4", features = ["derive"] }
-regex = "1.7.1"
-num-format = "0.4.3"
-lazy_static = "1.4.0"
-bit-set = "0.5.3"
-crossbeam = "0.8.2"
-rusttype = "0.9.3"
-priority-queue = "1.3.1"
-fxhash = "0.2.1"
+[workspace]
+members = ["shared", "2022"]

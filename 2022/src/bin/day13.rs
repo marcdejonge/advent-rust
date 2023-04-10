@@ -1,32 +1,52 @@
+use advent_lib::day::{execute_day, ExecutableDay};
 use std::cmp::Ordering;
 use std::iter::Peekable;
 use std::str::{Chars, FromStr};
 
-crate::day!(13, Vec<Packet>, usize {
-    parse_input(input) {
-        input.lines().filter(|&line| line != "").map(|line| {
-            line.parse().unwrap()
-        }).collect()
+struct Day {
+    packets: Vec<Packet>,
+}
+
+impl FromIterator<String> for Day {
+    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+        Day {
+            packets: iter
+                .into_iter()
+                .filter(|line| line.len() > 0)
+                .map(|line| line.parse().unwrap())
+                .collect(),
+        }
+    }
+}
+
+impl ExecutableDay for Day {
+    type Output = usize;
+
+    fn calculate_part1(&self) -> Self::Output {
+        self.packets
+            .as_slice()
+            .chunks(2)
+            .enumerate()
+            .filter_map(|(ix, packets)| {
+                let first = packets.get(0).unwrap();
+                let second = packets.get(1).unwrap();
+                if first < second {
+                    Some(ix + 1)
+                } else {
+                    None
+                }
+            })
+            .sum()
     }
 
-    calculate_part1(input) {
-        input.as_slice().chunks(2).enumerate().filter_map(|(ix, packets)| {
-            let first = packets.get(0).unwrap();
-            let second = packets.get(1).unwrap();
-            if first < second { Some(ix + 1) } else { None }
-        }).sum()
-    }
-
-    calculate_part2(input) {
-        let mut input = input.clone();
-        input.sort();
-        let start_ix = input.binary_search(&"[[2]]".parse().unwrap()).unwrap_err() + 1;
-        let end_ix = input.binary_search(&"[[6]]".parse().unwrap()).unwrap_err() + 2;
+    fn calculate_part2(&self) -> Self::Output {
+        let mut packets = self.packets.clone();
+        packets.sort();
+        let start_ix = packets.binary_search(&"[[2]]".parse().unwrap()).unwrap_err() + 1;
+        let end_ix = packets.binary_search(&"[[6]]".parse().unwrap()).unwrap_err() + 2;
         start_ix * end_ix
     }
-
-    test example_input(include_str!("example_input/day13.txt") => 13, 140)
-});
+}
 
 #[derive(Debug, Clone, Eq)]
 enum Packet {
@@ -69,9 +89,7 @@ impl Packet {
 }
 
 impl From<u32> for Packet {
-    fn from(value: u32) -> Self {
-        Packet::Single { value }
-    }
+    fn from(value: u32) -> Self { Packet::Single { value } }
 }
 
 impl FromStr for Packet {
@@ -86,15 +104,11 @@ impl FromStr for Packet {
 }
 
 impl PartialEq for Packet {
-    fn eq(&self, other: &Self) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
+    fn eq(&self, other: &Self) -> bool { self.cmp(other) == Ordering::Equal }
 }
 
 impl PartialOrd for Packet {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
 impl Ord for Packet {
@@ -143,4 +157,14 @@ impl Ord for Packet {
             },
         }
     }
+}
+
+fn main() { execute_day::<Day>() }
+
+#[cfg(test)]
+mod tests {
+    use advent_lib::day_test;
+
+    day_test!( 13, example => 13, 140 );
+    day_test!( 13 => 5843, 26289 );
 }
