@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use advent_lib::day::*;
+use std::str::FromStr;
 
 struct Day {
     dir_sizes: Vec<u32>,

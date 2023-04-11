@@ -1,3 +1,4 @@
+use num_traits::sign::Signed;
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, RangeInclusive};
 use std::str::FromStr;
@@ -31,9 +32,7 @@ impl<T: Display> Display for Vec2<T> {
 impl<T: Add<Output = T>> Add for Vec2<T> {
     type Output = Vec2<T>;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
-    }
+    fn add(self, rhs: Self) -> Self::Output { Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -43,13 +42,9 @@ pub struct LineSegment<T> {
 }
 
 impl<T: Copy> LineSegment<T> {
-    pub fn x_range(&self) -> RangeInclusive<T> {
-        self.start.x..=self.end.x
-    }
+    pub fn x_range(&self) -> RangeInclusive<T> { self.start.x..=self.end.x }
 
-    pub fn y_range(&self) -> RangeInclusive<T> {
-        self.start.y..=self.end.y
-    }
+    pub fn y_range(&self) -> RangeInclusive<T> { self.start.y..=self.end.y }
 }
 
 impl<T: Copy + Ord + PartialEq> Into<LineSegment<T>> for (Vec2<T>, Vec2<T>) {
@@ -66,5 +61,14 @@ impl<T: Display> Display for LineSegment<T> {
         f.write_str(" -> ")?;
         self.end.fmt(f)?;
         Ok(())
+    }
+}
+
+impl<T> Vec2<T>
+where
+    T: Signed + Copy,
+{
+    pub fn manhattan_distance(&self, other: &Vec2<T>) -> T {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
     }
 }
