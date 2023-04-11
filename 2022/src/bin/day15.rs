@@ -1,6 +1,6 @@
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::vec2::Vec2;
-use regex::Regex;
+use prse_derive::parse;
 use std::ops::RangeInclusive;
 
 struct Day {
@@ -20,6 +20,10 @@ impl Day {
         lines_indices.sort();
         lines_indices
     }
+
+    fn contains(&self, place: &Vec2<i64>) -> bool {
+        self.sensors.iter().any(|sensor| sensor.contains(place))
+    }
 }
 
 struct Sensor {
@@ -32,27 +36,24 @@ impl Sensor {
         let space = self.distance - (self.location.y - row).abs();
         (self.location.x - space)..=(self.location.x + space)
     }
+
+    fn contains(&self, place: &Vec2<i64>) -> bool {
+        self.location.manhattan_distance(place) <= self.distance
+    }
 }
 
 impl FromIterator<String> for Day {
     fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        let regex = Regex::new(
-            "Sensor at x=(-?\\d+), y=(-?\\d+): closest beacon is at x=(-?\\d+), y=(-?\\d+)",
-        )
-        .expect("Regex should be valid");
         Day {
             sensors: iter
                 .into_iter()
                 .map(|line| {
-                    let captures = regex.captures(&line).expect("Line doesn't match regex");
-                    let location = Vec2 {
-                        x: captures[1].parse().unwrap(),
-                        y: captures[2].parse().unwrap(),
-                    };
-                    let closest_beacon = Vec2 {
-                        x: captures[3].parse().unwrap(),
-                        y: captures[4].parse().unwrap(),
-                    };
+                    let (loc_x, loc_y, beacon_x, beacon_y) = parse!(
+                        line,
+                        "Sensor at x={}, y={}: closest beacon is at x={}, y={}"
+                    );
+                    let location = Vec2 { x: loc_x, y: loc_y };
+                    let closest_beacon = Vec2 { x: beacon_x, y: beacon_y };
                     let distance = location.manhattan_distance(&closest_beacon);
                     Sensor { location, distance }
                 })
@@ -83,16 +84,11 @@ impl ExecutableDay for Day {
                     let x = (down_line + up_line) / 2;
                     if x < 0 {
                         continue;
-                    }
-                    if x > valid_range.end {
+                    } else if x > valid_range.end {
                         break;
                     }
                     let y = x - down_line;
-                    if valid_range.contains(&y)
-                        && self.sensors.iter().all(|sensor| {
-                            sensor.location.manhattan_distance(&Vec2 { x, y }) > sensor.distance
-                        })
-                    {
+                    if valid_range.contains(&y) && !self.contains(&Vec2 { x, y }) {
                         return x * 4000000 + y;
                     }
                 }
