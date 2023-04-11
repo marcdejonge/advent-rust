@@ -1,7 +1,5 @@
 use advent_lib::day::*;
-use lazy_static::lazy_static;
-use regex::Regex;
-use std::str::FromStr;
+use prse_derive::parse;
 
 struct Day {
     stack_lines: Vec<Vec<char>>,
@@ -13,7 +11,14 @@ impl FromIterator<String> for Day {
         let mut iter = iter.into_iter();
         let mut day = Day {
             stack_lines: parse_stacks(iter.by_ref().take_while(|line| line != "").collect()),
-            command_lines: iter.filter_map(|line| line.parse::<Command>().ok()).collect(),
+            command_lines: iter
+                .map(|line| {
+                    let from: usize;
+                    let to: usize;
+                    let count: usize = parse!(line, "move {} from {from} to {to}");
+                    Command { count, from_stack_ix: from - 1, to_stack_ix: to - 1 }
+                })
+                .collect(),
         };
         day.command_lines.reverse();
         day
@@ -50,24 +55,6 @@ struct Command {
     count: usize,
     from_stack_ix: usize,
     to_stack_ix: usize,
-}
-
-impl FromStr for Command {
-    type Err = String;
-
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref COMMAND_REGEX: Regex =
-                Regex::new("move (\\d+) from (\\d+) to (\\d+)").unwrap();
-        }
-        let groups =
-            COMMAND_REGEX.captures(line).ok_or(format!("Invalid command line: {}", line))?;
-        Ok(Command {
-            count: groups[1].parse().unwrap(),
-            from_stack_ix: groups[2].parse::<usize>().unwrap() - 1,
-            to_stack_ix: groups[3].parse::<usize>().unwrap() - 1,
-        })
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
