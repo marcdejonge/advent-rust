@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::iter_utils::{max_n, ChunkedTrait};
 use std::cell::RefCell;

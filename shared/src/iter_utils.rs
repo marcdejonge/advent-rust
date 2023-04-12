@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::mem;
 
 pub struct Chunked<I, T>
 where
@@ -22,10 +23,7 @@ where
     where
         Self: Iterator<Item = T> + Sized,
     {
-        Chunked {
-            iter: self,
-            match_item: split_item,
-        }
+        Chunked { iter: self, match_item: split_item }
     }
 }
 
@@ -59,7 +57,6 @@ where
 pub struct ZipWithNext<I, T>
 where
     I: Iterator<Item = T>,
-    T: Copy,
 {
     iter: I,
     last_result: Option<T>,
@@ -68,8 +65,7 @@ where
 pub trait ZipWithNextTrait {
     fn zip_with_next<T>(self) -> ZipWithNext<Self, T>
     where
-        Self: Iterator<Item = T> + Sized,
-        T: Copy;
+        Self: Iterator<Item = T> + Sized;
 }
 
 impl<I> ZipWithNextTrait for I
@@ -78,20 +74,16 @@ where
 {
     fn zip_with_next<T>(self) -> ZipWithNext<Self, T>
     where
-        Self: Iterator<Item = T> + Sized,
-        T: Copy,
+        Self: Iterator<Item = T>,
     {
-        ZipWithNext {
-            iter: self,
-            last_result: None,
-        }
+        ZipWithNext { iter: self, last_result: None }
     }
 }
 
 impl<I, T> Iterator for ZipWithNext<I, T>
 where
     I: Iterator<Item = T>,
-    T: Copy,
+    T: Clone,
 {
     type Item = (T, T);
 
@@ -103,10 +95,35 @@ where
             next = self.iter.next()?;
         }
 
-        let result = Some((self.last_result.unwrap(), next.clone()));
-        self.last_result = Some(next);
+        let result = Some((
+            mem::replace(&mut self.last_result, Some(next.clone())).unwrap(),
+            next,
+        ));
         result
     }
+}
+
+#[cfg(test)]
+mod zip_with_next_tests {
+    use super::*;
+
+    #[test]
+    fn test_normal_behavior() {
+        assert_eq!(
+            vec![1, 2, 3, 4].iter().zip_with_next().collect::<Vec<_>>(),
+            vec![(&1, &2), (&2, &3), (&3, &4)]
+        )
+    }
+
+    #[test]
+    fn empty_vector() {
+        assert_eq!(
+            Vec::<i32>::new().iter().zip_with_next().collect::<Vec<_>>(),
+            vec![]
+        )
+    }
+    #[test]
+    fn single_item() { assert_eq!(vec![1].iter().zip_with_next().collect::<Vec<_>>(), vec![]) }
 }
 
 pub fn max_n<const N: usize, T>(it: impl Iterator<Item = T>) -> [T; N]

@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::{execute_day, ExecutableDay};
 
 struct Day {

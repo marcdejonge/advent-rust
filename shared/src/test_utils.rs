@@ -33,13 +33,19 @@ macro_rules! day_test {
         }
     };
     ( $day: expr => $part1_result: expr, $part2_result: expr ) => {
-        #[test]
-        fn real() {
-            advent_lib::test_utils::assert_day::<super::Day>(
-                include_str!(concat!("../../input/day", stringify!($day), ".txt")),
-                $part1_result,
-                $part2_result,
-            );
+        extern crate test;
+        use super::*;
+        use test::Bencher;
+
+        #[bench]
+        fn full(b: &mut Bencher) {
+            b.iter(|| {
+                advent_lib::test_utils::assert_day::<super::Day>(
+                    include_str!(concat!("../../input/day", stringify!($day), ".txt")),
+                    $part1_result,
+                    $part2_result,
+                );
+            })
         }
     };
 }

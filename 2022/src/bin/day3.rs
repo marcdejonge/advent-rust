@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::*;
 use fxhash::FxBuildHasher;
 use std::collections::HashSet;

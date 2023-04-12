@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::*;
 use prse::Parse;
 use prse_derive::parse;

@@ -1,7 +1,7 @@
+use crate::lines::LineSegment;
+use crossbeam::scope;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::RangeInclusive;
-
-use crossbeam::scope;
 
 #[derive(Clone)]
 pub struct Grid<T> {
@@ -109,9 +109,7 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.items.len()
-    }
+    pub fn len(&self) -> usize { self.items.len() }
 
     pub fn calc_index(&self, x: i32, y: i32) -> Option<usize> {
         if !self.x_indices.contains(&x) || !self.y_indices.contains(&y) {
@@ -124,21 +122,34 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn get(&self, x: i32, y: i32) -> Option<&T> {
-        self.items.get(self.calc_index(x, y)?)
-    }
+    pub fn get(&self, x: i32, y: i32) -> Option<&T> { self.items.get(self.calc_index(x, y)?) }
 
     pub fn get_mut(&mut self, x: i32, y: i32) -> Option<&mut T> {
         let ix = self.calc_index(x, y)?;
         self.items.get_mut(ix)
     }
 
-    pub fn x_range(&self) -> RangeInclusive<i32> {
-        self.x_indices.clone()
-    }
+    pub fn x_range(&self) -> RangeInclusive<i32> { self.x_indices.clone() }
 
-    pub fn y_range(&self) -> RangeInclusive<i32> {
-        self.y_indices.clone()
+    pub fn y_range(&self) -> RangeInclusive<i32> { self.y_indices.clone() }
+
+    pub fn draw_line(&mut self, line: LineSegment<i32>, value: T)
+    where
+        T: Copy,
+    {
+        if line.start.x == line.end.x {
+            let x = line.start.x;
+            for y in line.min_y()..=line.max_y() {
+                self.get_mut(x, y).map(|place| *place = value);
+            }
+        } else if line.start.y == line.end.y {
+            let y = line.start.y;
+            for x in line.min_x()..=line.max_x() {
+                self.get_mut(x, y).map(|place| *place = value);
+            }
+        } else {
+            unimplemented!("Non-straight lines cannot be drawn to a Grid yet")
+        }
     }
 }
 

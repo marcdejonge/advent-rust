@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::*;
 use advent_lib::iter_utils::*;
 use std::collections::BinaryHeap;

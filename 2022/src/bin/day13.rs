@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::{execute_day, ExecutableDay};
 use std::cmp::Ordering;
 use std::iter::Peekable;

@@ -1,3 +1,4 @@
+#![feature(test)]
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
 use bit_set::BitSet;

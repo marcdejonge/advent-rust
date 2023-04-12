@@ -1,19 +1,22 @@
-use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::vec2::Vec2;
-use prse_derive::parse;
+#![feature(test)]
 use std::ops::RangeInclusive;
+
+use prse_derive::parse;
+use rusttype::Point;
+
+use advent_lib::day::{execute_day, ExecutableDay};
 
 struct Day {
     sensors: Vec<Sensor>,
 }
 
 impl Day {
-    fn find_all_lines(&self, f: fn(&Vec2<i64>) -> i64) -> Vec<i64> {
+    fn find_all_lines(&self, f: fn(Point<i64>) -> i64) -> Vec<i64> {
         let mut lines_indices = self
             .sensors
             .iter()
             .flat_map(|sensor| {
-                let top_left = f(&sensor.location) + 1;
+                let top_left = f(sensor.location) + 1;
                 [top_left + sensor.distance, top_left - sensor.distance]
             })
             .collect::<Vec<_>>();
@@ -21,13 +24,13 @@ impl Day {
         lines_indices
     }
 
-    fn contains(&self, place: &Vec2<i64>) -> bool {
+    fn contains(&self, place: Point<i64>) -> bool {
         self.sensors.iter().any(|sensor| sensor.contains(place))
     }
 }
 
 struct Sensor {
-    location: Vec2<i64>,
+    location: Point<i64>,
     distance: i64,
 }
 
@@ -37,9 +40,14 @@ impl Sensor {
         (self.location.x - space)..=(self.location.x + space)
     }
 
-    fn contains(&self, place: &Vec2<i64>) -> bool {
-        self.location.manhattan_distance(place) <= self.distance
+    fn contains(&self, place: Point<i64>) -> bool {
+        manhattan_distance(self.location, place) <= self.distance
     }
+}
+
+fn manhattan_distance(from: Point<i64>, to: Point<i64>) -> i64 {
+    let vector = to - from;
+    vector.x.abs() + vector.y.abs()
 }
 
 impl FromIterator<String> for Day {
@@ -52,9 +60,9 @@ impl FromIterator<String> for Day {
                         line,
                         "Sensor at x={}, y={}: closest beacon is at x={}, y={}"
                     );
-                    let location = Vec2 { x: loc_x, y: loc_y };
-                    let closest_beacon = Vec2 { x: beacon_x, y: beacon_y };
-                    let distance = location.manhattan_distance(&closest_beacon);
+                    let location = Point { x: loc_x, y: loc_y };
+                    let closest_beacon = Point { x: beacon_x, y: beacon_y };
+                    let distance = manhattan_distance(closest_beacon, location);
                     Sensor { location, distance }
                 })
                 .collect(),
@@ -88,7 +96,7 @@ impl ExecutableDay for Day {
                         break;
                     }
                     let y = x - down_line;
-                    if valid_range.contains(&y) && !self.contains(&Vec2 { x, y }) {
+                    if valid_range.contains(&y) && !self.contains(Point { x, y }) {
                         return x * 4000000 + y;
                     }
                 }
