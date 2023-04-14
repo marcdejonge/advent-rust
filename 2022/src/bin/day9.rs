@@ -8,14 +8,12 @@ struct Day {
     steps: Vec<(Vector<i32>, i32)>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        Day { steps: iter.into_iter().map(parse_line).collect() }
-    }
-}
-
 impl ExecutableDay for Day {
     type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        Day { steps: lines.map(parse_line).collect() }
+    }
 
     fn calculate_part1(&self) -> Self::Output { self.calculate_from([START; 2]) }
 

@@ -6,20 +6,18 @@ struct Day {
     dir_sizes: Vec<u32>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = u32;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
             dir_sizes: TraverseWithStack {
-                iter: iter.into_iter().filter_map(|line| line.parse::<Command>().ok()),
+                iter: lines.filter_map(|line| line.parse::<Command>().ok()),
                 stack: Vec::new(),
             }
             .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = u32;
 
     fn calculate_part1(&self) -> Self::Output {
         self.dir_sizes.iter().filter(|&&size| size < 100000).sum()

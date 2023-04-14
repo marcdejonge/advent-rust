@@ -5,23 +5,21 @@ struct Day {
     additions: Vec<i32>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = String;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         let mut additions = Vec::new();
         let mut x = 1i32;
-        iter.into_iter().for_each(|line| {
+        for line in lines {
             additions.push(x);
             if line.starts_with("addx ") {
                 additions.push(x);
                 x += line[5..].parse::<i32>().expect("Expected number");
             }
-        });
+        }
         Day { additions }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = String;
 
     fn calculate_part1(&self) -> Self::Output {
         self.additions

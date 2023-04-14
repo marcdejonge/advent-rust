@@ -1,6 +1,7 @@
 #![feature(test)]
+
 use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::search::{a_star_search, SearchGraph};
+use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
 
 struct Day {
     nodes: Vec<Node>,
@@ -8,15 +9,16 @@ struct Day {
     height: usize,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        let nodes: Vec<_> = iter
-            .into_iter()
+impl ExecutableDay for Day {
+    type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        let nodes: Vec<_> = lines
             .enumerate()
             .flat_map(|(line_index, line)| {
                 line.chars()
                     .enumerate()
-                    .map(move |(char_index, char)| Node::new(char, char_index, line_index))
+                    .map(|(char_index, char)| Node::new(char, char_index, line_index))
                     .collect::<Vec<_>>()
             })
             .collect();
@@ -24,37 +26,29 @@ impl FromIterator<String> for Day {
         let height = nodes.iter().map(|n| n.y).max().unwrap() + 1;
         Day { nodes, width, height }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = usize;
 
     fn calculate_part1(&self) -> Self::Output {
         struct GraphPart1<'a> {
             graph: &'a Day,
         }
 
-        impl<'a> SearchGraph<'a> for GraphPart1<'a> {
-            type Node = Node;
+        impl<'a> SearchGraph for GraphPart1<'a> {
+            type Node = &'a Node;
             type Score = u32;
 
             fn neighbours(&self, node: &'a Node) -> Vec<(&'a Node, u32)> {
-                self.graph
-                    .neighbours(node)
-                    .iter()
-                    .cloned()
-                    .filter(|(next, _)| next.height - node.height <= 1)
-                    .collect()
+                let mut neighbours = self.graph.neighbours(node);
+                neighbours.retain(|(next, _)| next.height - node.height <= 1);
+                neighbours
             }
+        }
 
-            fn start_node(&self) -> &'a Node {
-                self.graph.nodes.iter().find(|n| n.c == 'S').expect("Find the starting node")
-            }
-
+        impl<'a> SearchGraphWithGoal for GraphPart1<'a> {
             fn is_goal(&self, node: &Node) -> bool { node.c == 'E' }
         }
 
-        a_star_search(&GraphPart1 { graph: self })
+        let start_node = self.nodes.iter().find(|n| n.c == 'S').expect("Find the starting node");
+        a_star_search(&GraphPart1 { graph: self }, start_node)
             .expect("Expected a path from S to E")
             .len()
             - 1
@@ -65,27 +59,23 @@ impl ExecutableDay for Day {
             graph: &'a Day,
         }
 
-        impl<'a> SearchGraph<'a> for GraphPart2<'a> {
-            type Node = Node;
+        impl<'a> SearchGraph for GraphPart2<'a> {
+            type Node = &'a Node;
             type Score = u32;
 
             fn neighbours(&self, node: &'a Node) -> Vec<(&'a Node, u32)> {
-                self.graph
-                    .neighbours(node)
-                    .iter()
-                    .cloned()
-                    .filter(|(next, _)| next.height - node.height >= -1)
-                    .collect()
+                let mut neighbours = self.graph.neighbours(node);
+                neighbours.retain(|(next, _)| next.height - node.height >= -1);
+                neighbours
             }
-
-            fn start_node(&self) -> &'a Node {
-                self.graph.nodes.iter().find(|n| n.c == 'E').expect("Find the starting node")
-            }
-
-            fn is_goal(&self, node: &'a Node) -> bool { node.height == 0 }
         }
 
-        a_star_search(&GraphPart2 { graph: self })
+        impl<'a> SearchGraphWithGoal for GraphPart2<'a> {
+            fn is_goal(&self, node: &Node) -> bool { node.height == 0 }
+        }
+
+        let start_node = self.nodes.iter().find(|n| n.c == 'E').expect("Find the starting node");
+        a_star_search(&GraphPart2 { graph: self }, start_node)
             .expect("Expected a path from E to 0")
             .len()
             - 1

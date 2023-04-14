@@ -7,11 +7,13 @@ struct Day {
     tree_heights: Grid<u8>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
             tree_heights: Grid::new(
-                iter.into_iter()
+                lines
                     .map(|line| {
                         line.chars()
                             .filter_map(|c| {
@@ -27,10 +29,6 @@ impl FromIterator<String> for Day {
             ),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = usize;
 
     fn calculate_part1(&self) -> Self::Output {
         let mut reachable = BitSet::new();

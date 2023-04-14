@@ -5,11 +5,12 @@ struct Day {
     bytes: Vec<u8>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = u32;
+
+    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
         Day {
-            bytes: iter
-                .into_iter()
+            bytes: lines
                 .next()
                 .expect("Expected a single line")
                 .chars()
@@ -25,10 +26,6 @@ impl FromIterator<String> for Day {
                 .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = u32;
 
     fn calculate_part1(&self) -> Self::Output {
         self.find(4).expect("Could not find result for part 1")

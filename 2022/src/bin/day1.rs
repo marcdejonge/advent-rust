@@ -7,21 +7,18 @@ struct Day {
     sorted_sums: Vec<i32>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = i32;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
-            sorted_sums: iter
-                .into_iter()
+            sorted_sums: lines
                 .chunk_by("".to_owned())
                 .map(|v| v.iter().map(|line| line.parse::<i32>().unwrap()).sum())
                 .collect::<BinaryHeap<_>>()
                 .into_sorted_vec(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = i32;
 
     fn calculate_part1(&self) -> Self::Output { self.sorted_sums.iter().rev().take(1).sum() }
 

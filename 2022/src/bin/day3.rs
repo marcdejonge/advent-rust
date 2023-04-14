@@ -7,11 +7,12 @@ struct Day {
     grid: Vec<Vec<u32>>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = u32;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
-            grid: iter
-                .into_iter()
+            grid: lines
                 .map(|line| {
                     line.chars()
                         .map(|c| match c {
@@ -24,10 +25,6 @@ impl FromIterator<String> for Day {
                 .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = u32;
 
     fn calculate_part1(&self) -> Self::Output {
         self.grid

@@ -6,10 +6,9 @@ pub fn assert_day<Day: ExecutableDay>(
     expected_part1: Day::Output,
     expected_part2: Day::Output,
 ) where
-    Day: FromIterator<String>,
     Day::Output: PartialEq + Debug,
 {
-    let day: Day = input.lines().map(|line| line.to_owned()).collect();
+    let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
     assert_eq!(day.calculate_part1(), expected_part1);
     assert_eq!(day.calculate_part2(), expected_part2);
 }

@@ -6,24 +6,24 @@ use std::time::Instant;
 pub trait ExecutableDay {
     type Output;
 
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self;
     fn calculate_part1(&self) -> Self::Output;
     fn calculate_part2(&self) -> Self::Output;
 }
 
 pub fn execute_day<Day>()
 where
-    Day: ExecutableDay + FromIterator<String>,
+    Day: ExecutableDay,
     Day::Output: Display,
 {
     let format = Locale::en;
     println!("Executing");
 
     let parse_file_start_time = Instant::now();
-    let day: Day = stdin()
-        .lock()
-        .lines()
-        .map(|line| line.expect("Failed to read from input"))
-        .collect();
+    let day: Day = Day::from_lines(
+        stdin().lock().lines().map(|line| line.expect("Failed to read from input")),
+    );
+
     println!(
         " ├── Input parsed \x1b[3min {}µs\x1b[0m",
         parse_file_start_time.elapsed().as_micros().to_formatted_string(&format)

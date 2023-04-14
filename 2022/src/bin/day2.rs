@@ -5,14 +5,12 @@ struct Day {
     input: Vec<String>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        Day { input: iter.into_iter().collect() }
-    }
-}
-
 impl ExecutableDay for Day {
     type Output = i32;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        Day { input: lines.collect() }
+    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.input

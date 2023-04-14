@@ -50,11 +50,12 @@ fn manhattan_distance(from: Point<i64>, to: Point<i64>) -> i64 {
     vector.x.abs() + vector.y.abs()
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = i64;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
-            sensors: iter
-                .into_iter()
+            sensors: lines
                 .map(|line| {
                     let (loc_x, loc_y, beacon_x, beacon_y) = parse!(
                         line,
@@ -68,10 +69,6 @@ impl FromIterator<String> for Day {
                 .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = i64;
 
     fn calculate_part1(&self) -> Self::Output {
         let check_row: i64 = if self.sensors.len() < 20 { 10 } else { 2000000 };

@@ -8,20 +8,17 @@ struct Day {
     packets: Vec<Packet>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
-            packets: iter
-                .into_iter()
+            packets: lines
                 .filter(|line| line.len() > 0)
                 .map(|line| line.parse().unwrap())
                 .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = usize;
 
     fn calculate_part1(&self) -> Self::Output {
         self.packets

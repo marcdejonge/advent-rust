@@ -7,16 +7,16 @@ struct Day {
     command_lines: Vec<Command>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        let mut iter = iter.into_iter();
+impl ExecutableDay for Day {
+    type Output = String;
+
+    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
         let mut day = Day {
-            stack_lines: parse_stacks(iter.by_ref().take_while(|line| line != "").collect()),
-            command_lines: iter
+            stack_lines: parse_stacks(lines.by_ref().take_while(|line| line != "").collect()),
+            command_lines: lines
                 .map(|line| {
-                    let from: usize;
-                    let to: usize;
-                    let count: usize = parse!(line, "move {} from {from} to {to}");
+                    let (count, from, to): (usize, usize, usize) =
+                        parse!(line, "move {} from {} to {}");
                     Command { count, from_stack_ix: from - 1, to_stack_ix: to - 1 }
                 })
                 .collect(),
@@ -24,10 +24,6 @@ impl FromIterator<String> for Day {
         day.command_lines.reverse();
         day
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = String;
 
     fn calculate_part1(&self) -> Self::Output { self.calculate(true) }
 

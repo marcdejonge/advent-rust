@@ -19,16 +19,12 @@ impl Range {
     fn wraps(&self, other: &Range) -> bool { self.from <= other.from && self.to >= other.to }
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        Day {
-            range_pairs: iter.into_iter().map(|line: String| parse!(line, "{},{}")).collect(),
-        }
-    }
-}
-
 impl ExecutableDay for Day {
     type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        Day { range_pairs: lines.map(|line: String| parse!(line, "{},{}")).collect() }
+    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.range_pairs

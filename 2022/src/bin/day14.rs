@@ -18,10 +18,11 @@ struct ParsePoint {
     y: i32,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
-        let lines: Vec<LineSegment<i32>> = iter
-            .into_iter()
+impl ExecutableDay for Day {
+    type Output = usize;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        let lines: Vec<LineSegment<i32>> = lines
             .flat_map(|line: String| {
                 parse!(line, "{: -> :}").into_iter().zip_with_next::<ParsePoint>().map(
                     |(start, end)| LineSegment {
@@ -41,10 +42,6 @@ impl FromIterator<String> for Day {
 
         Day { grid }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = usize;
 
     fn calculate_part1(&self) -> Self::Output { SandDroppingGrid::new(&self.grid).count() }
 

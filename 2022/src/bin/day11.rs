@@ -7,21 +7,18 @@ struct Day {
     monkeys: Vec<Monkey>,
 }
 
-impl FromIterator<String> for Day {
-    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+impl ExecutableDay for Day {
+    type Output = u64;
+
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
-            monkeys: iter
-                .into_iter()
+            monkeys: lines
                 .chunk_by("".to_owned())
                 .enumerate()
                 .map(|(index, lines)| parse_monkey(index, lines))
                 .collect(),
         }
     }
-}
-
-impl ExecutableDay for Day {
-    type Output = u64;
 
     fn calculate_part1(&self) -> Self::Output { self.calculate(20, 3) }
 
@@ -81,27 +78,47 @@ fn parse_monkey(index: usize, lines: Vec<String>) -> Monkey {
     }
 }
 
-fn execute_round(monkeys: &Vec<RefCell<Monkey>>, div: u64, modulus: u64) {
+fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64) -> u64) {
     for monkey_cell in monkeys {
         let mut monkey = monkey_cell.borrow_mut();
-        let mut true_monkey = monkeys
-            .get(monkey.true_monkey)
-            .expect("Can't find reference true monkey")
-            .borrow_mut();
-        let mut false_monkey = monkeys
-            .get(monkey.false_monkey)
-            .expect("Can't find reference false monkey")
-            .borrow_mut();
-        for &old in monkey.items.iter() {
-            let amount = if monkey.amount == 0 { old } else { monkey.amount };
-            let new = (if monkey.operation_type == '+' { old + amount } else { old * amount })
-                % modulus
-                / div;
-            if (new % monkey.test_divisible_by) == 0 {
-                true_monkey.items.push(new)
-            } else {
-                false_monkey.items.push(new)
-            };
+
+        let amount = monkey.amount;
+        if monkey.operation_type == '+' {
+            for old in monkey.items.iter_mut() {
+                let add = if amount == 0 { *old } else { amount };
+                *old = reduce(*old + add, param);
+            }
+        } else {
+            for old in monkey.items.iter_mut() {
+                let add = if amount == 0 { *old } else { amount };
+                *old = reduce(*old * add, param);
+            }
+        }
+
+        if monkey.true_monkey == monkey.false_monkey {
+            let mut send_monkey = monkeys
+                .get(monkey.true_monkey)
+                .expect("Can't find reference monkey")
+                .borrow_mut();
+            for &item in monkey.items.iter() {
+                send_monkey.items.push(item)
+            }
+        } else {
+            let mut true_monkey = monkeys
+                .get(monkey.true_monkey)
+                .expect("Can't find reference true monkey")
+                .borrow_mut();
+            let mut false_monkey = monkeys
+                .get(monkey.false_monkey)
+                .expect("Can't find reference false monkey")
+                .borrow_mut();
+            for &item in monkey.items.iter() {
+                if (item % monkey.test_divisible_by) == 0 {
+                    true_monkey.items.push(item)
+                } else {
+                    false_monkey.items.push(item)
+                };
+            }
         }
 
         monkey.inspected_items += monkey.items.len() as u64;
@@ -115,11 +132,26 @@ impl Day {
     }
 
     fn calculate(&self, rounds: u32, div: u64) -> u64 {
-        let modulus = self.calculate_mod();
         let calc_monkeys = self.monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
-        for _ in 0..rounds {
-            execute_round(&calc_monkeys, div, modulus);
+
+        if div > 1 {
+            for _ in 0..rounds {
+                execute_round(&calc_monkeys, div, |x, div| x / div);
+            }
+        } else {
+            let modulus = self.calculate_mod();
+            for monkey in &calc_monkeys {
+                let mut monkey = monkey.borrow_mut();
+                for item in monkey.items.iter_mut() {
+                    *item %= modulus;
+                }
+            }
+
+            for _ in 0..rounds {
+                execute_round(&calc_monkeys, modulus, |x, modulus| x % modulus);
+            }
         }
+
         let [first, second] = max_n(calc_monkeys.iter().map(|m| m.borrow().inspected_items));
         first * second
     }
