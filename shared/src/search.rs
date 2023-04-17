@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::hash::{BuildHasher, Hash};
 use std::ops::Add;
 
@@ -66,4 +66,92 @@ pub fn a_star_search<G: SearchGraphWithGoal>(
     }
 
     return None;
+}
+
+pub fn depth_first_search<S, I, FN, FV>(start_state: S, neighbours: FN, mut visit: FV)
+where
+    S: Clone,
+    I: Iterator<Item = S>,
+    FN: Fn(S) -> I,
+    FV: FnMut(S) -> bool,
+{
+    let mut stack = Vec::new();
+    stack.push(start_state);
+
+    while !stack.is_empty() {
+        let from_state = stack.pop().unwrap();
+        for next_state in neighbours(from_state) {
+            if visit(next_state.clone()) {
+                stack.push(next_state);
+            }
+        }
+    }
+}
+
+pub fn breadth_first_search<S, I, FN, FV>(start_state: S, neighbours: FN, mut visit: FV)
+where
+    S: Clone,
+    I: Iterator<Item = S>,
+    FN: Fn(S) -> I,
+    FV: FnMut(S) -> bool,
+{
+    let mut queue = VecDeque::new();
+    queue.push_back(start_state);
+
+    while !queue.is_empty() {
+        let from_state = queue.pop_front().unwrap();
+        for next_state in neighbours(from_state) {
+            if visit(next_state.clone()) {
+                queue.push_back(next_state);
+            }
+        }
+    }
+}
+
+pub fn find_max_nonoverlapping_combination<T, S>(
+    input: impl Iterator<Item = (u64, T)>,
+    get_score: fn(&T) -> S,
+    bits_split: u32,
+) -> (T, T)
+where
+    T: Clone,
+    S: Copy + Ord + Default + Add<Output = S>,
+{
+    if bits_split == 0 {
+        panic!("bits_split needs to be a positive number")
+    }
+    let split_mask = (1usize << bits_split) - 1;
+    let mut buckets: Vec<Vec<&(u64, T)>> = Vec::with_capacity(1 << bits_split);
+    for _ in 0..(1 << bits_split) {
+        buckets.push(Vec::with_capacity(32));
+    }
+    let mut input = input.collect::<Vec<_>>();
+    input.sort_by(|l, r| get_score(&r.1).cmp(&get_score(&l.1)));
+    input.iter().for_each(|item| buckets[item.0 as usize & split_mask].push(item));
+
+    let mut max: S = Default::default();
+    let mut max_items = None;
+
+    for first_ix in 0..buckets.len() {
+        for first_item in buckets[first_ix].iter().cloned() {
+            for second_ix in (first_ix + 1)..buckets.len() {
+                if (first_item.0 as usize & second_ix) != 0 {
+                    continue; // Skip any group that won't match anyway
+                }
+
+                for second_item in buckets[second_ix].iter().cloned() {
+                    let score = get_score(&first_item.1) + get_score(&second_item.1);
+                    if score < max {
+                        break;
+                    }
+                    if first_item.0 & second_item.0 == 0 {
+                        max = score;
+                        max_items = Some((first_item.1.clone(), second_item.1.clone()));
+                    }
+                }
+            }
+        }
+    }
+
+    max_items.expect("Could not find any combination!")
 }
