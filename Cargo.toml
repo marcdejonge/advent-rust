@@ -1,2 +1,6 @@
 [workspace]
 members = ["shared", "2022"]
+
+[profile.release]
+strip=true
+lto=true
