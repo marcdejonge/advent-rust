@@ -71,7 +71,7 @@ pub fn a_star_search<G: SearchGraphWithGoal>(
 pub fn depth_first_search<S, I, FN, FV>(start_state: S, neighbours: FN, mut visit: FV)
 where
     S: Clone,
-    I: Iterator<Item = S>,
+    I: IntoIterator<Item = S>,
     FN: Fn(S) -> I,
     FV: FnMut(S) -> bool,
 {
@@ -91,7 +91,7 @@ where
 pub fn breadth_first_search<S, I, FN, FV>(start_state: S, neighbours: FN, mut visit: FV)
 where
     S: Clone,
-    I: Iterator<Item = S>,
+    I: IntoIterator<Item = S>,
     FN: Fn(S) -> I,
     FV: FnMut(S) -> bool,
 {
