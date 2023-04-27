@@ -1,8 +1,8 @@
 **/big_inputs/
 **/flamegraph.svg
 
-# Created by https://www.toptal.com/developers/gitignore/api/macos,windows,intellij+all,rust
-# Edit at https://www.toptal.com/developers/gitignore?templates=macos,windows,intellij+all,rust
+# Created by https://www.toptal.com/developers/gitignore/api/rust,macos,windows,intellij+all,visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=rust,macos,windows,intellij+all,visualstudiocode
 
 ### Intellij+all ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
@@ -141,6 +141,25 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
@@ -167,4 +186,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/macos,windows,intellij+all,rust
+# End of https://www.toptal.com/developers/gitignore/api/rust,macos,windows,intellij+all,visualstudiocode
+
