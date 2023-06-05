@@ -8,6 +8,8 @@ use prse_derive::parse;
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::search::depth_first_search;
 
+type Count = u8;
+
 struct Day {
     blueprints: Vec<Blueprint>,
 }
@@ -22,9 +24,9 @@ struct Blueprint {
 
 #[derive(Copy, Clone)]
 struct RobotCost {
-    ore: u32,
-    clay: u32,
-    obsidian: u32,
+    ore: Count,
+    clay: Count,
+    obsidian: Count,
 }
 
 impl Blueprint {
@@ -42,7 +44,7 @@ impl Blueprint {
                 .max(self.clay_bot_cost.obsidian)
                 .max(self.obsidian_bot_cost.obsidian)
                 .max(self.geode_bot_cost.obsidian),
-            geode: u32::MAX,
+            geode: Count::MAX,
         }
     }
 
@@ -56,20 +58,20 @@ impl Blueprint {
     }
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone)]
 struct ActiveRobots {
-    ore: u32,
-    clay: u32,
-    obsidian: u32,
-    geode: u32,
+    ore: Count,
+    clay: Count,
+    obsidian: Count,
+    geode: Count,
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Default)]
 struct Materials {
-    ore: u32,
-    clay: u32,
-    obsidian: u32,
-    geode: u32,
+    ore: Count,
+    clay: Count,
+    obsidian: Count,
+    geode: Count,
 }
 
 impl Add<ActiveRobots> for Materials {
@@ -114,7 +116,7 @@ impl Sub<&RobotCost> for Materials {
 }
 
 impl Index<&Robot> for ActiveRobots {
-    type Output = u32;
+    type Output = Count;
 
     fn index(&self, index: &Robot) -> &Self::Output {
         match index {
@@ -146,7 +148,7 @@ enum Robot {
 
 #[derive(Copy, Clone, Default)]
 struct State {
-    time: u32,
+    time: u8,
     materials: Materials,
     active_robots: ActiveRobots,
     bought_robot: Option<Robot>,
@@ -154,10 +156,12 @@ struct State {
 }
 
 impl State {
-    fn calc_max_geodes(&self) -> u32 {
-        self.materials.geode
-            + self.time * self.active_robots.geode
-            + (self.time * (self.time - 1)) / 2
+    fn calc_max_geodes(&self) -> Count {
+        let bots = self.active_robots.geode as u32;
+        let geodes = self.materials.geode as u32;
+        let time = self.time as u32;
+        let max = geodes + time * bots + (time * (time - 1)) / 2;
+        max.clamp(0, Count::MAX as u32) as Count
     }
 
     fn next(&self) -> State {
@@ -235,7 +239,7 @@ impl<'a> Iterator for StateIterator<'a> {
     }
 }
 
-fn calculate(blueprint: &Blueprint, start_time: u32) -> State {
+fn calculate(blueprint: &Blueprint, start_time: u8) -> u32 {
     let max_robots = blueprint.calc_max_robots();
     let start = State { time: start_time, ..Default::default() };
     let mut max = start;
@@ -249,7 +253,7 @@ fn calculate(blueprint: &Blueprint, start_time: u32) -> State {
             state.time > 0 && state.calc_max_geodes() > max.materials.geode
         },
     );
-    max
+    max.materials.geode as u32
 }
 
 impl ExecutableDay for Day {
@@ -257,7 +261,7 @@ impl ExecutableDay for Day {
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day { blueprints: lines.map(|line|{
-            let (ix, ore_cost, clay_cost, obs_ore_cost, obs_clay_cost, geode_ore_cost, geode_obs_cost): (u32, u32, u32, u32, u32, u32, u32) = parse!(line, "Blueprint {}: Each ore robot costs {} ore. Each clay robot costs {} ore. Each obsidian robot costs {} ore and {} clay. Each geode robot costs {} ore and {} obsidian.");
+            let (ix, ore_cost, clay_cost, obs_ore_cost, obs_clay_cost, geode_ore_cost, geode_obs_cost): (u32, Count, Count, Count, Count, Count, Count) = parse!(line, "Blueprint {}: Each ore robot costs {} ore. Each clay robot costs {} ore. Each obsidian robot costs {} ore and {} clay. Each geode robot costs {} ore and {} obsidian.");
             Blueprint {
                 ix,
                 ore_bot_cost: RobotCost { ore: ore_cost, clay: 0, obsidian: 0 },
@@ -271,14 +275,15 @@ impl ExecutableDay for Day {
     fn calculate_part1(&self) -> Self::Output {
         self.blueprints
             .iter()
-            .map(|blueprint| blueprint.ix * calculate(blueprint, 24).materials.geode)
+            .map(|blueprint| blueprint.ix * calculate(blueprint, 24))
             .sum()
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        self.blueprints.iter().take(3).fold(1, |acc, blueprint| {
-            acc * calculate(blueprint, 32).materials.geode
-        })
+        self.blueprints
+            .iter()
+            .take(3)
+            .fold(1, |acc, blueprint| acc * calculate(blueprint, 32))
     }
 }
 
