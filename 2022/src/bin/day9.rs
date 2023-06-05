@@ -1,8 +1,11 @@
 #![feature(test)]
-use advent_lib::day::{execute_day, ExecutableDay};
+
+use std::collections::HashSet;
+
 use fxhash::FxBuildHasher;
 use rusttype::{Point, Vector};
-use std::collections::HashSet;
+
+use advent_lib::day::{execute_day, ExecutableDay};
 
 struct Day {
     steps: Vec<(Vector<i32>, i32)>,
@@ -27,7 +30,7 @@ const U: Vector<i32> = Vector { x: 0, y: 1 };
 const D: Vector<i32> = Vector { x: 0, y: -1 };
 
 fn parse_line(line: String) -> (Vector<i32>, i32) {
-    let (direction, count) = line.split_once(" ").expect("Missing space to split");
+    let (direction, count) = line.split_once(' ').expect("Missing space to split");
     let direction = match direction {
         "R" => R,
         "L" => L,
@@ -61,7 +64,7 @@ fn move_snake<const N: usize>(snake: [Point<i32>; N], direction: Vector<i32>) ->
 impl Day {
     fn calculate_from<const N: usize>(&self, snake: [Point<i32>; N]) -> usize {
         let mut places = HashSet::with_hasher(FxBuildHasher::default());
-        let mut snake = snake.clone();
+        let mut snake = snake;
         for &(direction, count) in &self.steps {
             for _ in 0..count {
                 snake = move_snake(snake, direction);
@@ -77,6 +80,7 @@ fn main() { execute_day::<Day>() }
 #[cfg(test)]
 mod tests {
     use advent_lib::day_test;
+
     day_test!( 9, example => 13, 1 );
     day_test!( 9, bigger => 88, 36 );
     day_test!( 9 => 5710, 2259 );

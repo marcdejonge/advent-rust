@@ -1,4 +1,5 @@
 #![feature(test)]
+
 use advent_lib::day::*;
 
 struct Day {
@@ -13,16 +14,8 @@ impl ExecutableDay for Day {
             bytes: lines
                 .next()
                 .expect("Expected a single line")
-                .chars()
-                .filter_map(
-                    |c| {
-                        if ('a'..='z').contains(&c) {
-                            Some((c as u8) - 97)
-                        } else {
-                            None
-                        }
-                    },
-                )
+                .bytes()
+                .filter_map(|c| if c.is_ascii_lowercase() { Some(c - b'a') } else { None })
                 .collect(),
         }
     }

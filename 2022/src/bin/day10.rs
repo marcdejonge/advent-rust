@@ -13,9 +13,9 @@ impl ExecutableDay for Day {
         let mut x = 1i32;
         for line in lines {
             additions.push(x);
-            if line.starts_with("addx ") {
+            if let Some(number) = line.strip_prefix("addx ") {
                 additions.push(x);
-                x += line[5..].parse::<i32>().expect("Expected number");
+                x += number.parse::<i32>().expect("Expected number");
             }
         }
         Day { additions }

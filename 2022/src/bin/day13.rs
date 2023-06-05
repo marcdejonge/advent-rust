@@ -2,7 +2,7 @@
 use advent_lib::day::{execute_day, ExecutableDay};
 use std::cmp::Ordering;
 use std::iter::Peekable;
-use std::str::{Chars, FromStr};
+use std::str::{Bytes, FromStr};
 
 struct Day {
     packets: Vec<Packet>,
@@ -14,7 +14,7 @@ impl ExecutableDay for Day {
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day {
             packets: lines
-                .filter(|line| line.len() > 0)
+                .filter(|line| !line.is_empty())
                 .map(|line| line.parse().unwrap())
                 .collect(),
         }
@@ -53,35 +53,32 @@ enum Packet {
 }
 
 impl Packet {
-    fn from_str_peekable(line: &mut Peekable<Chars>) -> Result<Self, String> {
-        if line.peek() == Some(&'[') {
+    fn from_str_peekable(line: &mut Peekable<Bytes>) -> Result<Self, String> {
+        if line.peek() == Some(&b'[') {
             line.next(); // Drop the '['
             let mut items: Vec<Packet> = Vec::new();
             loop {
-                if line.peek() != Some(&']') {
+                if line.peek() != Some(&b']') {
                     items.push(Packet::from_str_peekable(line)?);
                 }
                 let next = line.next();
                 match next {
-                    Some(',') => {}
-                    Some(']') => return Ok(Packet::List { items }),
+                    Some(b',') => {}
+                    Some(b']') => return Ok(Packet::List { items }),
                     _ => return Err(format!("Expected ',' or ']', but found {:?}", next)),
                 }
             }
         } else {
-            let mut number_string = String::new();
-            while let Some(c) = line.peek() {
-                if ('0'..='9').contains(c) {
-                    number_string.push(*c);
+            let mut number = 0u32;
+            while let Some(b) = line.peek() {
+                if b.is_ascii_digit() {
+                    number = number * 10 + (b - b'0') as u32;
                     line.next();
                 } else {
                     break;
                 }
             }
-            match number_string.parse::<u32>() {
-                Ok(value) => Ok(Packet::Single { value }),
-                Err(_) => Err(format!("Expected a number, but found {} ", number_string)),
-            }
+            Ok(Packet::Single { value: number })
         }
     }
 }
@@ -94,7 +91,7 @@ impl FromStr for Packet {
     type Err = String;
 
     fn from_str(line: &str) -> Result<Self, Self::Err> {
-        match Packet::from_str_peekable(&mut line.chars().peekable()) {
+        match Packet::from_str_peekable(&mut line.bytes().peekable()) {
             Ok(packet) => Ok(packet),
             Err(msg) => Err(format!("{} for {}", msg, line)),
         }

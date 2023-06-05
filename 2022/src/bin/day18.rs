@@ -47,7 +47,7 @@ impl ExecutableDay for Day {
 
         let mut outside_blocks = HashSet::with_capacity_and_hasher(4096, FxBuildHasher::default());
         depth_first_search(
-            rect.min.clone(),
+            rect.min,
             |p| DIRECTIONS.iter().map(move |dir| p + *dir),
             |p| {
                 if rect.contains_inclusive(&p)

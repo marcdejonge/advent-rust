@@ -1,8 +1,10 @@
-use crate::traits::NotEq;
-use num_traits::One;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::ops;
 use std::str::FromStr;
+
+use num_traits::One;
+
+use crate::traits::NotEq;
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
@@ -12,6 +14,7 @@ pub struct Point<const D: usize, T> {
 impl<const D: usize, T> FromStr for Point<D, T>
 where
     T: FromStr + Default + Copy,
+    <T as FromStr>::Err: Display,
 {
     type Err = String;
 
@@ -37,6 +40,7 @@ pub struct Vector<const D: usize, T> {
 impl<const D: usize, T> FromStr for Vector<D, T>
 where
     T: FromStr + Default + Copy,
+    <T as FromStr>::Err: Display,
 {
     type Err = String;
 
@@ -61,17 +65,19 @@ pub fn unit_vector<const D: usize, T: Copy + One>() -> Vector<D, T> {
 fn parse_coords<const D: usize, T>(s: &str) -> Result<[T; D], String>
 where
     T: Default + Copy + FromStr,
+    <T as FromStr>::Err: Display,
 {
     let mut coords: [T; D] = [Default::default(); D];
     for (ix, r) in s.split(',').map(|p| p.parse::<T>()).enumerate() {
         match r {
             Ok(c) => {
-                let coord = coords
-                    .get_mut(ix)
-                    .ok_or_else(|| format!("Invalid index {ix}, matching for {D}"))?;
-                *coord = c;
+                if let Some(coord) = coords.get_mut(ix) {
+                    *coord = c;
+                } else {
+                    return Err(format!("Invalid index {ix}, matching for {D}"));
+                }
             }
-            Err(_) => return Err(format!("Could not parse component {ix}")),
+            Err(e) => return Err(format!("Could not parse component {ix}: {e}")),
         }
     }
     Ok(coords)
@@ -84,11 +90,11 @@ fn debug<const D: usize, T: Debug>(
 ) -> std::fmt::Result {
     f.write_str(t)?;
     f.write_str("(")?;
-    for ix in 0..D {
+    for (ix, coord) in coords.iter().enumerate() {
         if ix > 0 {
             f.write_str(",")?;
         }
-        coords[ix].fmt(f)?;
+        coord.fmt(f)?;
     }
     f.write_str(")")?;
     Ok(())
@@ -157,13 +163,7 @@ impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub for Vector<D, T> {
 // vector * const = vector
 impl<const D: usize, T: ops::Mul<Output = T> + Copy> ops::Mul<T> for Vector<D, T> {
     type Output = Vector<D, T>;
-    fn mul(self, rhs: T) -> Vector<D, T> {
-        let mut coords = self.coords;
-        for ix in 0..D {
-            coords[ix] = coords[ix] * rhs;
-        }
-        Vector { coords }
-    }
+    fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
 }
 
 impl<const D: usize, F, T> From<Vector<D, F>> for Vector<D, T>
@@ -200,7 +200,7 @@ where
                 return false;
             }
         }
-        return true;
+        true
     }
 }
 
@@ -214,8 +214,8 @@ where
     I: Iterator<Item = Point<D, T>>,
 {
     fn enclosing_rect(mut self) -> Option<Rect<D, T>> {
-        let mut min = self.next()?.clone();
-        let mut max = min.clone();
+        let mut min = self.next()?;
+        let mut max = min;
 
         loop {
             match self.next() {

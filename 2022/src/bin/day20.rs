@@ -48,7 +48,7 @@ fn create_nodes(numbers: &Vec<i64>, multiply: i64) -> Vec<NumberNode> {
     result
 }
 
-fn apply_shift(nodes: &mut Vec<NumberNode>, ix: usize) {
+fn apply_shift(nodes: &mut [NumberNode], ix: usize) {
     let node = nodes[ix];
     if node.shift == 0 {
         return; // Nothing to do

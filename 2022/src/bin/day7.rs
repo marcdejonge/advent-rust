@@ -1,6 +1,8 @@
 #![feature(test)]
-use advent_lib::day::*;
+
 use std::str::FromStr;
+
+use advent_lib::day::*;
 
 struct Day {
     dir_sizes: Vec<u32>,
@@ -27,10 +29,10 @@ impl ExecutableDay for Day {
         let min_size = self.dir_sizes.last().unwrap_or(&0) - 40000000;
         self.dir_sizes
             .iter()
-            .filter(|&&size| size >= min_size)
+            .cloned()
+            .filter(|&size| size >= min_size)
             .min()
             .expect("Could not find any")
-            .clone()
     }
 }
 
@@ -49,11 +51,11 @@ impl FromStr for Command {
             Ok(Command::CdUp)
         } else if line.starts_with("$ cd ") {
             Ok(Command::CdDown)
-        } else if line.starts_with("$") || line.starts_with("dir ") {
+        } else if line.starts_with('$') || line.starts_with("dir ") {
             Err(())
         } else {
             let file_size = line.find(' ').map(|ix| &line[..ix]).ok_or(())?;
-            file_size.parse::<u32>().map(|size| Command::File(size)).map_err(|_| ())
+            file_size.parse::<u32>().map(Command::File).map_err(|_| ())
         }
     }
 }
@@ -69,7 +71,7 @@ impl<I> TraverseWithStack<I, u32> {
         if let Some(parent) = self.stack.last_mut() {
             *parent += current;
         }
-        return Some(current);
+        Some(current)
     }
 }
 

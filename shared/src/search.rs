@@ -28,13 +28,9 @@ where
 {
     let mut path = vec![end_node];
     let mut curr = end_node;
-    loop {
-        if let &(_, Some(next)) = current_status.get(&curr).unwrap() {
-            path.push(next);
-            curr = next;
-        } else {
-            break;
-        }
+    while let &(_, Some(next)) = current_status.get(&curr).unwrap() {
+        path.push(next);
+        curr = next;
     }
 
     path
@@ -65,7 +61,7 @@ pub fn a_star_search<G: SearchGraphWithGoal>(
         }
     }
 
-    return None;
+    None
 }
 
 pub fn depth_first_search<S, I, FN, FV>(start_state: S, neighbours: FN, mut visit: FV)
@@ -134,12 +130,12 @@ where
 
     for first_ix in 0..buckets.len() {
         for first_item in buckets[first_ix].iter().cloned() {
-            for second_ix in (first_ix + 1)..buckets.len() {
-                if (first_item.0 as usize & second_ix) != 0 {
+            for (second_ix, second_bucket) in buckets[(first_ix + 1)..].iter().enumerate() {
+                if (first_item.0 as usize & (second_ix + first_ix + 1)) != 0 {
                     continue; // Skip any group that won't match anyway
                 }
 
-                for second_item in buckets[second_ix].iter().cloned() {
+                for second_item in second_bucket.iter().cloned() {
                     let score = get_score(&first_item.1) + get_score(&second_item.1);
                     if score < max {
                         break;

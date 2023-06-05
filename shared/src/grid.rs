@@ -1,7 +1,9 @@
-use crate::lines::LineSegment;
-use crossbeam::scope;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::RangeInclusive;
+
+use crossbeam::scope;
+
+use crate::lines::LineSegment;
 
 #[derive(Clone)]
 pub struct Grid<T> {
@@ -111,6 +113,8 @@ impl<T> Grid<T> {
 
     pub fn len(&self) -> usize { self.items.len() }
 
+    pub fn is_empty(&self) -> bool { self.items.is_empty() }
+
     pub fn calc_index(&self, x: i32, y: i32) -> Option<usize> {
         if !self.x_indices.contains(&x) || !self.y_indices.contains(&y) {
             None
@@ -140,12 +144,16 @@ impl<T> Grid<T> {
         if line.start.x == line.end.x {
             let x = line.start.x;
             for y in line.min_y()..=line.max_y() {
-                self.get_mut(x, y).map(|place| *place = value);
+                if let Some(place) = self.get_mut(x, y) {
+                    *place = value
+                }
             }
         } else if line.start.y == line.end.y {
             let y = line.start.y;
             for x in line.min_x()..=line.max_x() {
-                self.get_mut(x, y).map(|place| *place = value);
+                if let Some(place) = self.get_mut(x, y) {
+                    *place = value
+                }
             }
         } else {
             unimplemented!("Non-straight lines cannot be drawn to a Grid yet")

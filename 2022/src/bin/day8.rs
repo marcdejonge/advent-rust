@@ -1,7 +1,9 @@
 #![feature(test)]
+
+use bit_set::BitSet;
+
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
-use bit_set::BitSet;
 
 struct Day {
     tree_heights: Grid<u8>,
@@ -15,14 +17,10 @@ impl ExecutableDay for Day {
             tree_heights: Grid::new(
                 lines
                     .map(|line| {
-                        line.chars()
-                            .filter_map(|c| {
-                                if ('0'..='9').contains(&c) {
-                                    Some((c as u8) - b'0' + 1)
-                                } else {
-                                    None
-                                }
-                            })
+                        line.bytes()
+                            .filter_map(
+                                |c| if c.is_ascii_digit() { Some(c - b'0' + 1) } else { None },
+                            )
                             .collect()
                     })
                     .collect(),

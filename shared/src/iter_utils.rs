@@ -95,11 +95,10 @@ where
             next = self.iter.next()?;
         }
 
-        let result = Some((
+        Some((
             mem::replace(&mut self.last_result, Some(next.clone())).unwrap(),
             next,
-        ));
-        result
+        ))
     }
 }
 

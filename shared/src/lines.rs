@@ -7,8 +7,8 @@ pub struct LineSegment<N> {
     pub end: Point<N>,
 }
 
-impl<N: Copy> Into<LineSegment<N>> for (Point<N>, Point<N>) {
-    fn into(self) -> LineSegment<N> { LineSegment { start: self.0, end: self.1 } }
+impl<N: Copy> From<(Point<N>, Point<N>)> for LineSegment<N> {
+    fn from(value: (Point<N>, Point<N>)) -> Self { LineSegment { start: value.0, end: value.1 } }
 }
 
 impl<N: Copy + Ord> LineSegment<N> {

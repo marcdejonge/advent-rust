@@ -97,7 +97,7 @@ impl Day {
         state.place.distances.iter().filter_map(move |(next_place, dist)| {
             let next_valve = self.valves.get(next_place).unwrap();
             let new_time_left = state.time_left - dist - 1; // 1 extra time to open the valve
-            return if new_time_left < 0 || state.open_valves & (1 << next_valve.code) != 0 {
+            if new_time_left < 0 || state.open_valves & (1 << next_valve.code) != 0 {
                 None
             } else {
                 Some(State {
@@ -107,7 +107,7 @@ impl Day {
                     open_valves: state.open_valves | (1 << next_valve.code),
                     total_flow: state.total_flow + new_time_left * next_valve.rate,
                 })
-            };
+            }
         })
     }
 }
@@ -176,7 +176,7 @@ impl ExecutableDay for Day {
                 if state.total_flow
                     > max_total_flows.get(&state.open_valves).map(|it| it.total_flow).unwrap_or(0)
                 {
-                    max_total_flows.insert(state.open_valves.clone(), state.clone());
+                    max_total_flows.insert(state.open_valves, state.clone());
                     state.time_left > 1
                 } else {
                     state.time_left > 1
