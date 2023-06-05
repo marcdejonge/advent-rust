@@ -243,18 +243,16 @@ impl<'a> Iterator for StateIterator<'a> {
 fn calculate(blueprint: &Blueprint, start_time: u8) -> u32 {
     let max_robots = blueprint.calc_max_robots();
     let start = State { time: start_time, ..Default::default() };
-    let mut max = start;
+    let mut max_geodes = Count::default();
     depth_first_search(
         start,
         |from| from.iter(&max_robots, blueprint),
         |state| {
-            if state.materials.geode > max.materials.geode {
-                max = state;
-            }
-            state.time > 0 && state.calc_max_geodes() > max.materials.geode
+            max_geodes = max_geodes.max(state.materials.geode);
+            state.time > 0 && state.calc_max_geodes() > max_geodes
         },
     );
-    max.materials.geode as u32
+    max_geodes as u32
 }
 
 impl ExecutableDay for Day {
