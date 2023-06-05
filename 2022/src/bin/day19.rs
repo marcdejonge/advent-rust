@@ -1,6 +1,7 @@
 #![feature(test)]
 
 use std::convert::identity;
+use std::mem::transmute;
 use std::ops::{Add, Index, Sub};
 
 use prse_derive::parse;
@@ -22,7 +23,7 @@ struct Blueprint {
     geode_bot_cost: RobotCost,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 struct RobotCost {
     ore: Count,
     clay: Count,
@@ -78,11 +79,11 @@ impl Add<ActiveRobots> for Materials {
     type Output = Materials;
 
     fn add(self, rhs: ActiveRobots) -> Self::Output {
-        Materials {
-            ore: self.ore + rhs.ore,
-            clay: self.clay + rhs.clay,
-            obsidian: self.obsidian + rhs.obsidian,
-            geode: self.geode + rhs.geode,
+        unsafe {
+            let left: u32 = transmute(self);
+            let right: u32 = transmute(rhs);
+            let sum = left + right; // Assume no overflow
+            transmute(sum)
         }
     }
 }
@@ -264,10 +265,10 @@ impl ExecutableDay for Day {
             let (ix, ore_cost, clay_cost, obs_ore_cost, obs_clay_cost, geode_ore_cost, geode_obs_cost): (u32, Count, Count, Count, Count, Count, Count) = parse!(line, "Blueprint {}: Each ore robot costs {} ore. Each clay robot costs {} ore. Each obsidian robot costs {} ore and {} clay. Each geode robot costs {} ore and {} obsidian.");
             Blueprint {
                 ix,
-                ore_bot_cost: RobotCost { ore: ore_cost, clay: 0, obsidian: 0 },
-                clay_bot_cost: RobotCost { ore: clay_cost, clay: 0, obsidian: 0 },
-                obsidian_bot_cost: RobotCost { ore: obs_ore_cost, clay: obs_clay_cost, obsidian: 0 },
-                geode_bot_cost: RobotCost { ore: geode_ore_cost, clay: 0, obsidian: geode_obs_cost },
+                ore_bot_cost: RobotCost { ore: ore_cost, ..Default::default() },
+                clay_bot_cost: RobotCost { ore: clay_cost, ..Default::default() },
+                obsidian_bot_cost: RobotCost { ore: obs_ore_cost, clay: obs_clay_cost, ..Default::default() },
+                geode_bot_cost: RobotCost { ore: geode_ore_cost, obsidian: geode_obs_cost, ..Default::default() },
             }
         }).collect() }
     }
@@ -291,8 +292,15 @@ fn main() { execute_day::<Day>() }
 
 #[cfg(test)]
 mod tests {
+    use std::mem::size_of;
+
     use advent_lib::day_test;
+
+    use crate::Materials;
 
     day_test!( 19, example => 33, 3472 );
     day_test!( 19 => 1147, 3080 );
+
+    #[test]
+    fn allign() { assert_eq!(4, dbg!(size_of::<Materials>())) }
 }
