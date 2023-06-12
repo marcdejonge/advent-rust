@@ -74,8 +74,7 @@ where
     let mut stack = Vec::new();
     stack.push(start_state);
 
-    while !stack.is_empty() {
-        let from_state = stack.pop().unwrap();
+    while let Some(from_state) = stack.pop() {
         for next_state in neighbours(from_state) {
             if visit(next_state.clone()) {
                 stack.push(next_state);
