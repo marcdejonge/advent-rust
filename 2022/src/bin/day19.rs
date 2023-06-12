@@ -151,17 +151,15 @@ enum Robot {
 
 #[derive(Copy, Clone, Default, Debug)]
 struct State {
-    time: u8,
+    time: Count,
     materials: Materials,
     active_robots: ActiveRobots,
 }
 
 impl State {
     fn calc_max_geodes(&self) -> Count {
-        let bots = self.active_robots.geode as u32;
-        let geodes = self.materials.geode as u32;
         let time = self.time as u32;
-        let max = geodes + time * bots + (time * (time - 1)) / 2;
+        let max = self.calc_geodes() as u32 + (time * (time - 1)) / 2;
         max.clamp(0, Count::MAX as u32) as Count
     }
 
@@ -169,7 +167,7 @@ impl State {
 
     fn next_robot(&self, cost: RobotCost, robot: Robot) -> Option<State> {
         let mut available = self.materials;
-        let mut time_spend = 1u8;
+        let mut time_spend = 1;
         while !available.can_pay_for(cost) {
             available = available + self.active_robots;
             time_spend += 1;
@@ -223,7 +221,7 @@ impl State {
     }
 }
 
-fn calculate(blueprint: &Blueprint, start_time: u8) -> u32 {
+fn calculate(blueprint: &Blueprint, start_time: Count) -> u32 {
     let start = State { time: start_time, ..Default::default() };
     let mut max_geodes = Count::default();
     depth_first_search(
