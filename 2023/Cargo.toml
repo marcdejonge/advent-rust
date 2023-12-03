@@ -1,0 +1,14 @@
+[package]
+name = "advent-rust-2023"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+advent-lib = { path = "../shared" }
+lazy_static = "1.4.0"
+bit-set = "0.5.3"
+fxhash = "0.2.1"
+rusttype = "0.9.3"
+num-traits = "0.2.15"
+prse = "1.0.1"
+prse-derive = "1.0.1"
