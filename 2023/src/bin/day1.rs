@@ -93,13 +93,12 @@ fn parse_line(line: &[u8], check_text: bool) -> u32 {
     first * 10 + last
 }
 
-#[inline]
 fn parse_prefix(line: &[u8], check_text: bool) -> Option<u32> {
     if line.is_empty() {
         return None;
     } else if (b'1'..=b'9').contains(&line[0]) {
         return Some((line[0] - b'0') as u32);
-    } else if check_text && (b'e'..=b't').contains(&line[0]) {
+    } else if check_text {
         for (test, result) in DIGITS {
             if line.starts_with(test) {
                 return Some(*result);
