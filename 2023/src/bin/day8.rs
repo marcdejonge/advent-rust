@@ -39,7 +39,7 @@ on nodes that end with Z?
 #![feature(test)]
 
 use fxhash::FxHashMap;
-use gcd::euclid_usize;
+use num::integer::lcm;
 use prse_derive::parse;
 
 use advent_lib::day::{execute_day, ExecutableDay};
@@ -137,10 +137,7 @@ impl ExecutableDay for Day {
             })
             .collect();
 
-        end_steps.iter().fold(1, |curr, next| {
-            let gcd = euclid_usize(curr, *next);
-            (curr / gcd) * next
-        })
+        end_steps.iter().fold(1, |curr, next| lcm(curr, *next))
     }
 }
 
