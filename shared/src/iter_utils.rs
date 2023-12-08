@@ -102,6 +102,49 @@ where
     }
 }
 
+pub struct RepeatingIterator<I, T>
+where
+    I: Iterator<Item = T> + Clone,
+{
+    source: I,
+    current: I,
+}
+
+pub trait RepeatingIteratorTrait {
+    fn repeat<T>(self) -> RepeatingIterator<Self, T>
+    where
+        Self: Iterator<Item = T> + Clone + Sized;
+}
+
+impl<I> RepeatingIteratorTrait for I
+where
+    I: Iterator + Clone + Sized,
+{
+    fn repeat<T>(self) -> RepeatingIterator<Self, T>
+    where
+        I: Iterator<Item = T>,
+    {
+        RepeatingIterator { current: self.clone(), source: self }
+    }
+}
+
+impl<I, T> Iterator for RepeatingIterator<I, T>
+where
+    I: Iterator<Item = T> + Clone + Sized,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.current.next();
+        if next.is_some() {
+            next
+        } else {
+            self.current = self.source.clone();
+            self.current.next()
+        }
+    }
+}
+
 #[cfg(test)]
 mod zip_with_next_tests {
     use super::*;
@@ -109,7 +152,7 @@ mod zip_with_next_tests {
     #[test]
     fn test_normal_behavior() {
         assert_eq!(
-            vec![1, 2, 3, 4].iter().zip_with_next().collect::<Vec<_>>(),
+            [1, 2, 3, 4].iter().zip_with_next().collect::<Vec<_>>(),
             vec![(&1, &2), (&2, &3), (&3, &4)]
         )
     }
@@ -122,7 +165,7 @@ mod zip_with_next_tests {
         )
     }
     #[test]
-    fn single_item() { assert_eq!(vec![1].iter().zip_with_next().collect::<Vec<_>>(), vec![]) }
+    fn single_item() { assert_eq!([1].iter().zip_with_next().collect::<Vec<_>>(), vec![]) }
 }
 
 pub fn max_n<const N: usize, T>(it: impl Iterator<Item = T>) -> [T; N]
