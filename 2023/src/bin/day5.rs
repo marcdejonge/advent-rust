@@ -3,6 +3,7 @@
 
 use advent_lib::day::*;
 use prse_derive::parse;
+use rayon::prelude::*;
 use std::ops::Range;
 use std::str::FromStr;
 
@@ -142,6 +143,7 @@ impl ExecutableDay for Day {
         self.seeds
             .iter()
             .array_chunks::<2>()
+            .par_bridge()
             .map(|[&start, &count]| start..start + count)
             .flat_map(|seed_range| {
                 self.mappings
@@ -163,5 +165,5 @@ mod tests {
     use advent_lib::day_test;
 
     day_test!( 5, example => 35, 46 );
-    day_test!( 5 => 910845529, 0);
+    day_test!( 5 => 910845529, 77435348);
 }

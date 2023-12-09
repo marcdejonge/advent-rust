@@ -74,10 +74,13 @@ Using the new joker rule, find the rank of every hand in your set. What are the 
 
 #![feature(test)]
 
-use fxhash::{FxBuildHasher, FxHashMap};
+use enum_map::{Enum, EnumMap};
 use std::fmt::{Debug, Formatter, Write};
 
 use advent_lib::day::{execute_day, ExecutableDay};
+
+use crate::Score::*;
+use rayon::prelude::*;
 
 struct Day {
     bets: Vec<([Card; 5], u64)>,
@@ -123,7 +126,7 @@ impl Hand {
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Enum)]
 enum Card {
     Joker,
     Two,
@@ -154,48 +157,53 @@ enum Score {
 
 impl Score {
     fn from(cards: &[Card; 5]) -> Score {
-        let mut counter =
-            FxHashMap::<Card, usize>::with_capacity_and_hasher(8, FxBuildHasher::default());
+        let mut counter = EnumMap::<Card, u8>::default();
         for card in cards {
-            counter.entry(*card).and_modify(|c| *c += 1).or_insert(1);
+            counter[*card] += 1;
         }
 
-        let jokers = *counter.get(&Card::Joker).unwrap_or(&0);
+        let jokers = counter[Card::Joker];
 
-        match counter.len() {
-            1 => Score::FiveOfAKind,
-            2 => {
-                if jokers > 0 {
-                    Score::FiveOfAKind
-                } else if counter.iter().any(|c| *c.1 == 4) {
-                    Score::FourOfAKind
-                } else {
-                    Score::FullHouse
+        let mut more_iter = counter.iter().filter(|(_, count)| **count > 1);
+        let first_card = more_iter.next().map(|(_, &count)| count);
+        let second_card = more_iter.next().map(|(_, &count)| count);
+
+        if let Some(second_count) = second_card {
+            let first_count = first_card.unwrap(); // First always exists if the second on does
+
+            if first_count == 3 || second_count == 3 {
+                match jokers {
+                    2 | 3 => FiveOfAKind,
+                    _ => FullHouse,
+                }
+            } else {
+                match jokers {
+                    2 => FourOfAKind,
+                    1 => FullHouse,
+                    _ => TwoPair,
                 }
             }
-            3 => {
-                if counter.iter().any(|c| *c.1 == 3) {
-                    match jokers {
-                        1 | 3 => Score::FourOfAKind,
-                        _ => Score::ThreeOfAKind,
-                    }
-                } else {
-                    match jokers {
-                        1 => Score::FullHouse,
-                        2 => Score::FourOfAKind,
-                        _ => Score::TwoPair,
-                    }
-                }
+        } else if let Some(first_count) = first_card {
+            match first_count {
+                5 => FiveOfAKind,
+                4 => match jokers {
+                    1 | 4 => FiveOfAKind,
+                    _ => FourOfAKind,
+                },
+                3 => match jokers {
+                    1 | 3 => FourOfAKind,
+                    _ => ThreeOfAKind,
+                },
+                2 => match jokers {
+                    1 | 2 => ThreeOfAKind,
+                    _ => OnePair,
+                },
+                _ => panic!("Other values are not possible"),
             }
-            4 => match jokers {
-                1 | 2 => Score::ThreeOfAKind,
-                _ => Score::OnePair,
-            },
-            5 => match jokers {
-                1 => Score::OnePair,
-                _ => Score::HighCard,
-            },
-            _ => panic!("Impossible to reach"),
+        } else if jokers == 1 {
+            OnePair
+        } else {
+            HighCard
         }
     }
 }
@@ -225,15 +233,12 @@ fn parse_hand(s: &str) -> [Card; 5] {
     s.chars().take(5).map(Card::from).collect::<Vec<_>>().try_into().unwrap()
 }
 
-fn replace_joker(cards: [Card; 5]) -> [Card; 5] {
+fn jokers(cards: [Card; 5]) -> [Card; 5] {
     cards.map(|c| if c == Card::Jack { Card::Joker } else { c })
 }
 
 fn end_score(mut bets: Vec<(Hand, u64)>) -> u64 {
     bets.sort();
-    bets.iter().for_each(|c| {
-        dbg!(c.0);
-    });
     bets.iter().enumerate().map(|(ix, (_, bet))| (ix as u64 + 1) * bet).sum()
 }
 
@@ -247,14 +252,14 @@ impl ExecutableDay for Day {
     }
 
     fn calculate_part1(&self) -> Self::Output {
-        end_score(self.bets.iter().map(|(c, b)| (Hand::new(*c), *b)).collect())
+        end_score(self.bets.par_iter().map(|(c, b)| (Hand::new(*c), *b)).collect())
     }
 
     fn calculate_part2(&self) -> Self::Output {
         end_score(
             self.bets
-                .iter()
-                .map(|(c, bet)| (Hand::new(replace_joker(*c)), *bet))
+                .par_iter()
+                .map(|(c, bet)| (Hand::new(jokers(*c)), *bet))
                 .collect::<Vec<_>>(),
         )
     }
@@ -274,49 +279,33 @@ mod tests {
 
         #[test]
         fn test_scores() {
-            assert_eq!(Score::HighCard, Score::from(&parse_hand("23456")));
-            assert_eq!(Score::OnePair, Score::from(&parse_hand("22456")));
-            assert_eq!(Score::TwoPair, Score::from(&parse_hand("22446")));
-            assert_eq!(Score::ThreeOfAKind, Score::from(&parse_hand("22246")));
-            assert_eq!(Score::FullHouse, Score::from(&parse_hand("22244")));
-            assert_eq!(Score::FourOfAKind, Score::from(&parse_hand("22224")));
-            assert_eq!(Score::FiveOfAKind, Score::from(&parse_hand("22222")));
+            assert_eq!(HighCard, Score::from(&parse_hand("23456")));
+            assert_eq!(OnePair, Score::from(&parse_hand("22456")));
+            assert_eq!(TwoPair, Score::from(&parse_hand("22446")));
+            assert_eq!(ThreeOfAKind, Score::from(&parse_hand("22246")));
+            assert_eq!(FullHouse, Score::from(&parse_hand("22244")));
+            assert_eq!(FourOfAKind, Score::from(&parse_hand("22224")));
+            assert_eq!(FiveOfAKind, Score::from(&parse_hand("22222")));
         }
 
         #[test]
         fn test_scores_with_jokers() {
-            assert_eq!(
-                Score::OnePair,
-                Score::from(&replace_joker(parse_hand("2345J")))
-            );
-            assert_eq!(
-                Score::ThreeOfAKind,
-                Score::from(&replace_joker(parse_hand("2245J")))
-            );
-            assert_eq!(
-                Score::ThreeOfAKind,
-                Score::from(&replace_joker(parse_hand("2J45J")))
-            );
-            assert_eq!(
-                Score::FullHouse,
-                Score::from(&replace_joker(parse_hand("2244J")))
-            );
-            assert_eq!(
-                Score::FourOfAKind,
-                Score::from(&replace_joker(parse_hand("2JJ4J")))
-            );
-            assert_eq!(
-                Score::FourOfAKind,
-                Score::from(&replace_joker(parse_hand("2224J")))
-            );
-            assert_eq!(
-                Score::FiveOfAKind,
-                Score::from(&replace_joker(parse_hand("222JJ")))
-            );
-            assert_eq!(
-                Score::FiveOfAKind,
-                Score::from(&replace_joker(parse_hand("2222J")))
-            );
+            assert_eq!(OnePair, Score::from(&jokers(parse_hand("2345J"))));
+
+            assert_eq!(ThreeOfAKind, Score::from(&jokers(parse_hand("2245J"))));
+            assert_eq!(ThreeOfAKind, Score::from(&jokers(parse_hand("2J45J"))));
+
+            assert_eq!(FullHouse, Score::from(&jokers(parse_hand("2244J"))));
+
+            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("2JJ4J"))));
+            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("22J4J"))));
+            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("2224J"))));
+
+            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("JJJJJ"))));
+            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("2JJJJ"))));
+            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("22JJJ"))));
+            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("222JJ"))));
+            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("2222J"))));
         }
     }
 }

@@ -41,6 +41,7 @@ on nodes that end with Z?
 use fxhash::FxHashMap;
 use num::integer::lcm;
 use prse_derive::parse;
+use rayon::prelude::*;
 
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::iter_utils::RepeatingIteratorTrait;
@@ -125,9 +126,9 @@ impl ExecutableDay for Day {
     fn calculate_part2(&self) -> Self::Output {
         let end_steps: Vec<_> = self
             .steps
-            .keys()
-            .filter(|p| p[2] == b'A')
-            .map(|start| {
+            .par_iter()
+            .filter(|(p, _)| p[2] == b'A')
+            .map(|(start, _)| {
                 for (step, place) in self.walk(*start).enumerate() {
                     if place[2] == b'Z' {
                         return step + 1;

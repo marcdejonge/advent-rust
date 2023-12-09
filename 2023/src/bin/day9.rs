@@ -35,6 +35,7 @@ extrapolated values?
 
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::iter_utils::ZipWithNextTrait;
+use rayon::prelude::*;
 
 struct Day {
     input: Vec<Vec<i64>>,
@@ -86,9 +87,9 @@ impl ExecutableDay for Day {
         }
     }
 
-    fn calculate_part1(&self) -> Self::Output { self.input.iter().map(calc_next).sum() }
+    fn calculate_part1(&self) -> Self::Output { self.input.par_iter().map(calc_next).sum() }
 
-    fn calculate_part2(&self) -> Self::Output { self.input.iter().map(calc_prev).sum() }
+    fn calculate_part2(&self) -> Self::Output { self.input.par_iter().map(calc_prev).sum() }
 }
 
 fn main() { execute_day::<Day>() }

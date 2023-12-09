@@ -50,6 +50,7 @@ What is the sum of all of the gear ratios in your engine schematic?
 extern crate core;
 
 use advent_lib::day::{execute_day, ExecutableDay};
+use rayon::prelude::*;
 
 struct Day {
     symbols: Vec<Symbol>,
@@ -121,7 +122,7 @@ impl ExecutableDay for Day {
 
     fn calculate_part1(&self) -> Self::Output {
         self.numbers
-            .iter()
+            .par_iter()
             .filter(|n| self.symbols.iter().any(|s| n.is_next_to(s)))
             .map(|n| n.value)
             .sum()
@@ -129,7 +130,7 @@ impl ExecutableDay for Day {
 
     fn calculate_part2(&self) -> Self::Output {
         self.symbols
-            .iter()
+            .par_iter()
             .filter(|s| s.is_gear)
             .filter_map(|s| {
                 let mut nrs = self.numbers.iter().filter(|n| n.is_next_to(s));
