@@ -31,6 +31,7 @@ extrapolated values?
  */
 
 #![feature(test)]
+#![feature(iter_collect_into)]
 
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::iter_utils::ZipWithNextTrait;
@@ -40,20 +41,37 @@ struct Day {
 }
 
 fn calc_next(nrs: &Vec<i64>) -> i64 {
-    if nrs.is_empty() || nrs.iter().all(|&nr| nr == 0) {
-        0
+    if let Some(&last) = nrs.last() {
+        if nrs.iter().all(|&nr| nr == last) {
+            last
+        } else {
+            last + calc_next(
+                nrs.iter()
+                    .zip_with_next()
+                    .map(|(x, y)| y - x)
+                    .collect_into(&mut Vec::with_capacity(nrs.len() - 1)),
+            )
+        }
     } else {
-        let next = calc_next(&nrs.iter().zip_with_next().map(|(x, y)| y - x).collect());
-        nrs.last().unwrap() + next
+        0
     }
 }
 
 fn calc_prev(nrs: &Vec<i64>) -> i64 {
-    if nrs.is_empty() || nrs.iter().all(|&nr| nr == 0) {
-        0
+    if let Some(&first) = nrs.first() {
+        if nrs.iter().all(|&nr| nr == first) {
+            first
+        } else {
+            first
+                - calc_prev(
+                    nrs.iter()
+                        .zip_with_next()
+                        .map(|(x, y)| y - x)
+                        .collect_into(&mut Vec::with_capacity(nrs.len() - 1)),
+                )
+        }
     } else {
-        let prev = calc_prev(&nrs.iter().zip_with_next().map(|(x, y)| y - x).collect());
-        nrs.first().unwrap() - prev
+        0
     }
 }
 
