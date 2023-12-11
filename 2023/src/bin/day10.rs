@@ -35,6 +35,17 @@ is one large, continuous loop.
 
 Find the single giant loop starting at S. How many steps along the loop does it take to get from the
 starting position to the point farthest from the starting position?
+
+--- Part Two ---
+
+You quickly reach the farthest point of the loop, but the animal never emerges. Maybe its nest is
+within the area enclosed by the loop?
+
+To determine whether it's even worth taking the time to search for such a nest, you should calculate
+how many tiles are contained within the loop.
+
+Figure out whether you have time to search for the nest by calculating the area within the loop.
+How many tiles are enclosed by the loop?
 */
 #![feature(test)]
 #![feature(iter_collect_into)]
@@ -71,27 +82,10 @@ impl Day {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 enum PipeCell {
     Ground,
     Pipe { directions: [Direction; 2] },
-}
-
-impl From<PipeCell> for char {
-    fn from(value: PipeCell) -> Self {
-        match value {
-            Ground => ' ',
-            Pipe { directions } => match directions {
-                [North, East] => '┗',
-                [North, South] => '┃',
-                [North, West] => '┛',
-                [East, South] => '┏',
-                [East, West] => '━',
-                [South, West] => '┓',
-                _ => 'X',
-            },
-        }
-    }
 }
 
 impl PipeCell {
@@ -154,25 +148,13 @@ impl<'a> Iterator for DayWalker<'a> {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Default, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Default)]
 enum LocationType {
     #[default]
     Background,
     Inside,
-    Pipe {
-        symbol: char,
-        cross: bool,
-    },
-}
-
-impl From<LocationType> for char {
-    fn from(value: LocationType) -> Self {
-        match value {
-            LocationType::Background => ' ',
-            LocationType::Inside => '▨',
-            LocationType::Pipe { symbol, cross: _ } => symbol,
-        }
-    }
+    VerticalPipe,
+    HorizontalPipe,
 }
 
 impl ExecutableDay for Day {
@@ -220,8 +202,11 @@ impl ExecutableDay for Day {
         self.iter().for_each(|(loc, _)| {
             if let Some(cell) = pipe_grid.get_mut(loc) {
                 let pipe = self.grid[loc];
-                let cross = matches!(pipe, Pipe { directions: [North, _] });
-                *cell = LocationType::Pipe { symbol: pipe.into(), cross }
+                *cell = if matches!(pipe, Pipe { directions: [North, _] }) {
+                    LocationType::VerticalPipe
+                } else {
+                    LocationType::HorizontalPipe
+                }
             }
         });
 
@@ -235,12 +220,10 @@ impl ExecutableDay for Day {
                             *cell = LocationType::Inside;
                         }
                     }
-                    LocationType::Inside => {}
-                    LocationType::Pipe { symbol: _, cross } => {
-                        if cross {
-                            outside = !outside;
-                        }
+                    LocationType::VerticalPipe => {
+                        outside = !outside;
                     }
+                    _ => {}
                 }
             }
         }

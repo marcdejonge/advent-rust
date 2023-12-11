@@ -1,8 +1,8 @@
 use std::ops::Neg;
 
-use crate::direction::Direction::*;
 use num_traits::{One, Zero};
 
+use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
