@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::RangeInclusive;
+use std::ops::{Index, IndexMut, RangeInclusive};
 
 use crossbeam::scope;
 
+use crate::geometry::{point2, Point};
 use crate::lines::LineSegment;
 
 #[derive(Clone)]
@@ -115,21 +116,25 @@ impl<T> Grid<T> {
 
     pub fn is_empty(&self) -> bool { self.items.is_empty() }
 
-    pub fn calc_index(&self, x: i32, y: i32) -> Option<usize> {
-        if !self.x_indices.contains(&x) || !self.y_indices.contains(&y) {
+    pub fn calc_index(&self, location: Point<2, i32>) -> Option<usize> {
+        if !self.x_indices.contains(&location.coords[0])
+            || !self.y_indices.contains(&location.coords[1])
+        {
             None
         } else {
             Some(
-                (x - self.x_indices.start()) as usize
-                    + (y - self.y_indices.start()) as usize * self.width,
+                (location.coords[0] - self.x_indices.start()) as usize
+                    + (location.coords[1] - self.y_indices.start()) as usize * self.width,
             )
         }
     }
 
-    pub fn get(&self, x: i32, y: i32) -> Option<&T> { self.items.get(self.calc_index(x, y)?) }
+    pub fn get(&self, location: Point<2, i32>) -> Option<&T> {
+        self.items.get(self.calc_index(location)?)
+    }
 
-    pub fn get_mut(&mut self, x: i32, y: i32) -> Option<&mut T> {
-        let ix = self.calc_index(x, y)?;
+    pub fn get_mut(&mut self, location: Point<2, i32>) -> Option<&mut T> {
+        let ix = self.calc_index(location)?;
         self.items.get_mut(ix)
     }
 
@@ -141,17 +146,17 @@ impl<T> Grid<T> {
     where
         T: Copy,
     {
-        if line.start.x == line.end.x {
-            let x = line.start.x;
+        if line.start.coords[0] == line.end.coords[0] {
+            let x = line.start.coords[0];
             for y in line.min_y()..=line.max_y() {
-                if let Some(place) = self.get_mut(x, y) {
+                if let Some(place) = self.get_mut(point2(x, y)) {
                     *place = value
                 }
             }
-        } else if line.start.y == line.end.y {
-            let y = line.start.y;
+        } else if line.start.coords[1] == line.end.coords[1] {
+            let y = line.start.coords[1];
             for x in line.min_x()..=line.max_x() {
-                if let Some(place) = self.get_mut(x, y) {
+                if let Some(place) = self.get_mut(point2(x, y)) {
                     *place = value
                 }
             }
@@ -159,6 +164,21 @@ impl<T> Grid<T> {
             unimplemented!("Non-straight lines cannot be drawn to a Grid yet")
         }
     }
+
+    pub fn entries(&self) -> impl Iterator<Item = (Point<2, i32>, &T)> {
+        self.items.iter().enumerate().map(|(index, value)| {
+            let index = index as i32;
+            let x_size = self.x_indices.end() - self.x_indices.start() + 1;
+            let y = index / (self.x_indices.end() - self.x_indices.start());
+            let x = index - y * x_size;
+            (
+                point2(x + self.x_indices.start(), y + self.y_indices.start()),
+                value,
+            )
+        })
+    }
+
+    pub fn values(&self) -> impl Iterator<Item = &T> { self.items.iter() }
 }
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {
@@ -171,12 +191,24 @@ impl<T: Copy + Into<char>> Debug for Grid<T> {
 
         for y in self.y_indices.clone() {
             for x in self.x_indices.clone() {
-                let item = self.get(x, y).unwrap();
+                let item = self.get(point2(x, y)).unwrap();
                 f.write_char((*item).into())?;
             }
             f.write_char('\n')?;
         }
 
         Ok(())
+    }
+}
+
+impl<T> Index<Point<2, i32>> for Grid<T> {
+    type Output = T;
+
+    fn index(&self, index: Point<2, i32>) -> &Self::Output { self.get(index).unwrap() }
+}
+
+impl<T> IndexMut<Point<2, i32>> for Grid<T> {
+    fn index_mut(&mut self, index: Point<2, i32>) -> &mut Self::Output {
+        self.get_mut(index).unwrap()
     }
 }

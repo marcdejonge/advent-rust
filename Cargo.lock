@@ -17,6 +17,7 @@ dependencies = [
  "num-format",
  "num-traits",
  "priority-queue",
+ "prse",
  "rusttype",
 ]
 

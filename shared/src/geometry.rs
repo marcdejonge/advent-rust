@@ -3,6 +3,7 @@ use std::ops;
 use std::str::FromStr;
 
 use num_traits::One;
+use prse::{parse, Parse, ParseError};
 
 use crate::traits::NotEq;
 
@@ -26,6 +27,13 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { debug(&self.coords, "Point", f) }
+}
+
+impl<const D: usize, T> Default for Point<D, T>
+where
+    T: Default + Copy,
+{
+    fn default() -> Self { Point { coords: [T::default(); D] } }
 }
 
 pub const fn point2<T>(x: T, y: T) -> Point<2, T> { Point { coords: [x, y] } }
@@ -234,6 +242,19 @@ where
         }
 
         Some(Rect { min, max })
+    }
+}
+
+impl<'a, T> Parse<'a> for Point<2, T>
+where
+    T: Parse<'a>,
+{
+    fn from_str(s: &'a str) -> Result<Self, ParseError>
+    where
+        Self: Sized,
+    {
+        let (x, y) = parse!(s, "{},{}");
+        Ok(Point { coords: [x, y] })
     }
 }
 
