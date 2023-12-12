@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut, RangeInclusive};
 
 use crossbeam::scope;
 
-use crate::geometry::{point2, Point};
+use crate::geometry::{point2, Point, PointIterator, Vector};
 use crate::lines::LineSegment;
 
 #[derive(Clone)]
@@ -15,17 +15,25 @@ pub struct Grid<T> {
     height: usize,
 }
 
-impl<T: Clone + Default> Grid<T> {
-    pub fn new_empty(x_indices: RangeInclusive<i32>, y_indices: RangeInclusive<i32>) -> Grid<T> {
+impl<T> Grid<T> {
+    pub fn new_empty(x_indices: RangeInclusive<i32>, y_indices: RangeInclusive<i32>) -> Grid<T>
+    where
+        T: Default + Clone,
+    {
+        Grid::new_default(T::default(), x_indices, y_indices)
+    }
+
+    pub fn new_default(
+        value: T,
+        x_indices: RangeInclusive<i32>,
+        y_indices: RangeInclusive<i32>,
+    ) -> Grid<T>
+    where
+        T: Clone,
+    {
         let width = (x_indices.end() - x_indices.start() + 1) as usize;
         let height = (y_indices.end() - y_indices.start() + 1) as usize;
-        Grid {
-            items: vec![Default::default(); width * height],
-            x_indices,
-            y_indices,
-            width,
-            height,
-        }
+        Grid { items: vec![value.clone(); width * height], x_indices, y_indices, width, height }
     }
 }
 
@@ -167,18 +175,59 @@ impl<T> Grid<T> {
 
     pub fn entries(&self) -> impl Iterator<Item = (Point<2, i32>, &T)> {
         self.items.iter().enumerate().map(|(index, value)| {
-            let index = index as i32;
-            let x_size = self.x_indices.end() - self.x_indices.start() + 1;
-            let y = index / (self.x_indices.end() - self.x_indices.start());
-            let x = index - y * x_size;
+            let y = index / self.width;
+            let x = index - y * self.width;
             (
-                point2(x + self.x_indices.start(), y + self.y_indices.start()),
+                point2(
+                    (x as i32) + self.x_indices.start(),
+                    (y as i32) + self.y_indices.start(),
+                ),
                 value,
             )
         })
     }
 
     pub fn values(&self) -> impl Iterator<Item = &T> { self.items.iter() }
+
+    pub fn iter_line(
+        &self,
+        start: Point<2, i32>,
+        direction: Vector<2, i32>,
+    ) -> impl Iterator<Item = &T> {
+        PointIterator::new(start, direction)
+            .map(|loc| self.get(loc))
+            .take_while(|x| x.is_some())
+            .map(|x| x.unwrap())
+    }
+
+    pub fn mut_line<F>(&mut self, start: Point<2, i32>, direction: Vector<2, i32>, function: F)
+    where
+        F: Fn(&mut T),
+    {
+        for loc in PointIterator::new(start, direction) {
+            if let Some(value) = self.get_mut(loc) {
+                function(value);
+            } else {
+                break;
+            }
+        }
+    }
+
+    pub fn map<U, F>(&self, function: F) -> Grid<U>
+    where
+        F: FnMut(&T) -> U,
+    {
+        let mut items = Vec::with_capacity(self.items.len());
+        self.items.iter().map(function).for_each(|result| items.push(result));
+
+        Grid {
+            items,
+            x_indices: self.x_indices.clone(),
+            y_indices: self.y_indices.clone(),
+            width: self.width,
+            height: self.height,
+        }
+    }
 }
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {

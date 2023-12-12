@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops;
+use std::ops::{Add, Sub};
 use std::str::FromStr;
 
 use num_traits::One;
@@ -109,7 +110,7 @@ fn debug<const D: usize, T: Debug>(
 }
 
 // point + vector -> point
-impl<const D: usize, T: ops::Add<Output = T> + Copy> ops::Add<Vector<D, T>> for Point<D, T> {
+impl<const D: usize, T: Add<Output = T> + Copy> Add<Vector<D, T>> for Point<D, T> {
     type Output = Point<D, T>;
     fn add(self, rhs: Vector<D, T>) -> Point<D, T> {
         let mut coords = self.coords;
@@ -121,7 +122,7 @@ impl<const D: usize, T: ops::Add<Output = T> + Copy> ops::Add<Vector<D, T>> for 
 }
 
 // vector + vector -> vector
-impl<const D: usize, T: ops::Add<Output = T> + Copy> ops::Add for Vector<D, T> {
+impl<const D: usize, T: Add<Output = T> + Copy> Add for Vector<D, T> {
     type Output = Vector<D, T>;
     fn add(self, rhs: Vector<D, T>) -> Vector<D, T> {
         let mut coords = self.coords;
@@ -280,4 +281,30 @@ mod tests {
 
     #[test]
     fn multiply_vector() { assert_eq!(vector2(6, 6), vector2(2, 2) * 3) }
+}
+
+pub struct PointIterator<const D: usize, T> {
+    point: Point<D, T>,
+    direction: Vector<D, T>,
+}
+
+impl<const D: usize, T> PointIterator<D, T>
+where
+    T: Copy + Sub<Output = T>,
+{
+    pub fn new(start: Point<D, T>, direction: Vector<D, T>) -> PointIterator<D, T> {
+        PointIterator { point: start - direction, direction }
+    }
+}
+
+impl<const D: usize, T> Iterator for PointIterator<D, T>
+where
+    T: Copy + Add<Output = T>,
+{
+    type Item = Point<D, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.point = self.point + self.direction;
+        Some(self.point)
+    }
 }
