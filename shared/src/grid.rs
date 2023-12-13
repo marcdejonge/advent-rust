@@ -15,6 +15,15 @@ pub struct Grid<T> {
     height: usize,
 }
 
+impl Grid<char> {
+    pub fn parse<I>(lines: I) -> Grid<char>
+    where
+        I: Iterator<Item = String>,
+    {
+        Grid::new(lines.map(|line| line.chars().collect()).collect())
+    }
+}
+
 impl<T> Grid<T> {
     pub fn new_empty(x_indices: RangeInclusive<i32>, y_indices: RangeInclusive<i32>) -> Grid<T>
     where
@@ -35,9 +44,7 @@ impl<T> Grid<T> {
         let height = (y_indices.end() - y_indices.start() + 1) as usize;
         Grid { items: vec![value.clone(); width * height], x_indices, y_indices, width, height }
     }
-}
 
-impl<T> Grid<T> {
     pub fn new(items: Vec<Vec<T>>) -> Grid<T>
     where
         T: Clone,
