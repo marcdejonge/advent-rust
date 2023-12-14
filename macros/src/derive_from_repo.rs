@@ -53,19 +53,34 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, String> {
             .map(|(ident, _, _)| *ident)
             .unwrap();
 
-        let variants: Vec<_> = variants
+        let from_literal_mappings: Vec<_> = variants
             .iter()
             .map(|(ident, lit, _)| {
                 quote! { #lit => #name::#ident, }
             })
             .collect();
 
+        let from_nr_mappings: Vec<_> = variants
+            .iter()
+            .map(|(ident, lit, _)| {
+                quote! { #name::#ident => #lit, }
+            })
+            .collect();
+
         Ok(quote! {
             impl From<#rep> for #name {
-                fn from(x: #rep) -> Self {
-                    match x {
-                        #(#variants)*
+                fn from(value: #rep) -> Self {
+                    match value {
+                        #(#from_literal_mappings)*
                         _ => #name::#default_variant,
+                    }
+                }
+            }
+
+            impl From<#name> for #rep {
+                fn from(value: #name) -> Self {
+                    match value {
+                        #(#from_nr_mappings)*
                     }
                 }
             }

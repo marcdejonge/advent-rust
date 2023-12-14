@@ -53,12 +53,20 @@ use rayon::prelude::*;
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
+use advent_macros::FromRepr;
 
 struct Day {
-    grids: Vec<Grid<char>>,
+    grids: Vec<Grid<Item>>,
 }
 
-fn find_reflection(grid: &Grid<char>, smudges: u32) -> i32 {
+#[repr(u8)]
+#[derive(FromRepr, PartialEq, Copy, Clone)]
+enum Item {
+    None = b'.',
+    Stone = b'#',
+}
+
+fn find_reflection(grid: &Grid<Item>, smudges: u32) -> i32 {
     for reflect_x in 1..=*grid.x_range().end() {
         let mut smudges_found = 0u32;
         'y: for y in grid.y_range() {
@@ -111,7 +119,7 @@ impl ExecutableDay for Day {
         let mut lines = lines.peekable();
         let mut grids = Vec::<Grid<_>>::new();
         while lines.peek().is_some() {
-            grids.push(Grid::parse(lines.by_ref().take_while(|s| !s.is_empty())));
+            grids.push(Grid::from(lines.by_ref().take_while(|s| !s.is_empty())));
         }
         Day { grids }
     }
@@ -142,7 +150,7 @@ mod tests {
         #[test]
         fn single() {
             let text = "#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
-            let grid = Grid::parse(text.lines().map(str::to_owned));
+            let grid = Grid::from(text.lines().map(str::to_owned));
             assert_eq!(6, find_reflection(&grid, 0));
             assert_eq!(12, find_reflection(&grid, 1));
         }
@@ -151,7 +159,7 @@ mod tests {
         fn test2() {
             let text =
                 ".##.##.##..\n#.######.##\n.#..##..#..\n#.#.##.#.##\n#.#....#.##\n.#..##..###\n##..##..###\n##..##..###\n.#.####.#..\n#..####..##\n.#.#..#.#..\n.##.##.##..\n.##....##..";
-            let grid = Grid::parse(text.lines().map(str::to_owned));
+            let grid = Grid::from(text.lines().map(str::to_owned));
             assert_eq!(10, find_reflection(&grid, 0));
             assert_eq!(5, find_reflection(&grid, 1));
         }

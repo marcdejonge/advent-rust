@@ -34,6 +34,7 @@ use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::East;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_macros::FromRepr;
 use Direction::South;
 
 use crate::Space::*;
@@ -43,10 +44,11 @@ struct Day {
     galaxy_locations: Vec<Point<2, i32>>,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[repr(u8)]
+#[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug)]
 enum Space {
-    Galaxy,
-    EmptySpace,
+    EmptySpace = b'.',
+    Galaxy = b'#',
 }
 
 impl Day {
@@ -103,20 +105,7 @@ impl ExecutableDay for Day {
     type Output = u64;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let grid = Grid::new(
-            lines
-                .map(|line| {
-                    line.chars()
-                        .map(|c| match c {
-                            '#' => Galaxy,
-                            '.' => EmptySpace,
-                            _ => panic!("Unknown character"),
-                        })
-                        .collect()
-                })
-                .collect(),
-        );
-
+        let grid = Grid::from(lines);
         let galaxy_locations = grid
             .entries()
             .filter(|(_, space)| **space == Galaxy)
