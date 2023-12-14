@@ -15,12 +15,13 @@ pub struct Grid<T> {
     height: usize,
 }
 
-impl Grid<char> {
-    pub fn parse<I>(lines: I) -> Grid<char>
-    where
-        I: Iterator<Item = String>,
-    {
-        Grid::new(lines.map(|line| line.chars().collect()).collect())
+impl<I, T> From<I> for Grid<T>
+where
+    T: From<u8> + Clone,
+    I: Iterator<Item = String>,
+{
+    fn from(lines: I) -> Self {
+        Grid::new(lines.map(|line| line.bytes().map(T::from).collect()).collect())
     }
 }
 

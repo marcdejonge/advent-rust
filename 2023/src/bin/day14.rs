@@ -12,30 +12,39 @@ use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::DetectingCycleTrait;
+use advent_macros::FromRepr;
 
 struct Day {
-    grid: Grid<char>,
+    grid: Grid<Stone>,
+}
+
+#[repr(u8)]
+#[derive(FromRepr, PartialEq, Clone, Hash)]
+enum Stone {
+    None = b'.',
+    Fixed = b'#',
+    Rolling = b'O',
 }
 
 fn drop_cell(
-    grid: &mut Grid<char>,
+    grid: &mut Grid<Stone>,
     last_location: &mut Point<2, i32>,
     location: Point<2, i32>,
     direction: Direction,
 ) {
     match grid[location] {
-        '#' => {
+        Stone::Fixed => {
             *last_location = location + direction.as_vec();
         }
-        'O' => {
+        Stone::Rolling => {
             grid.swap(location, *last_location).unwrap();
             *last_location = *last_location + direction.as_vec()
         }
-        _ => {}
+        Stone::None => {}
     }
 }
 
-fn drop(grid: &mut Grid<char>, direction: Direction) {
+fn drop(grid: &mut Grid<Stone>, direction: Direction) {
     let direction = direction.neg();
     match direction {
         North => {
@@ -73,11 +82,11 @@ fn drop(grid: &mut Grid<char>, direction: Direction) {
     }
 }
 
-fn weight(grid: &Grid<char>) -> usize {
+fn weight(grid: &Grid<Stone>) -> usize {
     let mut sum = 0;
     for x in grid.x_range() {
         for y in grid.y_range() {
-            if grid[point2(x, y)] == 'O' {
+            if grid[point2(x, y)] == Stone::Rolling {
                 sum += grid.height() - y as usize;
             }
         }
@@ -90,7 +99,7 @@ impl ExecutableDay for Day {
     type Output = usize;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { grid: Grid::parse(lines) }
+        Day { grid: Grid::from(lines) }
     }
 
     fn calculate_part1(&self) -> Self::Output {

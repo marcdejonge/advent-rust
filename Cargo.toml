@@ -1,3 +1,3 @@
 [workspace]
-members = ["shared", "2022", "2023"]
+members = ["shared", "macros", "2022", "2023"]
 resolver = "2"

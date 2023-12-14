@@ -5,6 +5,7 @@ use num_traits::{One, Zero};
 use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
 
+#[repr(u8)]
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Direction {
     North,
