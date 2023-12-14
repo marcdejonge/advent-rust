@@ -6,7 +6,7 @@ use crossbeam::scope;
 use crate::geometry::{point2, Point, PointIterator, Vector};
 use crate::lines::LineSegment;
 
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 pub struct Grid<T> {
     items: Vec<T>,
     x_indices: RangeInclusive<i32>,
@@ -156,6 +156,23 @@ impl<T> Grid<T> {
     pub fn x_range(&self) -> RangeInclusive<i32> { self.x_indices.clone() }
 
     pub fn y_range(&self) -> RangeInclusive<i32> { self.y_indices.clone() }
+
+    pub fn height(&self) -> usize { self.height }
+
+    pub fn width(&self) -> usize { self.width }
+
+    pub fn swap(&mut self, first: Point<2, i32>, second: Point<2, i32>) -> Result<(), &str> {
+        if first == second {
+            return Ok(()); // Nothing to swap
+        }
+
+        let first_ix = self.calc_index(first).ok_or("Could not find first index")?;
+        let second_ix = self.calc_index(second).ok_or("Could not find second index")?;
+
+        self.items.swap(first_ix, second_ix);
+
+        Ok(())
+    }
 
     pub fn draw_line(&mut self, line: LineSegment<i32>, value: T)
     where

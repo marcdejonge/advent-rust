@@ -1,5 +1,8 @@
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::mem;
+
+use fxhash::FxHashMap;
 
 pub struct Chunked<I, T>
 where
@@ -196,4 +199,36 @@ fn test_max_n() {
     assert_eq!(max_n(0..100), [99, 98, 97]);
     assert_eq!(max_n((0..100).step_by(5)), [95, 90]);
     assert_eq!(max_n((0..100).step_by(5).rev()), [95, 90, 85, 80]);
+}
+
+pub trait DetectingCycleTrait<T> {
+    fn find_cyclic_result_at(self, target_index: usize) -> Option<T>;
+}
+
+impl<I, S, T> DetectingCycleTrait<T> for I
+where
+    I: Iterator<Item = (S, T)> + Sized,
+    S: Eq + Hash,
+    T: PartialEq + Clone + Debug,
+{
+    fn find_cyclic_result_at(mut self, target_index: usize) -> Option<T> {
+        let mut results = Vec::<T>::with_capacity(512);
+        let mut states = FxHashMap::<S, usize>::default();
+
+        loop {
+            let (state, result) = self.next()?;
+            results.push(result);
+
+            if let Some(last_length) = states.get(&state) {
+                // Found same state, we can determine the location of previous
+                let cycle_size = results.len() - last_length;
+                let steps_needed = target_index - results.len();
+                let cycles = steps_needed / cycle_size;
+                let index = target_index - (cycles * cycle_size) - cycle_size;
+                return Some(results[index - 1].clone());
+            }
+
+            states.insert(state, results.len());
+        }
+    }
 }
