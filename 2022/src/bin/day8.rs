@@ -13,19 +13,7 @@ impl ExecutableDay for Day {
     type Output = usize;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            tree_heights: Grid::new(
-                lines
-                    .map(|line| {
-                        line.bytes()
-                            .filter_map(
-                                |c| if c.is_ascii_digit() { Some(c - b'0' + 1) } else { None },
-                            )
-                            .collect()
-                    })
-                    .collect(),
-            ),
-        }
+        Day { tree_heights: Grid::from(lines).map(|x| x - b'0' + 1) }
     }
 
     fn calculate_part1(&self) -> Self::Output {
