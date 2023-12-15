@@ -253,6 +253,22 @@ impl<T> Grid<T> {
             height: self.height,
         }
     }
+
+    pub fn find<F>(&self, mut predicate: F) -> Option<Point<2, i32>>
+    where
+        T: PartialEq,
+        F: FnMut(&T) -> bool,
+    {
+        let (index, _) = self.items.iter().enumerate().find(|(_, item)| predicate(*item))?;
+
+        let y = index / self.width;
+        let x = index % self.width;
+
+        Some(point2(
+            (x as i32) + self.x_indices.start(),
+            (y as i32) + self.y_indices.start(),
+        ))
+    }
 }
 
 impl<T: Copy + Into<u8>> Debug for Grid<T> {

@@ -59,6 +59,7 @@ use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_macros::FromRepr;
 
 use crate::PipeCell::*;
 
@@ -73,52 +74,77 @@ impl Day {
             day: self,
             started: false,
             location: self.start,
-            direction: if let Pipe { directions } = self.grid[self.start] {
-                directions[0]
-            } else {
-                panic!("No direction for starting location")
-            },
+            direction: *ALL_DIRECTIONS
+                .iter()
+                .find(|&&d| self.grid[self.start].points_to(d))
+                .unwrap(),
         }
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[repr(u8)]
+#[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug)]
 enum PipeCell {
-    Ground,
-    Pipe { directions: [Direction; 2] },
+    Ground = b'.',
+    Start = b'S',
+    NorthEast = b'L',
+    NorthSouth = b'|',
+    NorthWest = b'J',
+    EastSouth = b'F',
+    EastWest = b'-',
+    SouthWest = b'7',
 }
 
 impl PipeCell {
     fn get_next_direction(&self, from: Direction) -> Option<Direction> {
-        if let Pipe { directions: [a, b] } = *self {
-            if a == from.neg() {
-                Some(b)
-            } else if b == from.neg() {
-                Some(a)
-            } else {
-                None
-            }
-        } else {
-            None
+        match (self, from) {
+            (NorthEast, South) => Some(East),
+            (NorthEast, West) => Some(North),
+            (NorthSouth, South) => Some(South),
+            (NorthSouth, North) => Some(North),
+            (NorthWest, South) => Some(West),
+            (NorthWest, East) => Some(North),
+            (EastSouth, West) => Some(South),
+            (EastSouth, North) => Some(East),
+            (EastWest, West) => Some(West),
+            (EastWest, East) => Some(East),
+            (SouthWest, North) => Some(West),
+            (SouthWest, East) => Some(South),
+            _ => None,
         }
     }
 
+    fn points_to(&self, to: Direction) -> bool {
+        matches!(
+            (self, to),
+            (NorthEast, North)
+                | (NorthEast, East)
+                | (NorthSouth, North)
+                | (NorthSouth, South)
+                | (NorthWest, North)
+                | (NorthWest, West)
+                | (EastSouth, East)
+                | (EastSouth, South)
+                | (EastWest, East)
+                | (EastWest, West)
+                | (SouthWest, South)
+                | (SouthWest, West)
+        )
+    }
+
     fn detect_pipe(grid: &Grid<PipeCell>, location: Point<2, i32>) -> Option<PipeCell> {
-        Some(Pipe {
-            directions: ALL_DIRECTIONS
-                .into_iter()
-                .filter(|d| {
-                    let cell = grid.get(location.add(d.as_vec()));
-                    if let Some(Pipe { directions }) = cell {
-                        directions[0] == d.neg() || directions[1] == d.neg()
-                    } else {
-                        false
-                    }
-                })
-                .collect::<Vec<_>>()
-                .try_into()
-                .ok()?,
-        })
+        let connected = ALL_DIRECTIONS
+            .map(|d| grid.get(location.add(d.as_vec())).unwrap_or(&Ground).points_to(d.neg()));
+
+        match connected {
+            [true, true, false, false] => Some(NorthEast),
+            [true, false, true, false] => Some(NorthSouth),
+            [true, false, false, true] => Some(NorthWest),
+            [false, true, true, false] => Some(EastSouth),
+            [false, true, false, true] => Some(EastWest),
+            [false, false, true, true] => Some(SouthWest),
+            _ => None,
+        }
     }
 }
 
@@ -148,43 +174,12 @@ impl<'a> Iterator for DayWalker<'a> {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Default)]
-enum LocationType {
-    #[default]
-    Background,
-    Inside,
-    VerticalPipe,
-    HorizontalPipe,
-}
-
 impl ExecutableDay for Day {
     type Output = usize;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut start = Point::default();
-        let mut grid = Grid::new(
-            lines
-                .enumerate()
-                .map(|(y, line)| {
-                    line.chars()
-                        .enumerate()
-                        .map(|(x, c)| match c {
-                            'S' => {
-                                start = point2(x as i32, y as i32);
-                                Ground
-                            }
-                            'J' => Pipe { directions: [North, West] },
-                            '|' => Pipe { directions: [North, South] },
-                            'L' => Pipe { directions: [North, East] },
-                            'F' => Pipe { directions: [East, South] },
-                            '-' => Pipe { directions: [East, West] },
-                            '7' => Pipe { directions: [South, West] },
-                            _ => Ground,
-                        })
-                        .collect()
-                })
-                .collect(),
-        );
+        let mut grid = Grid::from(lines);
+        let start = grid.find(|item| item == &Start).unwrap();
         let start_pipe = PipeCell::detect_pipe(&grid, start).unwrap();
 
         if let Some(cell) = grid.get_mut(start) {
@@ -197,12 +192,21 @@ impl ExecutableDay for Day {
     fn calculate_part1(&self) -> Self::Output { self.iter().count() / 2 }
 
     fn calculate_part2(&self) -> Self::Output {
+        #[derive(Copy, Clone, Eq, PartialEq, Default)]
+        enum LocationType {
+            #[default]
+            Background,
+            Inside,
+            VerticalPipe,
+            HorizontalPipe,
+        }
+
         let mut pipe_grid =
             Grid::<LocationType>::new_empty(self.grid.x_range(), self.grid.y_range());
         self.iter().for_each(|(loc, _)| {
             if let Some(cell) = pipe_grid.get_mut(loc) {
                 let pipe = self.grid[loc];
-                *cell = if matches!(pipe, Pipe { directions: [North, _] }) {
+                *cell = if pipe.points_to(North) {
                     LocationType::VerticalPipe
                 } else {
                     LocationType::HorizontalPipe
