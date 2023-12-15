@@ -63,26 +63,12 @@ use crate::PipeCell::*;
 
 struct Day {
     grid: Grid<PipeCell>,
-    start: Point<2, i32>,
-}
-
-impl Day {
-    fn iter(&self) -> DayWalker {
-        DayWalker {
-            day: self,
-            started: false,
-            location: self.start,
-            direction: *ALL_DIRECTIONS
-                .iter()
-                .find(|&&d| self.grid[self.start].points_to(d))
-                .unwrap(),
-        }
-    }
 }
 
 #[repr(u8)]
-#[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug, Default)]
 enum PipeCell {
+    #[default]
     #[display = ' ']
     Ground = b'.',
     Start = b'S',
@@ -153,29 +139,44 @@ impl PipeCell {
     }
 }
 
-struct DayWalker<'a> {
-    day: &'a Day,
+struct GridWalker<'a> {
+    grid: &'a Grid<PipeCell>,
     started: bool,
+    start: Point<2, i32>,
     location: Point<2, i32>,
     direction: Direction,
 }
 
-impl<'a> Iterator for DayWalker<'a> {
-    type Item = (Point<2, i32>, Direction);
+impl<'a> GridWalker<'a> {
+    fn new(grid: &'a Grid<PipeCell>, start: Point<2, i32>) -> GridWalker<'a> {
+        GridWalker {
+            grid,
+            start,
+            started: false,
+            location: start,
+            direction: *ALL_DIRECTIONS.iter().find(|&&d| grid[start].points_to(d)).unwrap(),
+        }
+    }
+}
+
+impl<'a> Iterator for GridWalker<'a> {
+    type Item = (Point<2, i32>, Direction, PipeCell);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.started {
+        let pipe = if !self.started {
             self.started = true;
+            *self.grid.get(self.location)?
         } else {
             self.location = self.location.add(self.direction.as_vec());
-            if self.location == self.day.start {
+            if self.location == self.start {
                 return None;
             }
-            self.direction =
-                self.day.grid.get(self.location)?.get_next_direction(self.direction)?;
-        }
+            let pipe = *self.grid.get(self.location)?;
+            self.direction = pipe.get_next_direction(self.direction)?;
+            pipe
+        };
 
-        Some((self.location, self.direction))
+        Some((self.location, self.direction, pipe))
     }
 }
 
@@ -183,18 +184,21 @@ impl ExecutableDay for Day {
     type Output = usize;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut grid = Grid::from(lines);
-        let start = grid.find(|item| item == &Start).unwrap();
-        let start_pipe = PipeCell::detect_pipe(&grid, start).unwrap();
-
-        if let Some(cell) = grid.get_mut(start) {
+        let mut raw_grid = Grid::from(lines);
+        let start = raw_grid.find(|item| item == &Start).unwrap();
+        let start_pipe = PipeCell::detect_pipe(&raw_grid, start).unwrap();
+        if let Some(cell) = raw_grid.get_mut(start) {
             *cell = start_pipe
         }
 
-        Day { start, grid }
+        let mut grid = Grid::new_empty(raw_grid.x_range(), raw_grid.y_range());
+        GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
+        Day { grid }
     }
 
-    fn calculate_part1(&self) -> Self::Output { self.iter().count() / 2 }
+    fn calculate_part1(&self) -> Self::Output {
+        self.grid.values().filter(|p| **p != Ground).count() / 2
+    }
 
     fn calculate_part2(&self) -> Self::Output {
         #[derive(Copy, Clone, Eq, PartialEq, Default)]
@@ -206,16 +210,13 @@ impl ExecutableDay for Day {
             HorizontalPipe,
         }
 
-        let mut pipe_grid =
-            Grid::<LocationType>::new_empty(self.grid.x_range(), self.grid.y_range());
-        self.iter().for_each(|(loc, _)| {
-            if let Some(cell) = pipe_grid.get_mut(loc) {
-                let pipe = self.grid[loc];
-                *cell = if pipe.points_to(North) {
-                    LocationType::VerticalPipe
-                } else {
-                    LocationType::HorizontalPipe
-                }
+        let mut pipe_grid = self.grid.map(|pipe| {
+            if pipe == &Ground {
+                LocationType::Background
+            } else if pipe.points_to(North) {
+                LocationType::VerticalPipe
+            } else {
+                LocationType::HorizontalPipe
             }
         });
 
