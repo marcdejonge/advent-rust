@@ -1,4 +1,3 @@
-#![feature(map_try_insert)]
 /*
 --- Day 10: Pipe Maze ---
 
@@ -48,7 +47,6 @@ Figure out whether you have time to search for the nest by calculating the area 
 How many tiles are enclosed by the loop?
 */
 #![feature(test)]
-#![feature(iter_collect_into)]
 
 extern crate core;
 
@@ -85,13 +83,20 @@ impl Day {
 #[repr(u8)]
 #[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug)]
 enum PipeCell {
+    #[display = ' ']
     Ground = b'.',
     Start = b'S',
+    #[display('┗')]
     NorthEast = b'L',
+    #[display('┃')]
     NorthSouth = b'|',
+    #[display('┛')]
     NorthWest = b'J',
+    #[display('┏')]
     EastSouth = b'F',
+    #[display('━')]
     EastWest = b'-',
+    #[display('┓')]
     SouthWest = b'7',
 }
 

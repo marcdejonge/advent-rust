@@ -271,7 +271,7 @@ impl<T> Grid<T> {
     }
 }
 
-impl<T: Copy + Into<u8>> Debug for Grid<T> {
+impl<T: Copy + Into<char>> Debug for Grid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("x = ")?;
         self.x_indices.fmt(f)?;
@@ -282,7 +282,7 @@ impl<T: Copy + Into<u8>> Debug for Grid<T> {
         for y in self.y_indices.clone() {
             for x in self.x_indices.clone() {
                 let item = self.get(point2(x, y)).unwrap();
-                f.write_char((*item).into().into())?;
+                f.write_char((*item).into())?;
             }
             f.write_char('\n')?;
         }
