@@ -51,7 +51,7 @@ fn drop(grid: &mut Grid<Stone>, direction: Direction) {
             grid.x_range().for_each(|x| {
                 let mut last_location = point2(x, *grid.y_range().end());
                 for y in grid.y_range().rev() {
-                    drop_cell(grid, &mut last_location, point2(x, y), direction)
+                    drop_cell(grid, &mut last_location, point2(x, y), North)
                 }
             });
         }
@@ -59,7 +59,7 @@ fn drop(grid: &mut Grid<Stone>, direction: Direction) {
             grid.y_range().for_each(|y| {
                 let mut last_location = point2(*grid.x_range().end(), y);
                 for x in grid.x_range().rev() {
-                    drop_cell(grid, &mut last_location, point2(x, y), direction)
+                    drop_cell(grid, &mut last_location, point2(x, y), West)
                 }
             });
         }
@@ -67,7 +67,7 @@ fn drop(grid: &mut Grid<Stone>, direction: Direction) {
             grid.x_range().for_each(|x| {
                 let mut last_location = point2(x, *grid.y_range().start());
                 for y in grid.y_range() {
-                    drop_cell(grid, &mut last_location, point2(x, y), direction)
+                    drop_cell(grid, &mut last_location, point2(x, y), South)
                 }
             });
         }
@@ -75,7 +75,7 @@ fn drop(grid: &mut Grid<Stone>, direction: Direction) {
             grid.y_range().for_each(|y| {
                 let mut last_location = point2(*grid.x_range().start(), y);
                 for x in grid.x_range() {
-                    drop_cell(grid, &mut last_location, point2(x, y), direction)
+                    drop_cell(grid, &mut last_location, point2(x, y), East)
                 }
             });
         }
@@ -83,16 +83,10 @@ fn drop(grid: &mut Grid<Stone>, direction: Direction) {
 }
 
 fn weight(grid: &Grid<Stone>) -> usize {
-    let mut sum = 0;
-    for x in grid.x_range() {
-        for y in grid.y_range() {
-            if grid[point2(x, y)] == Stone::Rolling {
-                sum += grid.height() - y as usize;
-            }
-        }
-    }
-
-    sum
+    grid.entries()
+        .filter(|(_, stone)| **stone == Stone::Rolling)
+        .map(|(location, _)| grid.height() - location.coords[1] as usize)
+        .sum()
 }
 
 impl ExecutableDay for Day {

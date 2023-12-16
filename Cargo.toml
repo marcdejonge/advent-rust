@@ -1,3 +1,6 @@
 [workspace]
 members = ["shared", "macros", "2022", "2023"]
 resolver = "2"
+
+[profile.release]
+debug=true

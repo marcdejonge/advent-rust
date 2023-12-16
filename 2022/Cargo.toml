@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 advent-lib = { path = "../shared" }
+advent-macros = { path = "../macros" }
 lazy_static = "1.4.0"
 bit-set = "0.5.3"
 fxhash = "0.2.1"

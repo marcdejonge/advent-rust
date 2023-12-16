@@ -35,6 +35,7 @@ name = "advent-rust-2022"
 version = "0.1.0"
 dependencies = [
  "advent-lib",
+ "advent-macros",
  "bit-set",
  "fxhash",
  "lazy_static",

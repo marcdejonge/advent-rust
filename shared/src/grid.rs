@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Index, IndexMut, RangeInclusive};
+use std::ops::{Index, IndexMut, Range, RangeInclusive};
 
 use crossbeam::scope;
 
@@ -269,6 +269,30 @@ impl<T> Grid<T> {
             (y as i32) + self.y_indices.start(),
         ))
     }
+
+    pub fn sub_grid(&self, from_x_range: Range<i32>, from_y_range: Range<i32>) -> Grid<T>
+    where
+        T: Default + Clone,
+    {
+        let mut grid = Grid::new_empty(
+            0..=(from_x_range.end - from_x_range.start - 1),
+            0..=(from_y_range.end - from_y_range.start - 1),
+        );
+        for y in from_y_range.clone() {
+            for x in from_x_range.clone() {
+                if let Some(cell) = self.get(point2(x, y)) {
+                    let target_x = x - from_x_range.start;
+                    let target_y = y - from_y_range.start;
+
+                    if let Some(target) = grid.get_mut(point2(target_x, target_y)) {
+                        *target = cell.clone();
+                    }
+                }
+            }
+        }
+
+        grid
+    }
 }
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {
@@ -279,13 +303,29 @@ impl<T: Copy + Into<char>> Debug for Grid<T> {
         self.y_indices.fmt(f)?;
         f.write_str("\n\n")?;
 
+        f.write_char('┌')?;
+        for _ in self.x_indices.clone() {
+            f.write_char('─')?;
+        }
+        f.write_char('┐')?;
+        f.write_char('\n')?;
+
         for y in self.y_indices.clone() {
+            f.write_char('│')?;
             for x in self.x_indices.clone() {
                 let item = self.get(point2(x, y)).unwrap();
                 f.write_char((*item).into())?;
             }
+            f.write_char('│')?;
             f.write_char('\n')?;
         }
+
+        f.write_char('└')?;
+        for _ in self.x_indices.clone() {
+            f.write_char('─')?;
+        }
+        f.write_char('┘')?;
+        f.write_char('\n')?;
 
         Ok(())
     }
