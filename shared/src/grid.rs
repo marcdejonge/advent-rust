@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range, RangeInclusive};
 
+use crate::direction::Direction;
 use crossbeam::scope;
 
 use crate::geometry::{point2, Point, PointIterator, Vector};
@@ -21,7 +22,20 @@ where
     I: Iterator<Item = String>,
 {
     fn from(lines: I) -> Self {
-        Grid::new(lines.map(|line| line.bytes().map(T::from).collect()).collect())
+        let items: Vec<Vec<T>> = lines.map(|line| line.bytes().map(T::from).collect()).collect();
+
+        let height = items.len();
+        let width = items[0].len();
+        if items.iter().any(|line| line.len() != width) {
+            panic!("Not all input lines have the same length");
+        }
+        Grid {
+            items: items.iter().flatten().cloned().collect(),
+            height,
+            width,
+            x_indices: (0..=(width - 1) as i32),
+            y_indices: (0..=(height - 1) as i32),
+        }
     }
 }
 
@@ -44,24 +58,6 @@ impl<T> Grid<T> {
         let width = (x_indices.end() - x_indices.start() + 1) as usize;
         let height = (y_indices.end() - y_indices.start() + 1) as usize;
         Grid { items: vec![value.clone(); width * height], x_indices, y_indices, width, height }
-    }
-
-    pub fn new(items: Vec<Vec<T>>) -> Grid<T>
-    where
-        T: Clone,
-    {
-        let height = items.len();
-        let width = items[0].len();
-        if items.iter().any(|line| line.len() != width) {
-            panic!("Not all input lines have the same length");
-        }
-        Grid {
-            items: items.iter().flatten().cloned().collect(),
-            height,
-            width,
-            x_indices: (0..=(width - 1) as i32),
-            y_indices: (0..=(height - 1) as i32),
-        }
     }
 
     #[inline]
@@ -133,14 +129,12 @@ impl<T> Grid<T> {
     pub fn is_empty(&self) -> bool { self.items.is_empty() }
 
     pub fn calc_index(&self, location: Point<2, i32>) -> Option<usize> {
-        if !self.x_indices.contains(&location.coords[0])
-            || !self.y_indices.contains(&location.coords[1])
-        {
+        if !self.x_indices.contains(&location.x()) || !self.y_indices.contains(&location.y()) {
             None
         } else {
             Some(
-                (location.coords[0] - self.x_indices.start()) as usize
-                    + (location.coords[1] - self.y_indices.start()) as usize * self.width,
+                (location.x() - self.x_indices.start()) as usize
+                    + (location.y() - self.y_indices.start()) as usize * self.width,
             )
         }
     }
@@ -157,6 +151,10 @@ impl<T> Grid<T> {
     pub fn x_range(&self) -> RangeInclusive<i32> { self.x_indices.clone() }
 
     pub fn y_range(&self) -> RangeInclusive<i32> { self.y_indices.clone() }
+
+    pub fn contains(&self, location: &Point<2, i32>) -> bool {
+        self.x_range().contains(&location.x()) && self.y_range().contains(&location.y())
+    }
 
     pub fn height(&self) -> usize { self.height }
 
@@ -179,15 +177,15 @@ impl<T> Grid<T> {
     where
         T: Copy,
     {
-        if line.start.coords[0] == line.end.coords[0] {
-            let x = line.start.coords[0];
+        if line.start.x() == line.end.x() {
+            let x = line.start.x();
             for y in line.min_y()..=line.max_y() {
                 if let Some(place) = self.get_mut(point2(x, y)) {
                     *place = value
                 }
             }
-        } else if line.start.coords[1] == line.end.coords[1] {
-            let y = line.start.coords[1];
+        } else if line.start.y() == line.end.y() {
+            let y = line.start.y();
             for x in line.min_x()..=line.max_x() {
                 if let Some(place) = self.get_mut(point2(x, y)) {
                     *place = value
@@ -213,6 +211,14 @@ impl<T> Grid<T> {
     }
 
     pub fn values(&self) -> impl Iterator<Item = &T> { self.items.iter() }
+
+    pub fn iter_hor_line(&self, y: i32) -> impl Iterator<Item = &T> {
+        self.iter_line(point2(0, y), Direction::East.as_vec())
+    }
+
+    pub fn iter_ver_line(&self, x: i32) -> impl Iterator<Item = &T> {
+        self.iter_line(point2(x, 0), Direction::South.as_vec())
+    }
 
     pub fn iter_line(
         &self,

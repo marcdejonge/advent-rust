@@ -14,8 +14,8 @@ impl<N: Copy> From<(Point<2, N>, Point<2, N>)> for LineSegment<N> {
 }
 
 impl<N: Copy + Ord> LineSegment<N> {
-    pub fn min_x(&self) -> N { min(self.start.coords[0], self.end.coords[0]) }
-    pub fn min_y(&self) -> N { min(self.start.coords[1], self.end.coords[1]) }
-    pub fn max_x(&self) -> N { max(self.start.coords[0], self.end.coords[0]) }
-    pub fn max_y(&self) -> N { max(self.start.coords[1], self.end.coords[1]) }
+    pub fn min_x(&self) -> N { min(self.start.x(), self.end.x()) }
+    pub fn min_y(&self) -> N { min(self.start.y(), self.end.y()) }
+    pub fn max_x(&self) -> N { max(self.start.x(), self.end.x()) }
+    pub fn max_y(&self) -> N { max(self.start.y(), self.end.y()) }
 }

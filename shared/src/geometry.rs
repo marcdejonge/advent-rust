@@ -37,6 +37,33 @@ where
     fn default() -> Self { Point { coords: [T::default(); D] } }
 }
 
+impl<T> Point<2, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+}
+
+impl<T> Point<3, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+    pub fn z(&self) -> T { self.coords[2] }
+}
+
+impl<T> Point<4, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+    pub fn z(&self) -> T { self.coords[2] }
+    pub fn w(&self) -> T { self.coords[3] }
+}
+
 pub const fn point2<T>(x: T, y: T) -> Point<2, T> { Point { coords: [x, y] } }
 pub const fn point3<T>(x: T, y: T, z: T) -> Point<3, T> { Point { coords: [x, y, z] } }
 pub const fn point4<T>(w: T, x: T, y: T, z: T) -> Point<4, T> { Point { coords: [w, x, y, z] } }
@@ -61,6 +88,33 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { debug(&self.coords, "Vector", f) }
+}
+
+impl<T> Vector<2, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+}
+
+impl<T> Vector<3, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+    pub fn z(&self) -> T { self.coords[2] }
+}
+
+impl<T> Vector<4, T>
+where
+    T: Copy,
+{
+    pub fn x(&self) -> T { self.coords[0] }
+    pub fn y(&self) -> T { self.coords[1] }
+    pub fn z(&self) -> T { self.coords[2] }
+    pub fn w(&self) -> T { self.coords[3] }
 }
 
 pub const fn vector2<T>(x: T, y: T) -> Vector<2, T> { Vector { coords: [x, y] } }

@@ -21,8 +21,8 @@ struct Person {
 
 impl Person {
     fn score(&self) -> u64 {
-        (self.position.coords[0] + 1) * 4
-            + (self.position.coords[1] + 1) * 1000
+        (self.position.x() + 1) * 4
+            + (self.position.y() + 1) * 1000
             + match self.direction {
                 East => 0,
                 South => 1,
@@ -121,14 +121,12 @@ impl ExecutableDay for Day {
 
             let north_ix = block_iter
                 .clone()
-                .filter(|(_, b)| {
-                    b.offset.coords[0] == offset.coords[0] && b.offset.coords[1] < offset.coords[1]
-                })
+                .filter(|(_, b)| b.offset.x() == offset.x() && b.offset.y() < offset.y())
                 .map(|(ix, _)| ix)
                 .last()
                 .or(block_iter
                     .clone()
-                    .filter(|(_, b)| b.offset.coords[0] == offset.coords[0])
+                    .filter(|(_, b)| b.offset.x() == offset.x())
                     .map(|(ix, _)| ix)
                     .last())
                 .unwrap();
