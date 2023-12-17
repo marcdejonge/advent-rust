@@ -1,4 +1,3 @@
-use crate::direction::Direction::{East, North, South, West};
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
 
@@ -147,45 +146,33 @@ impl<T> Grid<T> {
         Some((self.size, index).into())
     }
 
+    unsafe fn get_unchecked(&self, x: i32, y: i32) -> &T {
+        self.items.get_unchecked((x + y * self.width()) as usize)
+    }
+
     pub fn north_line(&self, x: i32) -> LineIterator<T> {
-        LineIterator { grid: self, location: point2(x, self.height()), direction: North.as_vec() }
+        LineIterator::North { grid: self, x, y: self.height() - 1 }
     }
 
     pub fn east_line(&self, y: i32) -> LineIterator<T> {
-        LineIterator { grid: self, location: point2(-1, y), direction: East.as_vec() }
+        LineIterator::East { grid: self, x: 0, y }
     }
 
     pub fn south_line(&self, x: i32) -> LineIterator<T> {
-        LineIterator { grid: self, location: point2(x, -1), direction: South.as_vec() }
+        LineIterator::South { grid: self, x, y: 0 }
     }
 
     pub fn west_line(&self, y: i32) -> LineIterator<T> {
-        LineIterator { grid: self, location: point2(self.width(), y), direction: West.as_vec() }
+        LineIterator::West { grid: self, x: self.width() - 1, y }
     }
 
-    pub fn north_lines(&self) -> Vec<LineIterator<T>> {
-        let mut result = Vec::with_capacity(self.width() as usize);
-        self.x_range().for_each(|x| result.push(self.north_line(x)));
-        result
-    }
+    pub fn north_lines(&self) -> LinesIterator<T> { LinesIterator::North { grid: self, x: 0 } }
 
-    pub fn east_lines(&self) -> Vec<LineIterator<T>> {
-        let mut result = Vec::with_capacity(self.height() as usize);
-        self.y_range().for_each(|y| result.push(self.east_line(y)));
-        result
-    }
+    pub fn east_lines(&self) -> LinesIterator<T> { LinesIterator::East { grid: self, y: 0 } }
 
-    pub fn south_lines(&self) -> Vec<LineIterator<T>> {
-        let mut result = Vec::with_capacity(self.width() as usize);
-        self.x_range().for_each(|x| result.push(self.south_line(x)));
-        result
-    }
+    pub fn south_lines(&self) -> LinesIterator<T> { LinesIterator::South { grid: self, x: 0 } }
 
-    pub fn west_lines(&self) -> Vec<LineIterator<T>> {
-        let mut result = Vec::with_capacity(self.height() as usize);
-        self.y_range().for_each(|y| result.push(self.west_line(y)));
-        result
-    }
+    pub fn west_lines(&self) -> LinesIterator<T> { LinesIterator::West { grid: self, y: 0 } }
 
     pub fn mut_line<F>(&mut self, start: Location, direction: Vector<2, i32>, function: F)
     where
@@ -265,17 +252,143 @@ impl<T> IndexMut<Location> for Grid<T> {
     fn index_mut(&mut self, index: Location) -> &mut Self::Output { self.get_mut(index).unwrap() }
 }
 
-pub struct LineIterator<'a, T> {
-    grid: &'a Grid<T>,
-    location: Location,
-    direction: Vector<2, i32>,
+pub enum LineIterator<'a, T> {
+    North { grid: &'a Grid<T>, x: i32, y: i32 },
+    East { grid: &'a Grid<T>, x: i32, y: i32 },
+    South { grid: &'a Grid<T>, x: i32, y: i32 },
+    West { grid: &'a Grid<T>, x: i32, y: i32 },
 }
 
 impl<'a, T> Iterator for LineIterator<'a, T> {
     type Item = (Location, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.location = self.location + self.direction;
-        Some((self.location, self.grid.get(self.location)?))
+        match self {
+            LineIterator::North { grid, x, y } => {
+                if *y >= 0 {
+                    let curr_y = *y;
+                    *y -= 1;
+                    Some((point2(*x, curr_y), unsafe {
+                        grid.get_unchecked(*x, curr_y)
+                    }))
+                } else {
+                    None
+                }
+            }
+            LineIterator::East { grid, x, y } => {
+                if *x < grid.width() {
+                    let curr_x = *x;
+                    *x += 1;
+                    Some((point2(curr_x, *y), unsafe {
+                        grid.get_unchecked(curr_x, *y)
+                    }))
+                } else {
+                    None
+                }
+            }
+            LineIterator::South { grid, x, y } => {
+                if *y < grid.height() {
+                    let curr_y = *y;
+                    *y += 1;
+                    Some((point2(*x, curr_y), unsafe {
+                        grid.get_unchecked(*x, curr_y)
+                    }))
+                } else {
+                    None
+                }
+            }
+            LineIterator::West { grid, x, y } => {
+                if *x >= 0 {
+                    let curr_x = *x;
+                    *x -= 1;
+                    Some((point2(curr_x, *y), unsafe {
+                        grid.get_unchecked(curr_x, *y)
+                    }))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+pub enum LinesIterator<'a, T> {
+    North { grid: &'a Grid<T>, x: i32 },
+    East { grid: &'a Grid<T>, y: i32 },
+    South { grid: &'a Grid<T>, x: i32 },
+    West { grid: &'a Grid<T>, y: i32 },
+}
+
+impl<'a, T> Iterator for LinesIterator<'a, T> {
+    type Item = LineIterator<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            LinesIterator::North { grid, x } => {
+                if *x < grid.width() {
+                    let curr_x = *x;
+                    *x += 1;
+                    Some(LineIterator::North { grid, x: curr_x, y: grid.height() - 1 })
+                } else {
+                    None
+                }
+            }
+            LinesIterator::East { grid, y } => {
+                if *y < grid.height() {
+                    let curr_y = *y;
+                    *y += 1;
+                    Some(LineIterator::East { grid, x: 0, y: curr_y })
+                } else {
+                    None
+                }
+            }
+            LinesIterator::South { grid, x } => {
+                if *x < grid.width() {
+                    let curr_x = *x;
+                    *x += 1;
+                    Some(LineIterator::South { grid, x: curr_x, y: 0 })
+                } else {
+                    None
+                }
+            }
+            LinesIterator::West { grid, y } => {
+                if *y < grid.height() {
+                    let curr_y = *y;
+                    *y += 1;
+                    Some(LineIterator::West { grid, x: grid.width() - 1, y: curr_y })
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+mod tests {
+    use crate::grid::Grid;
+
+    #[test]
+    fn test_north_iterators() {
+        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let cells = grid.north_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
+        assert_eq!([7, 4, 1, 8, 5, 2, 9, 6, 3], cells.as_slice())
+    }
+    #[test]
+    fn test_east_iterators() {
+        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let cells = grid.east_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
+        assert_eq!([1, 2, 3, 4, 5, 6, 7, 8, 9], cells.as_slice())
+    }
+    #[test]
+    fn test_south_iterators() {
+        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let cells = grid.south_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
+        assert_eq!([1, 4, 7, 2, 5, 8, 3, 6, 9], cells.as_slice())
+    }
+    #[test]
+    fn test_west_iterators() {
+        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let cells = grid.west_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
+        assert_eq!([3, 2, 1, 6, 5, 4, 9, 8, 7], cells.as_slice())
     }
 }

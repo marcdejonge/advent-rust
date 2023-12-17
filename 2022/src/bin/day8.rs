@@ -1,53 +1,49 @@
 #![feature(test)]
 
 use bit_set::BitSet;
-use crossbeam::scope;
 
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
+use rayon::prelude::*;
 
 struct Day {
     tree_heights: Grid<u8>,
 }
 
 #[inline]
-pub fn for_all_lines<C, LC>(
+pub fn for_all_lines<ID, CF, C, LC>(
     grid: &Grid<u8>,
-    result: &mut C,
+    gen_result_holder: ID,
+    combine_function: CF,
     line_context: &LC,
     each_cell: fn(&mut C, &mut LC, &u8, usize),
-    combine: fn(&mut C, C),
-) where
+) -> C
+where
+    ID: Fn() -> C + Sync + Send,
+    CF: Fn(C, C) -> C + Sync + Send,
     C: Clone + Sync + Send,
     LC: Clone + Sync,
 {
-    let thread_results = scope(|s| {
-        [
-            Grid::north_lines,
-            Grid::east_lines,
-            Grid::south_lines,
-            Grid::west_lines,
-        ]
-        .map(|line_function| {
-            let mut ctx = result.clone();
-            s.spawn(move |_| {
-                for line in line_function(grid) {
-                    let mut lc = line_context.clone();
-                    for (loc, value) in line {
-                        let index = (loc.x() + loc.y() * grid.width()) as usize;
-                        each_cell(&mut ctx, &mut lc, value, index);
-                    }
-                }
-                ctx
-            })
-        })
-        .map(|thread| thread.join().unwrap())
+    [
+        Grid::north_lines,
+        Grid::east_lines,
+        Grid::south_lines,
+        Grid::west_lines,
+    ]
+    .par_iter()
+    .map(|line_function| {
+        let mut ctx = gen_result_holder();
+        for line in line_function(grid) {
+            let mut lc = line_context.clone();
+            for (loc, value) in line {
+                let index = (loc.x() + loc.y() * grid.width()) as usize;
+                each_cell(&mut ctx, &mut lc, value, index);
+            }
+        }
+        ctx
     })
-    .unwrap();
-
-    for thread_result in thread_results {
-        combine(result, thread_result)
-    }
+    .reduce_with(combine_function)
+    .unwrap()
 }
 
 impl ExecutableDay for Day {
@@ -58,11 +54,13 @@ impl ExecutableDay for Day {
     }
 
     fn calculate_part1(&self) -> Self::Output {
-        let mut reachable = BitSet::new();
-
         for_all_lines(
             &self.tree_heights,
-            &mut reachable,
+            || BitSet::new(),
+            |mut curr, next| {
+                curr.union_with(&next);
+                curr
+            },
             &0u8,
             |reachable, max, &height, ix| {
                 // for each cell
@@ -71,23 +69,21 @@ impl ExecutableDay for Day {
                     reachable.insert(ix);
                 }
             },
-            |reachable, thread_reachable| {
-                // combine thread results
-                reachable.union_with(&thread_reachable);
-            },
-        );
-
-        reachable.len()
+        )
+        .len()
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        let mut scores = vec![1usize; self.tree_heights.len()];
-        let last_seen = [0usize; 11];
-
         for_all_lines(
             &self.tree_heights,
-            &mut scores,
-            &last_seen,
+            || vec![1usize; self.tree_heights.len()],
+            |mut curr, next| {
+                for ix in 0..curr.len() {
+                    curr[ix] *= next[ix];
+                }
+                curr
+            },
+            &[0usize; 11],
             |scores, last_seen, &height, ix| {
                 // for each cell
                 scores[ix] = last_seen[0] - last_seen[height as usize];
@@ -96,15 +92,11 @@ impl ExecutableDay for Day {
                 }
                 last_seen[0] += 1;
             },
-            |scores, thread_scores| {
-                // combine thread results
-                for ix in 0..scores.len() {
-                    scores[ix] *= thread_scores[ix];
-                }
-            },
-        );
-
-        scores.iter().max().cloned().unwrap()
+        )
+        .iter()
+        .max()
+        .cloned()
+        .unwrap()
     }
 }
 
