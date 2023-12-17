@@ -146,7 +146,11 @@ impl<T> Grid<T> {
         Some((self.size, index).into())
     }
 
-    unsafe fn get_unchecked(&self, x: i32, y: i32) -> &T {
+    /// # Safety
+    ///
+    /// This method does not do any boundary checks, so only use this if you already know that
+    /// x and y are within boundary (e.g. coming directly from the x_range and y_range).
+    pub unsafe fn get_unchecked(&self, x: i32, y: i32) -> &T {
         self.items.get_unchecked((x + y * self.width()) as usize)
     }
 
@@ -364,30 +368,35 @@ impl<'a, T> Iterator for LinesIterator<'a, T> {
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use crate::grid::Grid;
+    use super::Grid;
+
+    fn generate_test_grid() -> Grid<u8> {
+        Grid::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0')
+    }
 
     #[test]
     fn test_north_iterators() {
-        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let grid = generate_test_grid();
         let cells = grid.north_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
         assert_eq!([7, 4, 1, 8, 5, 2, 9, 6, 3], cells.as_slice())
     }
     #[test]
     fn test_east_iterators() {
-        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let grid = generate_test_grid();
         let cells = grid.east_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
         assert_eq!([1, 2, 3, 4, 5, 6, 7, 8, 9], cells.as_slice())
     }
     #[test]
     fn test_south_iterators() {
-        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let grid = generate_test_grid();
         let cells = grid.south_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
         assert_eq!([1, 4, 7, 2, 5, 8, 3, 6, 9], cells.as_slice())
     }
     #[test]
     fn test_west_iterators() {
-        let grid = Grid::<u8>::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0');
+        let grid = generate_test_grid();
         let cells = grid.west_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
         assert_eq!([3, 2, 1, 6, 5, 4, 9, 8, 7], cells.as_slice())
     }
