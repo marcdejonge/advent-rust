@@ -14,6 +14,26 @@ struct Day {
     grid: Grid<Place>,
 }
 
+fn draw_line(grid: &mut Grid<Place>, line: LineSegment<i32>, value: Place) {
+    if line.start.x() == line.end.x() {
+        let x = line.start.x();
+        for y in line.min_y()..=line.max_y() {
+            if let Some(place) = grid.get_mut(point2(x, y)) {
+                *place = value
+            }
+        }
+    } else if line.start.y() == line.end.y() {
+        let y = line.start.y();
+        for x in line.min_x()..=line.max_x() {
+            if let Some(place) = grid.get_mut(point2(x, y)) {
+                *place = value
+            }
+        }
+    } else {
+        unimplemented!("Non-straight lines cannot be drawn to a Grid yet")
+    }
+}
+
 impl ExecutableDay for Day {
     type Output = usize;
 
@@ -28,10 +48,10 @@ impl ExecutableDay for Day {
             .collect();
 
         let max_height = lines.iter().map(|line| line.max_y()).max().unwrap() + 2;
-        let mut grid = Grid::new_empty((500 - max_height)..=(500 + max_height), 0..=max_height);
+        let mut grid = Grid::new_empty(1000, max_height + 1);
 
         for line in lines {
-            grid.draw_line(line, Place::Line);
+            draw_line(&mut grid, line, Place::Line);
         }
 
         Day { grid }
@@ -41,7 +61,7 @@ impl ExecutableDay for Day {
 
     fn calculate_part2(&self) -> Self::Output {
         let mut grid = SandDroppingGrid::new(&self.grid);
-        let y = *grid.grid.y_range().end();
+        let y = grid.grid.height() - 1;
         for x in grid.grid.x_range() {
             let place = grid.grid.get_mut(point2(x, y)).unwrap();
             *place = Place::Line;

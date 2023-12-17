@@ -88,7 +88,7 @@ impl Day {
         let mut neighbours = Vec::with_capacity(2);
         let mut add = |next_dir: Direction| {
             let next_loc = curr_loc + next_dir.as_vec();
-            if self.grid.contains(&next_loc) {
+            if self.grid.is_valid_location(&next_loc) {
                 neighbours.push((next_loc, next_dir));
             }
         };
@@ -121,7 +121,7 @@ impl Day {
     }
 
     fn visit_grid(&self, start_loc: Point<2, i32>, start_dir: Direction) -> usize {
-        let mut energized_grid = Grid::new_empty(self.grid.x_range(), self.grid.y_range());
+        let mut energized_grid = Grid::new_empty(self.grid.width(), self.grid.height());
         let mut visited = FxHashSet::<(Point<2, i32>, Direction)>::default();
         visited.insert((start_loc, start_dir));
 
@@ -165,15 +165,13 @@ impl ExecutableDay for Day {
                 North => self
                     .grid
                     .x_range()
-                    .map(|x| (point2(x, *self.grid.y_range().end()), North))
+                    .map(|x| (point2(x, self.grid.height() - 1), North))
                     .collect::<Vec<_>>(),
                 East => self.grid.y_range().map(|y| (point2(0, y), East)).collect(),
                 South => self.grid.x_range().map(|x| (point2(x, 0), South)).collect(),
-                West => self
-                    .grid
-                    .y_range()
-                    .map(|y| (point2(*self.grid.x_range().end(), y), West))
-                    .collect(),
+                West => {
+                    self.grid.y_range().map(|y| (point2(self.grid.width() - 1, y), West)).collect()
+                }
             })
             .par_bridge()
             .map(|(start, dir)| self.visit_grid(start, dir))

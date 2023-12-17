@@ -1,6 +1,5 @@
 use std::fmt::{Debug, Display, Formatter};
-use std::ops;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Mul, Sub};
 use std::str::FromStr;
 
 use num_traits::One;
@@ -188,7 +187,7 @@ impl<const D: usize, T: Add<Output = T> + Copy> Add for Vector<D, T> {
 }
 
 // point - point -> vector
-impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub for Point<D, T> {
+impl<const D: usize, T: Sub<Output = T> + Copy> Sub for Point<D, T> {
     type Output = Vector<D, T>;
     fn sub(self, rhs: Point<D, T>) -> Vector<D, T> {
         let mut coords = self.coords;
@@ -200,7 +199,7 @@ impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub for Point<D, T> {
 }
 
 // point - vector -> point
-impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub<Vector<D, T>> for Point<D, T> {
+impl<const D: usize, T: Sub<Output = T> + Copy> Sub<Vector<D, T>> for Point<D, T> {
     type Output = Point<D, T>;
     fn sub(self, rhs: Vector<D, T>) -> Point<D, T> {
         let mut coords = self.coords;
@@ -212,7 +211,7 @@ impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub<Vector<D, T>> for 
 }
 
 // vector - vector -> vector
-impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub for Vector<D, T> {
+impl<const D: usize, T: Sub<Output = T> + Copy> Sub for Vector<D, T> {
     type Output = Vector<D, T>;
     fn sub(self, rhs: Vector<D, T>) -> Vector<D, T> {
         let mut coords = self.coords;
@@ -224,7 +223,7 @@ impl<const D: usize, T: ops::Sub<Output = T> + Copy> ops::Sub for Vector<D, T> {
 }
 
 // vector * const = vector
-impl<const D: usize, T: ops::Mul<Output = T> + Copy> ops::Mul<T> for Vector<D, T> {
+impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Vector<D, T> {
     type Output = Vector<D, T>;
     fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
 }
@@ -237,7 +236,7 @@ where
     fn from(value: Vector<D, F>) -> Self { Vector { coords: value.coords.map(F::into) } }
 }
 
-impl<const D: usize, T: ops::Mul<Output = T> + One> Vector<D, T> {
+impl<const D: usize, T: Mul<Output = T> + One> Vector<D, T> {
     pub fn content_size(self) -> T {
         self.coords.into_iter().fold(T::one(), |acc, next| acc * next)
     }
@@ -249,7 +248,7 @@ pub struct Rect<const D: usize, T> {
     pub max: Point<D, T>,
 }
 
-impl<const D: usize, T: ops::Sub<Output = T> + Copy> Rect<D, T> {
+impl<const D: usize, T: Sub<Output = T> + Copy> Rect<D, T> {
     pub fn total_size(&self) -> Vector<D, T> { self.max - self.min }
 }
 
@@ -313,30 +312,6 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn point_add_vector() {
-        assert_eq!(point2(3, 3), point2(1, 2) + vector2(2, 1));
-        assert_eq!(point3(-6, 6, 0), point3(-12, 12, 1) + vector3(6, -6, -1));
-        assert_eq!(point4(1, 2, 3, 4), point4(0, 0, 0, 0) + vector4(1, 2, 3, 4));
-    }
-
-    #[test]
-    fn vector_add_vector() { assert_eq!(vector2(4, 4), vector2(1, 2) + vector2(3, 2)) }
-
-    #[test]
-    fn point_sub_point() { assert_eq!(vector2(-1, 2), point2(4, 2) - point2(5, 0)) }
-
-    #[test]
-    fn vector_sub_vector() { assert_eq!(vector2(0, 0), vector2(2, 4) - vector2(2, 4)) }
-
-    #[test]
-    fn multiply_vector() { assert_eq!(vector2(6, 6), vector2(2, 2) * 3) }
-}
-
 pub struct PointIterator<const D: usize, T> {
     point: Point<D, T>,
     direction: Vector<D, T>,
@@ -361,4 +336,28 @@ where
         self.point = self.point + self.direction;
         Some(self.point)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn point_add_vector() {
+        assert_eq!(point2(3, 3), point2(1, 2) + vector2(2, 1));
+        assert_eq!(point3(-6, 6, 0), point3(-12, 12, 1) + vector3(6, -6, -1));
+        assert_eq!(point4(1, 2, 3, 4), point4(0, 0, 0, 0) + vector4(1, 2, 3, 4));
+    }
+
+    #[test]
+    fn vector_add_vector() { assert_eq!(vector2(4, 4), vector2(1, 2) + vector2(3, 2)) }
+
+    #[test]
+    fn point_sub_point() { assert_eq!(vector2(-1, 2), point2(4, 2) - point2(5, 0)) }
+
+    #[test]
+    fn vector_sub_vector() { assert_eq!(vector2(0, 0), vector2(2, 4) - vector2(2, 4)) }
+
+    #[test]
+    fn multiply_vector() { assert_eq!(vector2(6, 6), vector2(2, 2) * 3) }
 }

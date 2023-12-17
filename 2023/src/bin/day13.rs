@@ -67,10 +67,10 @@ enum Item {
 }
 
 fn find_reflection(grid: &Grid<Item>, smudges: u32) -> i32 {
-    for reflect_x in 1..=*grid.x_range().end() {
+    for reflect_x in 1..grid.width() {
         let mut smudges_found = 0u32;
         'y: for y in grid.y_range() {
-            let reflect_size = min(*grid.x_range().end() - reflect_x + 1, reflect_x);
+            let reflect_size = min(grid.width() - reflect_x, reflect_x);
             for dx in 0..reflect_size {
                 let x_left = reflect_x - dx - 1;
                 let x_right = reflect_x + dx;
@@ -88,10 +88,10 @@ fn find_reflection(grid: &Grid<Item>, smudges: u32) -> i32 {
         }
     }
 
-    for reflect_y in 1..=*grid.y_range().end() {
+    for reflect_y in 1..grid.height() {
         let mut smudges_found = 0u32;
         'x: for x in grid.x_range() {
-            let reflect_size = min(*grid.y_range().end() - reflect_y + 1, reflect_y);
+            let reflect_size = min(grid.height() - reflect_y, reflect_y);
             for dy in 0..reflect_size {
                 let y_left = reflect_y - dy - 1;
                 let y_right = reflect_y + dy;

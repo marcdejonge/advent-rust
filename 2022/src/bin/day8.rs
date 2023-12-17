@@ -1,12 +1,53 @@
 #![feature(test)]
 
 use bit_set::BitSet;
+use crossbeam::scope;
 
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
 
 struct Day {
     tree_heights: Grid<u8>,
+}
+
+#[inline]
+pub fn for_all_lines<C, LC>(
+    grid: &Grid<u8>,
+    result: &mut C,
+    line_context: &LC,
+    each_cell: fn(&mut C, &mut LC, &u8, usize),
+    combine: fn(&mut C, C),
+) where
+    C: Clone + Sync + Send,
+    LC: Clone + Sync,
+{
+    let thread_results = scope(|s| {
+        [
+            Grid::north_lines,
+            Grid::east_lines,
+            Grid::south_lines,
+            Grid::west_lines,
+        ]
+        .map(|line_function| {
+            let mut ctx = result.clone();
+            s.spawn(move |_| {
+                for line in line_function(grid) {
+                    let mut lc = line_context.clone();
+                    for (loc, value) in line {
+                        let index = (loc.x() + loc.y() * grid.width()) as usize;
+                        each_cell(&mut ctx, &mut lc, value, index);
+                    }
+                }
+                ctx
+            })
+        })
+        .map(|thread| thread.join().unwrap())
+    })
+    .unwrap();
+
+    for thread_result in thread_results {
+        combine(result, thread_result)
+    }
 }
 
 impl ExecutableDay for Day {
@@ -19,7 +60,8 @@ impl ExecutableDay for Day {
     fn calculate_part1(&self) -> Self::Output {
         let mut reachable = BitSet::new();
 
-        self.tree_heights.for_all_lines(
+        for_all_lines(
+            &self.tree_heights,
             &mut reachable,
             &0u8,
             |reachable, max, &height, ix| {
@@ -42,7 +84,8 @@ impl ExecutableDay for Day {
         let mut scores = vec![1usize; self.tree_heights.len()];
         let last_seen = [0usize; 11];
 
-        self.tree_heights.for_all_lines(
+        for_all_lines(
+            &self.tree_heights,
             &mut scores,
             &last_seen,
             |scores, last_seen, &height, ix| {

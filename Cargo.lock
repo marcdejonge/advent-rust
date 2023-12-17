@@ -37,6 +37,7 @@ dependencies = [
  "advent-lib",
  "advent-macros",
  "bit-set",
+ "crossbeam",
  "fxhash",
  "lazy_static",
  "num-traits",

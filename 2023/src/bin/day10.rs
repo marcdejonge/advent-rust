@@ -191,7 +191,7 @@ impl ExecutableDay for Day {
             *cell = start_pipe
         }
 
-        let mut grid = Grid::new_empty(raw_grid.x_range(), raw_grid.y_range());
+        let mut grid = Grid::new_empty(raw_grid.width(), raw_grid.height());
         GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
         Day { grid }
     }

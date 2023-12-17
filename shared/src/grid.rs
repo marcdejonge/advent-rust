@@ -1,19 +1,26 @@
+use crate::direction::Direction::{East, North, South, West};
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Index, IndexMut, Range, RangeInclusive};
+use std::ops::{Index, IndexMut, Range};
 
-use crate::direction::Direction;
-use crossbeam::scope;
-
-use crate::geometry::{point2, Point, PointIterator, Vector};
-use crate::lines::LineSegment;
+use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 
 #[derive(Clone, Hash)]
 pub struct Grid<T> {
     items: Vec<T>,
-    x_indices: RangeInclusive<i32>,
-    y_indices: RangeInclusive<i32>,
-    width: usize,
-    height: usize,
+    size: Size,
+}
+
+type Location = Point<2, i32>;
+
+type Size = Vector<2, i32>;
+
+impl From<(Size, usize)> for Location {
+    fn from(value: (Size, usize)) -> Self {
+        let index = value.1 as i32;
+        let x = index % value.0.x();
+        let y = index / value.0.x();
+        point2(x, y)
+    }
 }
 
 impl<I, T> From<I> for Grid<T>
@@ -31,207 +38,156 @@ where
         }
         Grid {
             items: items.iter().flatten().cloned().collect(),
-            height,
-            width,
-            x_indices: (0..=(width - 1) as i32),
-            y_indices: (0..=(height - 1) as i32),
+            size: vector2(width as i32, height as i32),
         }
     }
 }
 
 impl<T> Grid<T> {
-    pub fn new_empty(x_indices: RangeInclusive<i32>, y_indices: RangeInclusive<i32>) -> Grid<T>
+    pub fn new_empty(width: i32, height: i32) -> Grid<T>
     where
         T: Default + Clone,
     {
-        Grid::new_default(T::default(), x_indices, y_indices)
+        Grid::new_default(T::default(), width, height)
     }
 
-    pub fn new_default(
-        value: T,
-        x_indices: RangeInclusive<i32>,
-        y_indices: RangeInclusive<i32>,
-    ) -> Grid<T>
+    pub fn new_default(value: T, width: i32, height: i32) -> Grid<T>
     where
         T: Clone,
     {
-        let width = (x_indices.end() - x_indices.start() + 1) as usize;
-        let height = (y_indices.end() - y_indices.start() + 1) as usize;
-        Grid { items: vec![value.clone(); width * height], x_indices, y_indices, width, height }
-    }
-
-    #[inline]
-    pub fn for_all_lines<C, LC>(
-        &self,
-        result: &mut C,
-        line_context: &LC,
-        each_cell: fn(&mut C, &mut LC, &T, usize),
-        combine: fn(&mut C, C),
-    ) where
-        C: Clone + Sync + Send,
-        LC: Clone + Sync,
-        T: Sync + Send,
-    {
-        let thread_results = scope(|s| {
-            [
-                s.spawn(|_| {
-                    let mut ctx = result.clone();
-                    for y in 0..self.height {
-                        let mut lc = line_context.clone();
-                        for index in (y * self.width)..((y + 1) * self.width) {
-                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
-                        }
-                    }
-                    ctx
-                }),
-                s.spawn(|_| {
-                    let mut ctx = result.clone();
-                    for y in 0..self.height {
-                        let mut lc = line_context.clone();
-                        for index in ((y * self.width)..((y + 1) * self.width)).rev() {
-                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
-                        }
-                    }
-                    ctx
-                }),
-                s.spawn(|_| {
-                    let mut ctx = result.clone();
-                    for x in 0..self.width {
-                        let mut lc = line_context.clone();
-                        for index in (x..(self.height * self.width)).step_by(self.width) {
-                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
-                        }
-                    }
-                    ctx
-                }),
-                s.spawn(|_| {
-                    let mut ctx = result.clone();
-                    for x in 0..self.width {
-                        let mut lc = line_context.clone();
-                        for index in (x..(self.height * self.width)).step_by(self.width).rev() {
-                            each_cell(&mut ctx, &mut lc, self.items.get(index).unwrap(), index)
-                        }
-                    }
-                    ctx
-                }),
-            ]
-            .map(|thread| thread.join().unwrap())
-        })
-        .unwrap();
-
-        for thread_result in thread_results {
-            combine(result, thread_result)
+        if width < 0 {
+            panic!("Width cannot be negative")
+        } else if height < 0 {
+            panic!("Height cannot be negative")
+        }
+        Grid {
+            items: vec![value.clone(); (width * height) as usize],
+            size: vector2(width, height),
         }
     }
+
+    pub fn height(&self) -> i32 { self.size.y() }
+
+    pub fn width(&self) -> i32 { self.size.x() }
 
     pub fn len(&self) -> usize { self.items.len() }
 
     pub fn is_empty(&self) -> bool { self.items.is_empty() }
 
-    pub fn calc_index(&self, location: Point<2, i32>) -> Option<usize> {
-        if !self.x_indices.contains(&location.x()) || !self.y_indices.contains(&location.y()) {
-            None
-        } else {
-            Some(
-                (location.x() - self.x_indices.start()) as usize
-                    + (location.y() - self.y_indices.start()) as usize * self.width,
-            )
-        }
-    }
+    pub fn x_range(&self) -> Range<i32> { 0..self.size.x() }
 
-    pub fn get(&self, location: Point<2, i32>) -> Option<&T> {
-        self.items.get(self.calc_index(location)?)
-    }
+    pub fn y_range(&self) -> Range<i32> { 0..self.size.y() }
 
-    pub fn get_mut(&mut self, location: Point<2, i32>) -> Option<&mut T> {
-        let ix = self.calc_index(location)?;
-        self.items.get_mut(ix)
-    }
-
-    pub fn x_range(&self) -> RangeInclusive<i32> { self.x_indices.clone() }
-
-    pub fn y_range(&self) -> RangeInclusive<i32> { self.y_indices.clone() }
-
-    pub fn contains(&self, location: &Point<2, i32>) -> bool {
+    pub fn is_valid_location(&self, location: &Location) -> bool {
         self.x_range().contains(&location.x()) && self.y_range().contains(&location.y())
     }
 
-    pub fn height(&self) -> usize { self.height }
+    fn index_from_location(&self, location: Location) -> Option<usize> {
+        if self.is_valid_location(&location) {
+            Some((location.x() + location.y() * self.width()) as usize)
+        } else {
+            None
+        }
+    }
 
-    pub fn width(&self) -> usize { self.width }
+    pub fn get(&self, location: Location) -> Option<&T> {
+        let ix = self.index_from_location(location)?;
+        self.items.get(ix)
+    }
 
-    pub fn swap(&mut self, first: Point<2, i32>, second: Point<2, i32>) -> Result<(), &str> {
+    pub fn get_mut(&mut self, location: Location) -> Option<&mut T> {
+        let ix = self.index_from_location(location)?;
+        self.items.get_mut(ix)
+    }
+
+    pub fn swap(&mut self, first: Location, second: Location) -> Result<(), &str> {
         if first == second {
             return Ok(()); // Nothing to swap
         }
 
-        let first_ix = self.calc_index(first).ok_or("Could not find first index")?;
-        let second_ix = self.calc_index(second).ok_or("Could not find second index")?;
+        let first_ix = self.index_from_location(first).ok_or("Could not find first index")?;
+        let second_ix = self.index_from_location(second).ok_or("Could not find second index")?;
 
         self.items.swap(first_ix, second_ix);
 
         Ok(())
     }
 
-    pub fn draw_line(&mut self, line: LineSegment<i32>, value: T)
-    where
-        T: Copy,
-    {
-        if line.start.x() == line.end.x() {
-            let x = line.start.x();
-            for y in line.min_y()..=line.max_y() {
-                if let Some(place) = self.get_mut(point2(x, y)) {
-                    *place = value
-                }
-            }
-        } else if line.start.y() == line.end.y() {
-            let y = line.start.y();
-            for x in line.min_x()..=line.max_x() {
-                if let Some(place) = self.get_mut(point2(x, y)) {
-                    *place = value
-                }
-            }
-        } else {
-            unimplemented!("Non-straight lines cannot be drawn to a Grid yet")
-        }
+    pub fn entries(&self) -> impl Iterator<Item = (Location, &T)> {
+        self.items
+            .iter()
+            .enumerate()
+            .map(|(index, value)| ((self.size, index).into(), value))
     }
 
-    pub fn entries(&self) -> impl Iterator<Item = (Point<2, i32>, &T)> {
-        self.items.iter().enumerate().map(|(index, value)| {
-            let y = index / self.width;
-            let x = index - y * self.width;
-            (
-                point2(
-                    (x as i32) + self.x_indices.start(),
-                    (y as i32) + self.y_indices.start(),
-                ),
-                value,
-            )
-        })
+    pub fn entries_mut(&mut self) -> impl Iterator<Item = (Location, &mut T)> {
+        self.items
+            .iter_mut()
+            .enumerate()
+            .map(|(index, value)| ((self.size, index).into(), value))
     }
 
     pub fn values(&self) -> impl Iterator<Item = &T> { self.items.iter() }
 
-    pub fn iter_hor_line(&self, y: i32) -> impl Iterator<Item = &T> {
-        self.iter_line(point2(0, y), Direction::East.as_vec())
+    pub fn map<U, F>(&self, function: F) -> Grid<U>
+    where
+        F: FnMut(&T) -> U,
+    {
+        let mut items = Vec::with_capacity(self.items.len());
+        self.items.iter().map(function).for_each(|result| items.push(result));
+        Grid { items, size: self.size }
     }
 
-    pub fn iter_ver_line(&self, x: i32) -> impl Iterator<Item = &T> {
-        self.iter_line(point2(x, 0), Direction::South.as_vec())
+    pub fn find<F>(&self, mut predicate: F) -> Option<Location>
+    where
+        T: PartialEq,
+        F: FnMut(&T) -> bool,
+    {
+        let (index, _) = self.items.iter().enumerate().find(|(_, item)| predicate(*item))?;
+        Some((self.size, index).into())
     }
 
-    pub fn iter_line(
-        &self,
-        start: Point<2, i32>,
-        direction: Vector<2, i32>,
-    ) -> impl Iterator<Item = &T> {
-        PointIterator::new(start, direction)
-            .map(|loc| self.get(loc))
-            .take_while(|x| x.is_some())
-            .map(|x| x.unwrap())
+    pub fn north_line(&self, x: i32) -> LineIterator<T> {
+        LineIterator { grid: self, location: point2(x, self.height()), direction: North.as_vec() }
     }
 
-    pub fn mut_line<F>(&mut self, start: Point<2, i32>, direction: Vector<2, i32>, function: F)
+    pub fn east_line(&self, y: i32) -> LineIterator<T> {
+        LineIterator { grid: self, location: point2(-1, y), direction: East.as_vec() }
+    }
+
+    pub fn south_line(&self, x: i32) -> LineIterator<T> {
+        LineIterator { grid: self, location: point2(x, -1), direction: South.as_vec() }
+    }
+
+    pub fn west_line(&self, y: i32) -> LineIterator<T> {
+        LineIterator { grid: self, location: point2(self.width(), y), direction: West.as_vec() }
+    }
+
+    pub fn north_lines(&self) -> Vec<LineIterator<T>> {
+        let mut result = Vec::with_capacity(self.width() as usize);
+        self.x_range().for_each(|x| result.push(self.north_line(x)));
+        result
+    }
+
+    pub fn east_lines(&self) -> Vec<LineIterator<T>> {
+        let mut result = Vec::with_capacity(self.height() as usize);
+        self.y_range().for_each(|y| result.push(self.east_line(y)));
+        result
+    }
+
+    pub fn south_lines(&self) -> Vec<LineIterator<T>> {
+        let mut result = Vec::with_capacity(self.width() as usize);
+        self.x_range().for_each(|x| result.push(self.south_line(x)));
+        result
+    }
+
+    pub fn west_lines(&self) -> Vec<LineIterator<T>> {
+        let mut result = Vec::with_capacity(self.height() as usize);
+        self.y_range().for_each(|y| result.push(self.west_line(y)));
+        result
+    }
+
+    pub fn mut_line<F>(&mut self, start: Location, direction: Vector<2, i32>, function: F)
     where
         F: Fn(&mut T),
     {
@@ -244,45 +200,13 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn map<U, F>(&self, function: F) -> Grid<U>
-    where
-        F: FnMut(&T) -> U,
-    {
-        let mut items = Vec::with_capacity(self.items.len());
-        self.items.iter().map(function).for_each(|result| items.push(result));
-
-        Grid {
-            items,
-            x_indices: self.x_indices.clone(),
-            y_indices: self.y_indices.clone(),
-            width: self.width,
-            height: self.height,
-        }
-    }
-
-    pub fn find<F>(&self, mut predicate: F) -> Option<Point<2, i32>>
-    where
-        T: PartialEq,
-        F: FnMut(&T) -> bool,
-    {
-        let (index, _) = self.items.iter().enumerate().find(|(_, item)| predicate(*item))?;
-
-        let y = index / self.width;
-        let x = index % self.width;
-
-        Some(point2(
-            (x as i32) + self.x_indices.start(),
-            (y as i32) + self.y_indices.start(),
-        ))
-    }
-
     pub fn sub_grid(&self, from_x_range: Range<i32>, from_y_range: Range<i32>) -> Grid<T>
     where
         T: Default + Clone,
     {
         let mut grid = Grid::new_empty(
-            0..=(from_x_range.end - from_x_range.start - 1),
-            0..=(from_y_range.end - from_y_range.start - 1),
+            from_x_range.end - from_x_range.start,
+            from_y_range.end - from_y_range.start,
         );
         for y in from_y_range.clone() {
             for x in from_x_range.clone() {
@@ -303,22 +227,16 @@ impl<T> Grid<T> {
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("x = ")?;
-        self.x_indices.fmt(f)?;
-        f.write_str(", y = ")?;
-        self.y_indices.fmt(f)?;
-        f.write_str("\n\n")?;
-
         f.write_char('┌')?;
-        for _ in self.x_indices.clone() {
+        for _ in self.x_range() {
             f.write_char('─')?;
         }
         f.write_char('┐')?;
         f.write_char('\n')?;
 
-        for y in self.y_indices.clone() {
+        for y in self.y_range() {
             f.write_char('│')?;
-            for x in self.x_indices.clone() {
+            for x in self.x_range() {
                 let item = self.get(point2(x, y)).unwrap();
                 f.write_char((*item).into())?;
             }
@@ -327,7 +245,7 @@ impl<T: Copy + Into<char>> Debug for Grid<T> {
         }
 
         f.write_char('└')?;
-        for _ in self.x_indices.clone() {
+        for _ in self.x_range() {
             f.write_char('─')?;
         }
         f.write_char('┘')?;
@@ -337,14 +255,27 @@ impl<T: Copy + Into<char>> Debug for Grid<T> {
     }
 }
 
-impl<T> Index<Point<2, i32>> for Grid<T> {
+impl<T> Index<Location> for Grid<T> {
     type Output = T;
 
-    fn index(&self, index: Point<2, i32>) -> &Self::Output { self.get(index).unwrap() }
+    fn index(&self, index: Location) -> &Self::Output { self.get(index).unwrap() }
 }
 
-impl<T> IndexMut<Point<2, i32>> for Grid<T> {
-    fn index_mut(&mut self, index: Point<2, i32>) -> &mut Self::Output {
-        self.get_mut(index).unwrap()
+impl<T> IndexMut<Location> for Grid<T> {
+    fn index_mut(&mut self, index: Location) -> &mut Self::Output { self.get_mut(index).unwrap() }
+}
+
+pub struct LineIterator<'a, T> {
+    grid: &'a Grid<T>,
+    location: Location,
+    direction: Vector<2, i32>,
+}
+
+impl<'a, T> Iterator for LineIterator<'a, T> {
+    type Item = (Location, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.location = self.location + self.direction;
+        Some((self.location, self.grid.get(self.location)?))
     }
 }

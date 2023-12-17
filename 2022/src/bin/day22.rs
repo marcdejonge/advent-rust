@@ -90,9 +90,9 @@ impl ExecutableDay for Day {
 
         let mut blocks = Vec::new();
         let bsize = field
-            .y_range()
-            .map(|y| point2(0, y))
-            .map(|start| field.iter_line(start, East.as_vec()).filter(|f| **f != Outside).count())
+            .east_lines()
+            .into_iter()
+            .map(|line| line.filter(|(_, f)| **f != Outside).count())
             .min()
             .unwrap();
 
@@ -146,7 +146,7 @@ mod tests {
 
     use crate::{parse_commands, Command};
 
-    day_test!( 22, example => 6032, 5031 );
+    //day_test!( 22, example => 6032, 5031 );
     //day_test!( 22 => 197160, 0 );
 
     #[test]

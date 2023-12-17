@@ -53,15 +53,15 @@ enum Space {
 
 impl Day {
     fn create_distance_grid(&self, distance: u64) -> Grid<u64> {
-        let mut grid = Grid::new_default(1, self.grid.x_range(), self.grid.y_range());
+        let mut grid = Grid::new_default(1, self.grid.width(), self.grid.height());
 
         for y in self.grid.y_range() {
-            if self.grid.iter_line(point2(0, y), East.as_vec()).all(|&x| x != Galaxy) {
+            if self.grid.east_line(y).all(|(_, x)| *x != Galaxy) {
                 grid.mut_line(point2(0, y), East.as_vec(), |value| *value = distance)
             }
         }
         for x in self.grid.x_range() {
-            if self.grid.iter_line(point2(x, 0), South.as_vec()).all(|&x| x != Galaxy) {
+            if self.grid.south_line(x).all(|(_, x)| *x != Galaxy) {
                 grid.mut_line(point2(x, 0), South.as_vec(), |value| *value = distance)
             }
         }
