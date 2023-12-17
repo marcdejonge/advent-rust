@@ -66,8 +66,8 @@ use fxhash::FxHashSet;
 use rayon::prelude::*;
 
 use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
-use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::search::depth_first_search;
@@ -159,24 +159,21 @@ impl ExecutableDay for Day {
     fn calculate_part1(&self) -> Self::Output { self.visit_grid(point2(0, 0), East) }
 
     fn calculate_part2(&self) -> Self::Output {
-        ALL_DIRECTIONS
-            .into_iter()
-            .flat_map(|dir| match dir {
-                North => self
-                    .grid
-                    .x_range()
-                    .map(|x| (point2(x, self.grid.height() - 1), North))
-                    .collect::<Vec<_>>(),
-                East => self.grid.y_range().map(|y| (point2(0, y), East)).collect(),
-                South => self.grid.x_range().map(|x| (point2(x, 0), South)).collect(),
-                West => {
-                    self.grid.y_range().map(|y| (point2(self.grid.width() - 1, y), West)).collect()
-                }
-            })
-            .par_bridge()
-            .map(|(start, dir)| self.visit_grid(start, dir))
-            .max()
-            .unwrap()
+        [
+            self.grid
+                .x_range()
+                .map(|x| (point2(x, self.grid.height() - 1), North))
+                .collect::<Vec<_>>(),
+            self.grid.y_range().map(|y| (point2(0, y), East)).collect(),
+            self.grid.x_range().map(|x| (point2(x, 0), South)).collect(),
+            self.grid.y_range().map(|y| (point2(self.grid.width() - 1, y), West)).collect(),
+        ]
+        .into_iter()
+        .flatten()
+        .par_bridge()
+        .map(|(start, dir)| self.visit_grid(start, dir))
+        .max()
+        .unwrap()
     }
 }
 
