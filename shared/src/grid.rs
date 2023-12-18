@@ -154,6 +154,15 @@ impl<T> Grid<T> {
         self.items.get_unchecked((x + y * self.width()) as usize)
     }
 
+    /// # Safety
+    ///
+    /// This method does not do any boundary checks, so only use this if you already know that
+    /// x and y are within boundary (e.g. coming directly from the x_range and y_range).
+    pub unsafe fn get_unchecked_mut(&mut self, x: i32, y: i32) -> &mut T {
+        let width = self.width();
+        self.items.get_unchecked_mut((x + y * width) as usize)
+    }
+
     pub fn north_line(&self, x: i32) -> LineIterator<T> {
         LineIterator::North { grid: self, x, y: self.height() - 1 }
     }
@@ -213,6 +222,72 @@ impl<T> Grid<T> {
         }
 
         grid
+    }
+
+    pub fn fill(&mut self, start: Location, value: T) -> usize
+    where
+        T: PartialEq + Clone,
+    {
+        let accept_cell = if let Some(cell) = self.get(start) {
+            cell.clone()
+        } else {
+            return 0; // Not in range, just return
+        };
+
+        let mut stack = Vec::with_capacity(self.height() as usize);
+        stack.push(start);
+        let mut count_cells = 0usize;
+
+        while !stack.is_empty() {
+            let [x, y] = stack.pop().unwrap().coords;
+            let mut lx = x;
+            while lx > 0 {
+                // Safety: we know that (x,y) is in bounds and we check lx explicitly
+                let fill_cell = unsafe { self.get_unchecked_mut(lx - 1, y) };
+                if *fill_cell == accept_cell {
+                    *fill_cell = value.clone();
+                    count_cells += 1;
+                    lx -= 1;
+                } else {
+                    break;
+                }
+            }
+
+            let mut rx = x;
+            while rx < self.width() {
+                // Safety: we know that (x,y) is in bounds and we check rx explicitly
+                let fill_cell = unsafe { self.get_unchecked_mut(rx, y) };
+                if *fill_cell == accept_cell {
+                    *fill_cell = value.clone();
+                    count_cells += 1;
+                    rx += 1;
+                } else {
+                    break;
+                }
+            }
+
+            let mut scan_next_fill = |y| {
+                let mut span_added = false;
+                for x in lx..rx {
+                    let check_cell = unsafe { self.get_unchecked(x, y) };
+                    if *check_cell != accept_cell {
+                        span_added = false;
+                    } else if !span_added {
+                        stack.push(point2(x, y));
+                        span_added = true;
+                    }
+                }
+            };
+
+            if y > 0 {
+                scan_next_fill(y - 1);
+            }
+            if y < self.height() - 1 {
+                scan_next_fill(y + 1);
+            }
+        }
+
+        count_cells
     }
 }
 
@@ -375,6 +450,8 @@ impl<'a, T> Iterator for LinesIterator<'a, T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::geometry::point2;
+
     use super::Grid;
 
     fn generate_test_grid() -> Grid<u8> {
@@ -404,5 +481,31 @@ mod tests {
         let grid = generate_test_grid();
         let cells = grid.west_lines().flat_map(|line| line.map(|(_, c)| *c)).collect::<Vec<_>>();
         assert_eq!([3, 2, 1, 6, 5, 4, 9, 8, 7], cells.as_slice())
+    }
+
+    #[test]
+    fn test_fill_around_block() {
+        let mut grid = Grid::<u8>::new_empty(3, 3);
+        grid[point2(1, 1)] = b'X';
+        assert_eq!(8, grid.fill(point2(0, 0), b'O'));
+        assert_eq!(
+            vec![b'O', b'O', b'O', b'O', b'X', b'O', b'O', b'O', b'O'],
+            grid.items
+        );
+    }
+
+    #[test]
+    fn test_fill_inside() {
+        let mut grid = Grid::<u8>::new_empty(7, 2);
+        grid[point2(1, 0)] = b'X';
+        grid[point2(3, 0)] = b'X';
+        grid[point2(5, 0)] = b'X';
+        assert_eq!(11, grid.fill(point2(0, 0), b'O'));
+        assert_eq!(
+            vec![
+                b'O', b'X', b'O', b'X', b'O', b'X', b'O', b'O', b'O', b'O', b'O', b'O', b'O', b'O'
+            ],
+            grid.items
+        );
     }
 }

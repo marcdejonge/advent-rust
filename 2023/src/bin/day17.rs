@@ -83,17 +83,6 @@ impl<'a> Target<'a> {
             .map(|b| *b as usize)
             .sum()
     }
-
-    fn show_path(&self, path: &[(Point<2, i32>, Direction, i32)]) {
-        let mut vis_grid = self.grid.map(|b| *b + b'0');
-        path.iter().for_each(|(loc, dir, _)| match dir {
-            North => *vis_grid.get_mut(*loc).unwrap() = b'^',
-            East => *vis_grid.get_mut(*loc).unwrap() = b'>',
-            South => *vis_grid.get_mut(*loc).unwrap() = b'v',
-            West => *vis_grid.get_mut(*loc).unwrap() = b'<',
-        });
-        dbg!(vis_grid);
-    }
 }
 
 impl<'a> SearchGraph for Target<'a> {

@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use num_traits::{abs, One, Signed};
@@ -247,6 +247,16 @@ impl<const D: usize, T: Mul<Output = T> + One> Vector<D, T> {
     pub fn content_size(self) -> T {
         self.coords.into_iter().fold(T::one(), |acc, next| acc * next)
     }
+}
+
+impl<const D: usize, T: Neg<Output = T>> Neg for Vector<D, T> {
+    type Output = Vector<D, T>;
+
+    fn neg(self) -> Self::Output { Vector { coords: self.coords.map(|x| x.neg()) } }
+}
+
+impl<const D: usize, T> From<Vector<D, T>> for Point<D, T> {
+    fn from(value: Vector<D, T>) -> Self { Point { coords: value.coords } }
 }
 
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]

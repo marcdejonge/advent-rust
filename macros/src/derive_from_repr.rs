@@ -103,6 +103,13 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
                     }
                 }
             }
+
+            impl<'a> prse::Parse<'a> for #name {
+                fn from_str(value: &str) -> Result<Self, prse::ParseError> {
+                    value.bytes().next().map(|b| b.into())
+                        .ok_or(prse::ParseError::new("Unexpected empty string"))
+                }
+            }
         })
     } else {
         Err(Error::new(
