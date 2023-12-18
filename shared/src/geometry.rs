@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Mul, Sub};
 use std::str::FromStr;
 
-use num_traits::One;
+use num_traits::{abs, One, Signed};
 use prse::{parse, Parse, ParseError};
 
 use crate::traits::NotEq;
@@ -95,6 +95,13 @@ where
 {
     pub fn x(&self) -> T { self.coords[0] }
     pub fn y(&self) -> T { self.coords[1] }
+
+    pub fn euler(&self) -> T
+    where
+        T: Signed,
+    {
+        abs(self.coords[0]) + abs(self.coords[1])
+    }
 }
 
 impl<T> Vector<3, T>

@@ -218,6 +218,11 @@ impl<T> Grid<T> {
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Grid(")?;
+        f.write_str(&format!("{}x{}", self.width(), self.height()))?;
+        f.write_char(')')?;
+        f.write_char('\n')?;
+
         f.write_char('┌')?;
         for _ in self.x_range() {
             f.write_char('─')?;
