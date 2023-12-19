@@ -1,12 +1,10 @@
-/*
-
-*/
 #![feature(test)]
 
-use fxhash::hash64;
 use std::ops::Neg;
 
-use advent_lib::day::{execute_day, ExecutableDay};
+use fxhash::hash64;
+
+use advent_lib::day::*;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};

@@ -1,41 +1,14 @@
-/*
---- Day 11: Cosmic Expansion ---
-
-You continue following signs for "Hot Springs" and eventually come across an observatory. The Elf
-within turns out to be a researcher studying cosmic expansion using the giant telescope here.
-
-He doesn't know anything about the missing machine parts; he's only visiting for this research
-project. However, he confirms that the hot springs are the next-closest area likely to have people;
-he'll even take you straight there once he's done with today's observation analysis.
-
-Maybe you can help him with the analysis to speed things up?
-
-The researcher has collected a bunch of data and compiled the data into a single giant image (your
-puzzle input). The image includes empty space (.) and galaxies (#).
-
-The researcher is trying to figure out the sum of the lengths of the shortest path between every
-pair of galaxies. However, there's a catch: the universe expanded in the time it took the light
-from those galaxies to reach the observatory.
-
-Due to something involving gravitational effects, only some space expands. In fact, the result is
-that any rows or columns that contain no galaxies should all actually be twice as big.
-
-Expand the universe, then find the length of the shortest path between every pair of galaxies.
-What is the sum of these lengths?
-*/
-
 #![feature(test)]
 
-use rayon::prelude::*;
 use std::ops::{Add, Sub};
 
-use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::direction::Direction;
-use advent_lib::direction::Direction::East;
+use rayon::prelude::*;
+
+use advent_lib::day::*;
+use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_macros::FromRepr;
-use Direction::South;
 
 use crate::Space::*;
 

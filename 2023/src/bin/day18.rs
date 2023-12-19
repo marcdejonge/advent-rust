@@ -1,13 +1,10 @@
-/*
-
-*/
 #![feature(test)]
 
 extern crate core;
 
 use prse_derive::parse;
 
-use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::day::*;
 use advent_lib::direction::Direction;
 use Direction::*;
 

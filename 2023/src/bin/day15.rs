@@ -1,10 +1,8 @@
-/*
-
-*/
 #![feature(test)]
 
-use advent_lib::day::{execute_day, ExecutableDay};
 use std::hash::Hasher;
+
+use advent_lib::day::*;
 
 struct Day {
     words: Vec<String>,
