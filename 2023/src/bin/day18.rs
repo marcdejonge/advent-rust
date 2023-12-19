@@ -3,11 +3,19 @@
 */
 #![feature(test)]
 
+extern crate core;
+
 use prse_derive::parse;
 
 use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::direction::Direction;
 use Direction::*;
+
+#[cfg(big)]
+type Number = i128;
+
+#[cfg(not(big))]
+type Number = i64;
 
 struct Day {
     dig_plan1: Vec<DigCommand>,
@@ -17,7 +25,7 @@ struct Day {
 #[derive(Debug)]
 struct DigCommand {
     direction: Direction,
-    steps: i64,
+    steps: Number,
 }
 
 // Simplified from https://www.mathsisfun.com/geometry/area-irregular-polygons.html
@@ -45,7 +53,7 @@ impl ExecutableDay for Day {
         let (dig_plan1, dig_plan2): (Vec<_>, Vec<_>) = lines
             .map(|line| {
                 let (direction, steps, color): (_, _, String) = parse!(line, "{} {} (#{})");
-                let big_steps = i64::from_str_radix(&color[0..5], 16)
+                let big_steps = Number::from_str_radix(&color[0..5], 16)
                     .expect("Expect a valid hexadecimal value {color}");
                 let big_direction = Direction::from(color.chars().last().unwrap() as u8);
                 (

@@ -3,6 +3,9 @@ name = "advent-rust-2023"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+big = []
+
 [dependencies]
 advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
