@@ -1,6 +1,7 @@
 #![feature(test)]
 
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 
 use fxhash::FxHashMap;
 use num::integer::lcm;
@@ -24,18 +25,34 @@ struct State {
     modules: FxHashMap<Key, Module>,
 }
 
+struct Signal {
+    source: Key,
+    target: Key,
+    is_high: bool,
+}
+
+fn signal(source: Key, target: Key, is_high: bool) -> Signal { Signal { source, target, is_high } }
+
+impl Display for Signal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.source.fmt(f)?;
+        if self.is_high {
+            f.write_str(" -high-> ")?;
+        } else {
+            f.write_str(" -low-> ")?;
+        }
+        self.source.fmt(f)?;
+        Ok(())
+    }
+}
+
 impl State {
-    fn handle_incoming_signal(
-        &mut self,
-        previous_key: Key,
-        signal: bool,
-        current_key: Key,
-    ) -> (Option<&Vec<Key>>, bool) {
-        if let Some(module) = self.modules.get_mut(&current_key) {
+    fn handle_incoming_signal(&mut self, signal: &Signal) -> (Option<&Vec<Key>>, bool) {
+        if let Some(module) = self.modules.get_mut(&signal.target) {
             match module {
-                Broadcaster { connections } => (Some(connections), signal),
+                Broadcaster { connections } => (Some(connections), false),
                 FlipFlop { connections, state } => {
-                    if !signal {
+                    if !signal.is_high {
                         *state = !*state;
                         (Some(connections), *state)
                     } else {
@@ -43,7 +60,7 @@ impl State {
                     }
                 }
                 Conjunction { connections, incoming_state } => {
-                    incoming_state.insert(previous_key, signal);
+                    incoming_state.insert(signal.source, signal.is_high);
                     let next_signal = !incoming_state.values().all(|b| *b);
                     (Some(connections), next_signal)
                 }
@@ -55,24 +72,24 @@ impl State {
 
     fn button_press<FL, FH>(&mut self, mut when_low: FL, mut when_high: FH)
     where
-        FL: FnMut(Key, Key),
-        FH: FnMut(Key, Key),
+        FL: FnMut(&Signal),
+        FH: FnMut(&Signal),
     {
         let mut signals = VecDeque::with_capacity(1024);
-        signals.push_back((BUTTON, false, BROADCASTER));
+        signals.push_back(signal(BUTTON, BROADCASTER, false));
 
-        while let Some((from, signal, to)) = signals.pop_front() {
-            if signal {
-                when_high(from, to)
+        while let Some(next_signal) = signals.pop_front() {
+            if next_signal.is_high {
+                when_high(&next_signal)
             } else {
-                when_low(from, to)
+                when_low(&next_signal)
             }
 
-            let (next_modules, next_signal) = self.handle_incoming_signal(from, signal, to);
+            let (next_modules, next_is_high) = self.handle_incoming_signal(&next_signal);
 
             if let Some(next_modules) = next_modules {
                 for next_module in next_modules {
-                    signals.push_back((to, next_signal, *next_module));
+                    signals.push_back(signal(next_signal.target, *next_module, next_is_high));
                 }
             }
         }
@@ -139,7 +156,7 @@ impl ExecutableDay for Day {
         let mut high_count = 0;
 
         for _ in 0..1000 {
-            state.button_press(|_, _| low_count += 1, |_, _| high_count += 1);
+            state.button_press(|_| low_count += 1, |_| high_count += 1);
         }
 
         low_count * high_count
@@ -158,10 +175,12 @@ impl ExecutableDay for Day {
         loop {
             button_pressed += 1;
             state.button_press(
-                |_, _| {},
-                |key, _| {
-                    if triggers.contains(&key) && !found_numbers.contains_key(&key) {
-                        found_numbers.insert(key, button_pressed);
+                |_| {},
+                |signal| {
+                    if triggers.contains(&signal.source)
+                        && !found_numbers.contains_key(&signal.source)
+                    {
+                        found_numbers.insert(signal.source, button_pressed);
                     }
                 },
             );
