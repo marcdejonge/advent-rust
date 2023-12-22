@@ -10,11 +10,13 @@ use advent_lib::grid::Grid;
 use advent_lib::iter_utils::ZipWithNextTrait;
 use advent_lib::lines::LineSegment;
 
+type Line = LineSegment<2, i32>;
+
 struct Day {
     grid: Grid<Place>,
 }
 
-fn draw_line(grid: &mut Grid<Place>, line: LineSegment<i32>, value: Place) {
+fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
     if line.start.x() == line.end.x() {
         let x = line.start.x();
         for y in line.min_y()..=line.max_y() {
@@ -38,7 +40,7 @@ impl ExecutableDay for Day {
     type Output = usize;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let lines: Vec<LineSegment<i32>> = lines
+        let lines: Vec<Line> = lines
             .flat_map(|line: String| {
                 parse!(line, "{: -> :}")
                     .into_iter()
