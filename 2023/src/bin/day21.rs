@@ -15,6 +15,33 @@ struct Day {
     start: Point<2, i32>,
 }
 
+impl Day {
+    fn calculate_far(&self, steps: usize) -> usize {
+        let repeat = self.grid.width() as usize; // Assume that the pattern repeats for the size of the grid
+        let first = steps % repeat; // The steps are out of sync, so we skip the offset
+        if first != self.start.x() as usize && first != self.start.y() as usize {
+            panic!("This solution only works if the offset of the start is similar to the mod of the repeat")
+        }
+        let iterations = steps / repeat;
+
+        if let &[first, second, third] = self
+            .into_iter()
+            .enumerate()
+            .filter(|(round, _)| round % repeat == first)
+            .map(|(_, count)| count)
+            .take(3)
+            .collect::<Vec<usize>>()
+            .as_slice()
+        {
+            let first_diff = second - first;
+            let second_diff = (third - second) - first_diff; // The second order diff is constant
+            (iterations * (iterations - 1) / 2 * second_diff) + (iterations * first_diff) + first
+        } else {
+            0
+        }
+    }
+}
+
 impl<'a> IntoIterator for &'a Day {
     type Item = usize;
     type IntoIter = ExploreIterator<'a>;
@@ -106,28 +133,7 @@ impl ExecutableDay for Day {
 
     fn calculate_part1(&self) -> Self::Output { self.into_iter().within_bounds().nth(64).unwrap() }
 
-    fn calculate_part2(&self) -> Self::Output {
-        const STEPS: usize = 26_501_365;
-        let repeat = self.grid.width() as usize; // Assume that the pattern repeats for the size of the grid
-        let first = STEPS % repeat; // The steps are out of sync, so we skip the offset
-
-        if let &[first, second, third] = self
-            .into_iter()
-            .enumerate()
-            .filter(|(round, _)| round % repeat == first)
-            .map(|(_, count)| count)
-            .take(3)
-            .collect::<Vec<usize>>()
-            .as_slice()
-        {
-            let first_diff = second - first;
-            let second_diff = (third - second) - first_diff; // The second order diff is constant
-            let n = STEPS / repeat;
-            (n * (n - 1) / 2 * second_diff) + (n * first_diff) + first
-        } else {
-            0
-        }
-    }
+    fn calculate_part2(&self) -> Self::Output { self.calculate_far(26_501_365) }
 }
 
 fn main() { execute_day::<Day>() }
