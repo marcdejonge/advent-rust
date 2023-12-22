@@ -5,8 +5,6 @@ use std::str::FromStr;
 use num_traits::{abs, One, Signed};
 use prse::{parse, Parse, ParseError};
 
-use crate::traits::NotEq;
-
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
     pub coords: [T; D],
@@ -235,14 +233,6 @@ impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Vector<D, T> {
     fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
 }
 
-impl<const D: usize, F, T> From<Vector<D, F>> for Vector<D, T>
-where
-    F: Into<T>,
-    (F, T): NotEq,
-{
-    fn from(value: Vector<D, F>) -> Self { Vector { coords: value.coords.map(F::into) } }
-}
-
 impl<const D: usize, T: Mul<Output = T> + One> Vector<D, T> {
     pub fn content_size(self) -> T {
         self.coords.into_iter().fold(T::one(), |acc, next| acc * next)
@@ -326,6 +316,19 @@ where
     {
         let (x, y) = parse!(s, "{},{}");
         Ok(Point { coords: [x, y] })
+    }
+}
+
+impl<'a, T> Parse<'a> for Point<3, T>
+where
+    T: Parse<'a>,
+{
+    fn from_str(s: &'a str) -> Result<Self, ParseError>
+    where
+        Self: Sized,
+    {
+        let (x, y, z) = parse!(s, "{},{},{}");
+        Ok(Point { coords: [x, y, z] })
     }
 }
 

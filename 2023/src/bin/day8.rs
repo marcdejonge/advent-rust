@@ -7,12 +7,11 @@ use rayon::prelude::*;
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::RepeatingIteratorTrait;
-
-type Place = [u8; 3];
+use advent_lib::key::Key;
 
 struct Day {
     instructions: Vec<Turn>,
-    steps: FxHashMap<Place, (Place, Place)>,
+    steps: FxHashMap<Key, (Key, Key)>,
 }
 
 enum Turn {
@@ -20,13 +19,8 @@ enum Turn {
     Right,
 }
 
-const fn parse_code(s: &str) -> Place {
-    let bytes = s.as_bytes();
-    [bytes[0], bytes[1], bytes[2]]
-}
-
 impl Day {
-    fn next_step(&self, curr: Place, turn: &Turn) -> Option<Place> {
+    fn next_step(&self, curr: Key, turn: &Turn) -> Option<Key> {
         let next_steps = self.steps.get(&curr);
         let next = if let Some((left, right)) = next_steps {
             match turn {
@@ -43,7 +37,7 @@ impl Day {
         }
     }
 
-    fn walk(&self, start: Place) -> impl Iterator<Item = Place> + '_ {
+    fn walk(&self, start: Key) -> impl Iterator<Item = Key> + '_ {
         self.instructions.iter().repeat().scan(start, |curr, turn| {
             if let Some(next) = self.next_step(*curr, turn) {
                 *curr = next;
@@ -74,25 +68,25 @@ impl ExecutableDay for Day {
         let mut steps = FxHashMap::default();
         lines.for_each(|line| {
             let (from, left, right) = parse!(line, "{} = ({}, {})");
-            steps.insert(parse_code(from), (parse_code(left), parse_code(right)));
+            steps.insert(from, (left, right));
         });
 
         Day { instructions, steps }
     }
 
     fn calculate_part1(&self) -> Self::Output {
-        let target = parse_code("ZZZ");
-        self.walk(parse_code("AAA")).take_while(|c| c != &target).count() + 1
+        const TARGET: Key = Key::fixed(b"zzz");
+        self.walk(Key::fixed(b"aaa")).take_while(|&c| c != TARGET).count() + 1
     }
 
     fn calculate_part2(&self) -> Self::Output {
         let end_steps: Vec<_> = self
             .steps
             .par_iter()
-            .filter(|(p, _)| p[2] == b'A')
+            .filter(|(p, _)| p.last_char() == b'a')
             .map(|(start, _)| {
                 for (step, place) in self.walk(*start).enumerate() {
-                    if place[2] == b'Z' {
+                    if place.last_char() == b'z' {
                         return step + 1;
                     }
                 }

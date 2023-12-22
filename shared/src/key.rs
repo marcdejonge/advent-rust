@@ -15,29 +15,52 @@ impl Key {
         let mut ix = s.len();
         while ix > 0 {
             ix -= 1;
-            let c = s[ix] - b'a' + 1;
-            value = value * 27 + c as u64;
+            let c = if s[ix].is_ascii_lowercase() {
+                s[ix] - b'a'
+            } else if s[ix].is_ascii_uppercase() {
+                s[ix] - b'A'
+            } else {
+                panic!("Invalid character found")
+            };
+            value = value * 26 + c as u64 + 1;
         }
+        value -= 1;
         Key { value }
     }
+
+    pub const fn last_char(&self) -> u8 { b'a' + (self.value % 26) as u8 }
 }
 
-const OFFSET: u32 = 'a' as u32 - 1;
+const LOW_OFFSET: u64 = 'a' as u64;
+const HIGH_OFFSET: u64 = 'A' as u64;
 
 impl<'a> Parse<'a> for Key {
     fn from_str(s: &'a str) -> Result<Self, ParseError>
     where
         Self: Sized,
     {
-        let mut value: u64 = 0;
-        for c in s.chars().rev() {
-            if !c.is_ascii_lowercase() {
-                return Err(ParseError::new("Invalid character found"));
-            }
-
-            value = value.checked_mul(27).ok_or(ParseError::new("Overflow error"))?
-                + (c as u32 - OFFSET) as u64;
+        if s.is_empty() {
+            ParseError::new("Empty strings are not supported");
         }
+
+        let mut value: u64 = 0;
+        for c in s.chars() {
+            let codepoint = if c.is_ascii_lowercase() {
+                c as u64 - LOW_OFFSET
+            } else if c.is_ascii_uppercase() {
+                c as u64 - HIGH_OFFSET
+            } else {
+                return Err(ParseError::new("Invalid character found"));
+            };
+
+            value = value
+                .checked_mul(26)
+                .ok_or(ParseError::new("Overflow error"))?
+                .checked_add(codepoint)
+                .ok_or(ParseError::new("Overflow error"))?
+                + 1;
+        }
+        value -= 1;
 
         Ok(Key { value })
     }
@@ -52,19 +75,34 @@ impl Debug for Key {
     }
 }
 
+const ADD_OFFSET: u32 = 'a' as u32;
+
 impl Display for Key {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut value = self.value;
+        fn recurse(mut value: u64, f: &mut Formatter) -> std::fmt::Result {
+            if value == 0 {
+                return Ok(());
+            }
 
-        while value > 0 {
-            f.write_char(
-                char::try_from((value % 27) as u32 + OFFSET).map_err(|_| std::fmt::Error)?,
-            )?;
-            value /= 27;
+            value -= 1;
+            let c =
+                char::try_from((value % 26) as u32 + ADD_OFFSET).map_err(|_| std::fmt::Error)?;
+            recurse(value / 26, f)?;
+            f.write_char(c)
         }
 
-        Ok(())
+        recurse(self.value + 1, f)
     }
+}
+
+/// This is to generate readable keys from indices used in an array or vector
+impl From<usize> for Key {
+    fn from(value: usize) -> Self { Key { value: value as u64 } }
+}
+
+/// This is the reverse, to be able to use a key as an index in an array or vector
+impl From<Key> for usize {
+    fn from(key: Key) -> Self { key.value as usize }
 }
 
 #[cfg(test)]
@@ -95,7 +133,14 @@ mod tests {
     fn string_too_long_error() {
         assert_eq!(
             Err(ParseError::Other("Overflow error".to_string())),
-            Key::from_str("abcdefghijklmn")
+            Key::from_str("abcdefghijklmno")
         );
+    }
+
+    #[test]
+    fn predictable_raw_keys() {
+        assert_eq!(Key::from_str("a"), Ok(Key::from(0)));
+        assert_eq!(Key::from_str("ab"), Ok(Key::from(27)));
+        assert_eq!(Key::from_str("columns"), Ok(Key::from(1110829946)));
     }
 }
