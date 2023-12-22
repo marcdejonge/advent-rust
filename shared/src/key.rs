@@ -12,9 +12,8 @@ impl Key {
     /// from_str, so it shouldn't be used in normal parsing.
     pub const fn fixed(s: &'static [u8]) -> Key {
         let mut value: u64 = 0;
-        let mut ix = s.len();
-        while ix > 0 {
-            ix -= 1;
+        let mut ix = 0;
+        while ix < s.len() {
             let c = if s[ix].is_ascii_lowercase() {
                 s[ix] - b'a'
             } else if s[ix].is_ascii_uppercase() {
@@ -23,6 +22,7 @@ impl Key {
                 panic!("Invalid character found")
             };
             value = value * 26 + c as u64 + 1;
+            ix += 1;
         }
         value -= 1;
         Key { value }
@@ -142,5 +142,10 @@ mod tests {
         assert_eq!(Key::from_str("a"), Ok(Key::from(0)));
         assert_eq!(Key::from_str("ab"), Ok(Key::from(27)));
         assert_eq!(Key::from_str("columns"), Ok(Key::from(1110829946)));
+    }
+
+    #[test]
+    fn const_keys_should_match() {
+        assert_eq!(Key::from_str("text"), Ok(Key::fixed(b"text")));
     }
 }
