@@ -2,25 +2,19 @@ use std::fmt::Debug;
 
 use crate::day::ExecutableDay;
 
+#[inline]
 pub fn assert_day<Day: ExecutableDay>(
-    input: &str,
-    expected_part1: Day::Output,
-    expected_part2: Day::Output,
+    input: &Day,
+    calc: fn(&Day) -> Day::Output,
+    expected: Day::Output,
 ) where
     Day::Output: PartialEq + Debug,
 {
-    let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+    let result = calc(input);
     assert_eq!(
-        day.calculate_part1(),
-        expected_part1,
-        "Part 1 was expected to be {:?}",
-        expected_part1
-    );
-    assert_eq!(
-        day.calculate_part2(),
-        expected_part2,
-        "Part 2 was expected to be {:?}",
-        expected_part2
+        result, expected,
+        "Expected output of {:?}, but was {:?}",
+        expected, result
     );
 }
 
@@ -41,7 +35,7 @@ macro_rules! day_test {
             #[test]
             fn part1() {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
-                assert_eq!(day.calculate_part1(), $part1_result);
+                advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
             }
         }
     };
@@ -60,13 +54,13 @@ macro_rules! day_test {
             #[test]
             fn part1() {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
-                assert_eq!(day.calculate_part1(), $part1_result);
+                advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
             }
 
             #[test]
             fn part2() {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
-                assert_eq!(day.calculate_part2(), $part2_result);
+                advent_lib::test_utils::assert_day(&day, Day::calculate_part2, $part2_result);
             }
         }
     };
@@ -82,7 +76,7 @@ macro_rules! day_test {
             fn part1(b: &mut Bencher) {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
                 b.iter(|| {
-                    assert_eq!(day.calculate_part1(), $part1_result);
+                    advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
                 })
             }
         }
@@ -99,7 +93,7 @@ macro_rules! day_test {
             fn part1(b: &mut Bencher) {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
                 b.iter(|| {
-                    assert_eq!(day.calculate_part1(), $part1_result);
+                    advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
                 })
             }
 
@@ -107,7 +101,7 @@ macro_rules! day_test {
             fn part2(b: &mut Bencher) {
                 let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
                 b.iter(|| {
-                    assert_eq!(day.calculate_part2(), $part2_result);
+                    advent_lib::test_utils::assert_day(&day, Day::calculate_part2, $part2_result);
                 })
             }
         }

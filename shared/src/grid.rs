@@ -94,6 +94,16 @@ impl<T> Grid<T> {
         self.items.get(ix)
     }
 
+    fn index_from_location_infinite(&self, location: Location) -> usize {
+        let x = location.x().rem_euclid(self.width()) as usize;
+        let y = location.y().rem_euclid(self.height()) as usize;
+        y * self.width() as usize + x
+    }
+
+    pub fn get_infinite(&self, location: Location) -> &T {
+        self.items.get(self.index_from_location_infinite(location)).unwrap()
+    }
+
     pub fn get_mut(&mut self, location: Location) -> Option<&mut T> {
         let ix = self.index_from_location(location)?;
         self.items.get_mut(ix)
@@ -288,6 +298,21 @@ impl<T> Grid<T> {
         }
 
         count_cells
+    }
+
+    pub fn draw_with_overlay<'a, I>(&self, locations: I, c: char)
+    where
+        I: IntoIterator<Item = &'a Location>,
+        T: Into<char> + Copy,
+    {
+        let mut char_grid: Grid<char> = self.map(|b| (*b).into());
+        for loc in locations {
+            if let Some(cell) = char_grid.get_mut(*loc) {
+                *cell = c;
+            }
+        }
+
+        println!("{char_grid:?}");
     }
 }
 
