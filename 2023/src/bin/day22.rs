@@ -1,18 +1,17 @@
 #![feature(test)]
 
-use bit_set::BitSet;
+use std::collections::VecDeque;
+
 use fxhash::{FxHashMap, FxHashSet};
 use prse_derive::parse;
-use std::collections::hash_map::Entry;
-use std::collections::VecDeque;
 
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::key::Key;
-
 use advent_lib::lines::LineSegment;
 
 type Brick = LineSegment<3, i64>;
+type BrickSet = bit_set::BitSet<usize>;
 
 fn all_xy(brick: &Brick) -> impl Iterator<Item = Point<2, i64>> {
     let x_range = brick.start.x()..=brick.end.x();
@@ -48,7 +47,7 @@ impl Day {
                     height_grid.insert(loc, (max_height + brick_height, index.into()));
                 });
 
-                let supported_by: FxHashSet<_> = high_points
+                let supported_by: FxHashSet<Key> = high_points
                     .iter()
                     .filter(|(h, _)| *h == max_height)
                     .map(|(_, key)| *key)
@@ -56,6 +55,94 @@ impl Day {
                 handle_supported_by(index.into(), supported_by);
             }
         }
+    }
+}
+
+struct BrickSupport {
+    supports: FxHashMap<Key, FxHashSet<Key>>,
+    supported_by: FxHashMap<Key, FxHashSet<Key>>,
+}
+
+impl BrickSupport {
+    fn new(size: usize) -> BrickSupport {
+        let mut supports = FxHashMap::default();
+        let mut supported_by = FxHashMap::default();
+
+        for ix in 0..size {
+            let key = Key::from(ix);
+            supports.insert(key, Default::default());
+            supported_by.insert(key, Default::default());
+        }
+
+        BrickSupport { supports, supported_by }
+    }
+
+    fn register_support(&mut self, key: Key, supported_by: FxHashSet<Key>) {
+        for supported_key in &supported_by {
+            self.supports.get_mut(supported_key).unwrap().insert(key);
+        }
+        self.supported_by.insert(key, supported_by);
+    }
+
+    fn is_supported(&self, key: &Key, dropped_keys: &BrickSet) -> bool {
+        if let Some(supported_by) = self.supported_by.get(key) {
+            supported_by.iter().any(|key| !dropped_keys.contains((*key).into()))
+        } else {
+            false
+        }
+    }
+}
+
+#[derive(Default)]
+struct BrickDropped {
+    // Key -> (dropped bricks, supporting bricks not dropped)
+    bricks: FxHashMap<Key, (BrickSet, BrickSet)>,
+}
+
+impl BrickDropped {
+    fn calc_dropped_bricks(&mut self, support: &BrickSupport, key: &Key) -> usize {
+        if let Some((dropped, _)) = self.bricks.get(key) {
+            return dropped.len() - 1;
+        }
+        // println!("Calculating for {key}");
+
+        let mut dropped_bricks = BrickSet::default();
+        dropped_bricks.reserve_len_exact(support.supports.len());
+        let mut supporting_bricks = BrickSet::default();
+        supporting_bricks.reserve_len_exact(support.supports.len());
+        dropped_bricks.insert((*key).into());
+
+        let mut stack = VecDeque::<Key>::with_capacity(256);
+        if let Some(supports) = support.supports.get(key) {
+            supports.iter().for_each(|support| {
+                stack.push_back((*support).into());
+                supporting_bricks.insert((*support).into());
+            });
+        }
+
+        while let Some(to_drop) = stack.pop_front() {
+            if !support.is_supported(&to_drop, &dropped_bricks) {
+                self.calc_dropped_bricks(support, &to_drop);
+
+                let (next_dropped_bricks, next_supported_bricks) =
+                    self.bricks.get(&to_drop).unwrap();
+                dropped_bricks.union_with(next_dropped_bricks);
+                supporting_bricks.difference_with(next_dropped_bricks);
+
+                for next_supported_brick in next_supported_bricks {
+                    if supporting_bricks.contains(next_supported_brick) {
+                        stack.push_back(next_supported_brick.into())
+                    } else {
+                        supporting_bricks.insert(next_supported_brick);
+                    }
+                }
+            }
+        }
+
+        let count = dropped_bricks.len() - 1;
+        // println!("Saved {count} for {key}:\n{dropped_keys:?}");
+        self.bricks.insert(*key, (dropped_bricks, supporting_bricks));
+        count
     }
 }
 
@@ -69,49 +156,25 @@ impl ExecutableDay for Day {
     }
 
     fn calculate_part1(&self) -> Self::Output {
-        let mut single_support = BitSet::with_capacity(self.starting_bricks.len());
+        let mut single_support = BrickSet::default();
         self.drop_bricks(|_, supported_by| {
             if supported_by.len() == 1 {
-                single_support.insert(usize::from(*supported_by.iter().next().unwrap()));
+                single_support.insert((*supported_by.iter().next().unwrap()).into());
             }
         });
         self.starting_bricks.len() - single_support.len()
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        let mut supports: FxHashMap<Key, FxHashSet<Key>> = Default::default();
-        let mut supported_by: FxHashMap<Key, FxHashSet<Key>> = Default::default();
-
-        self.drop_bricks(|key, supported_keys| {
-            for supported_key in &supported_keys {
-                match supports.entry(*supported_key) {
-                    Entry::Occupied(mut entry) => entry.get_mut().insert(key),
-                    Entry::Vacant(entry) => entry.insert(Default::default()).insert(key),
-                };
-            }
-            supported_by.insert(key, supported_keys);
-        });
+        let mut brick_support = BrickSupport::new(self.starting_bricks.len());
+        let mut bricks_dropped = BrickDropped::default();
+        self.drop_bricks(|key, supported_by| brick_support.register_support(key, supported_by));
 
         (0..self.starting_bricks.len())
+            .rev()
             .map(|index| {
                 let index_key = Key::from(index);
-                let mut dropped_keys = FxHashSet::<Key>::default();
-                let mut stack = VecDeque::<Key>::with_capacity(256);
-                stack.push_back(index_key);
-
-                while let Some(dropped) = stack.pop_front() {
-                    if dropped_keys.insert(dropped) {
-                        if let Some(supported_keys) = supports.get(&dropped) {
-                            for drop in supported_keys {
-                                if supported_by[drop].iter().all(|s| dropped_keys.contains(s)) {
-                                    stack.push_back(*drop);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                dropped_keys.len() - 1 // Don't count the initial dropped one
+                bricks_dropped.calc_dropped_bricks(&brick_support, &index_key)
             })
             .sum()
     }
