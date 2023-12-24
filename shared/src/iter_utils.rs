@@ -232,3 +232,32 @@ where
         }
     }
 }
+
+pub trait SingleTrait<T> {
+    fn single(self) -> Option<T>;
+}
+
+impl<I, T> SingleTrait<T> for I
+where
+    I: Iterator<Item = T>,
+{
+    fn single(mut self) -> Option<T> {
+        if let Some(first) = self.next() {
+            if self.next().is_none() {
+                Some(first)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[test]
+fn check_single() {
+    assert_eq!(None, [1, 2, 3].iter().single());
+    assert_eq!(None, [1, 2].iter().single());
+    assert_eq!(Some(&1), [1].iter().single());
+    assert_eq!(None::<&i32>, [].iter().single());
+}
