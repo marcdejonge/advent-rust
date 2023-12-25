@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::geometry::{unit_vector, vector3, Rect, RectFind};
+use advent_lib::geometry::{unit_vector, vector3, BoundingBox, FindBoundingBox};
 use advent_lib::search::depth_first_search;
 use fxhash::FxBuildHasher;
 use std::collections::HashSet;
@@ -41,13 +41,13 @@ impl ExecutableDay for Day {
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        let rect = self.points.iter().cloned().enclosing_rect().unwrap();
+        let mut rect = self.points.iter().cloned().enclosing_rect().unwrap();
         // Make the rectangle 1 step bigger to make sure we can wrap all the sides
-        let rect = Rect { min: rect.min - unit_vector(), max: rect.max + unit_vector() };
+        rect.expand(unit_vector());
 
         let mut outside_blocks = HashSet::with_capacity_and_hasher(4096, FxBuildHasher::default());
         depth_first_search(
-            rect.min,
+            rect.min_point(),
             |p| DIRECTIONS.iter().map(move |dir| p + *dir),
             |p| {
                 if rect.contains_inclusive(&p)

@@ -1,9 +1,10 @@
+use std::cmp::min;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use num_traits::{abs, One, Signed};
-use prse::{parse, Parse, ParseError};
+use prse::*;
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
@@ -61,6 +62,19 @@ where
     pub fn w(&self) -> T { self.coords[3] }
 }
 
+impl<const D: usize, T> Point<D, T> {
+    pub fn switch_dimensions<const R: usize>(&self) -> Point<R, T>
+    where
+        T: Default + Copy,
+    {
+        let mut result = Point::default();
+        for ix in 0..min(D, R) {
+            result.coords[ix] = self.coords[ix];
+        }
+        result
+    }
+}
+
 pub const fn point2<T>(x: T, y: T) -> Point<2, T> { Point { coords: [x, y] } }
 pub const fn point3<T>(x: T, y: T, z: T) -> Point<3, T> { Point { coords: [x, y, z] } }
 pub const fn point4<T>(w: T, x: T, y: T, z: T) -> Point<4, T> { Point { coords: [w, x, y, z] } }
@@ -85,6 +99,26 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { debug(&self.coords, "Vector", f) }
+}
+
+impl<const D: usize, T> Default for Vector<D, T>
+where
+    T: Default + Copy,
+{
+    fn default() -> Self { Vector { coords: [T::default(); D] } }
+}
+
+impl<const D: usize, T> Vector<D, T> {
+    pub fn switch_dimensions<const R: usize>(&self) -> Vector<R, T>
+    where
+        T: Default + Copy,
+    {
+        let mut result = Vector::default();
+        for ix in 0..min(D, R) {
+            result.coords[ix] = self.coords[ix];
+        }
+        result
+    }
 }
 
 impl<T> Vector<2, T>
@@ -135,7 +169,7 @@ where
     <T as FromStr>::Err: Display,
 {
     let mut coords: [T; D] = [Default::default(); D];
-    for (ix, r) in s.split(',').map(|p| p.parse::<T>()).enumerate() {
+    for (ix, r) in s.split(',').map(|p| p.trim().parse::<T>()).enumerate() {
         match r {
             Ok(c) => {
                 if let Some(coord) = coords.get_mut(ix) {
@@ -227,10 +261,20 @@ impl<const D: usize, T: Sub<Output = T> + Copy> Sub for Vector<D, T> {
     }
 }
 
+// point * const = point
+impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Point<D, T> {
+    type Output = Point<D, T>;
+    fn mul(self, rhs: T) -> Point<D, T> { Point { coords: self.coords.map(|c| c * rhs) } }
+}
+
 // vector * const = vector
 impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Vector<D, T> {
     type Output = Vector<D, T>;
     fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
+}
+
+impl<T: Mul<Output = T> + Sub<Output = T> + Copy> Vector<2, T> {
+    pub fn cross(self, rhs: Vector<2, T>) -> T { rhs.x() * self.y() - self.x() * rhs.y() }
 }
 
 impl<const D: usize, T: Mul<Output = T> + One> Vector<D, T> {
@@ -250,16 +294,59 @@ impl<const D: usize, T> From<Vector<D, T>> for Point<D, T> {
 }
 
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct Rect<const D: usize, T> {
-    pub min: Point<D, T>,
-    pub max: Point<D, T>,
+pub struct BoundingBox<const D: usize, T> {
+    min: Point<D, T>,
+    max: Point<D, T>,
 }
 
-impl<const D: usize, T: Sub<Output = T> + Copy> Rect<D, T> {
+impl<const D: usize, T> BoundingBox<D, T> {
+    pub fn from(first: Point<D, T>, second: Point<D, T>) -> BoundingBox<D, T>
+    where
+        T: PartialOrd + Copy,
+    {
+        let mut min_coords: [T; D] = first.coords;
+        let mut max_coords: [T; D] = second.coords;
+
+        for ix in 0..D {
+            if second.coords[ix] < min_coords[ix] {
+                min_coords[ix] = second.coords[ix];
+            }
+            if first.coords[ix] > max_coords[ix] {
+                max_coords[ix] = first.coords[ix];
+            }
+        }
+
+        BoundingBox { min: Point { coords: min_coords }, max: Point { coords: max_coords } }
+    }
+
+    pub fn expand(&mut self, amount: Vector<D, T>)
+    where
+        T: Copy + Add<Output = T> + Sub<Output = T>,
+    {
+        self.min = self.min - amount;
+        self.max = self.max + amount;
+    }
+
+    pub fn min_point(&self) -> Point<D, T>
+    where
+        T: Copy,
+    {
+        self.min
+    }
+
+    pub fn max_point(&self) -> Point<D, T>
+    where
+        T: Copy,
+    {
+        self.max
+    }
+}
+
+impl<const D: usize, T: Sub<Output = T> + Copy> BoundingBox<D, T> {
     pub fn total_size(&self) -> Vector<D, T> { self.max - self.min }
 }
 
-impl<const D: usize, T> Rect<D, T>
+impl<const D: usize, T> BoundingBox<D, T>
 where
     T: PartialOrd,
 {
@@ -273,16 +360,16 @@ where
     }
 }
 
-pub trait RectFind<const D: usize, T> {
-    fn enclosing_rect(self) -> Option<Rect<D, T>>;
+pub trait FindBoundingBox<const D: usize, T> {
+    fn enclosing_rect(self) -> Option<BoundingBox<D, T>>;
 }
 
-impl<const D: usize, T: PartialOrd, I> RectFind<D, T> for I
+impl<const D: usize, T: PartialOrd, I> FindBoundingBox<D, T> for I
 where
     T: PartialOrd + Copy,
     I: Iterator<Item = Point<D, T>>,
 {
-    fn enclosing_rect(mut self) -> Option<Rect<D, T>> {
+    fn enclosing_rect(mut self) -> Option<BoundingBox<D, T>> {
         let mut min = self.next()?;
         let mut max = min;
 
@@ -302,33 +389,33 @@ where
             }
         }
 
-        Some(Rect { min, max })
+        Some(BoundingBox { min, max })
     }
 }
 
-impl<'a, T> Parse<'a> for Point<2, T>
+impl<'a, const D: usize, T> Parse<'a> for Point<D, T>
 where
-    T: Parse<'a>,
+    T: Default + Copy + FromStr,
+    <T as FromStr>::Err: Display,
 {
     fn from_str(s: &'a str) -> Result<Self, ParseError>
     where
         Self: Sized,
     {
-        let (x, y) = parse!(s, "{},{}");
-        Ok(Point { coords: [x, y] })
+        Ok(Point { coords: parse_coords(s).map_err(ParseError::new)? })
     }
 }
 
-impl<'a, T> Parse<'a> for Point<3, T>
+impl<'a, const D: usize, T> Parse<'a> for Vector<D, T>
 where
-    T: Parse<'a>,
+    T: Default + Copy + FromStr,
+    <T as FromStr>::Err: Display,
 {
     fn from_str(s: &'a str) -> Result<Self, ParseError>
     where
         Self: Sized,
     {
-        let (x, y, z) = parse!(s, "{},{},{}");
-        Ok(Point { coords: [x, y, z] })
+        Ok(Vector { coords: parse_coords(s).map_err(ParseError::new)? })
     }
 }
 
