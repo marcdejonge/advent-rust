@@ -1,6 +1,7 @@
 pub mod day;
 pub mod direction;
 pub mod geometry;
+pub mod graph_utils;
 pub mod grid;
 pub mod iter_utils;
 pub mod key;

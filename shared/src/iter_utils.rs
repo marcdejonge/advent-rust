@@ -1,4 +1,5 @@
 use std::array::from_fn;
+use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem;
@@ -333,4 +334,46 @@ fn check_all_triples() {
         vec![[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]],
         [1, 2, 3, 4].into_iter().combinations().collect::<Vec<_>>()
     );
+}
+
+pub trait TopSelectTrait<T> {
+    fn top<const D: usize>(self, sort_with: impl Fn(&T, &T) -> Ordering) -> Option<[T; D]>;
+}
+
+impl<I, T> TopSelectTrait<T> for I
+where
+    I: Iterator<Item = T>,
+    T: Copy,
+{
+    fn top<const D: usize>(self, sort_with: impl Fn(&T, &T) -> Ordering) -> Option<[T; D]> {
+        let mut top: [Option<T>; D] = from_fn(|_| None);
+        self.for_each(|item| {
+            for test_ix in 0..D {
+                if let Some(stored) = top[test_ix] {
+                    if sort_with(&item, &stored) == Ordering::Greater {
+                        for move_ix in ((test_ix + 1)..D).rev() {
+                            top[move_ix] = top[move_ix - 1];
+                        }
+                        top[test_ix] = Some(item);
+                        break;
+                    }
+                } else {
+                    top[test_ix] = Some(item);
+                    break;
+                }
+            }
+        });
+
+        if top.iter().any(|option| option.is_none()) {
+            None
+        } else {
+            unsafe { Some(top.map(|option| option.unwrap_unchecked())) }
+        }
+    }
+}
+
+#[test]
+fn test_getting_top_results() {
+    assert_eq!(Some([9, 8, 7]), (1..10).top(usize::cmp));
+    assert_eq!(None, (1..3).top::<3>(usize::cmp));
 }
