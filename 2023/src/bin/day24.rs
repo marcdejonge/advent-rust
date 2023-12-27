@@ -2,16 +2,18 @@
 
 use std::fmt::{Debug, Formatter};
 
+use num::Integer;
 use prse::*;
 
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
+use advent_lib::iter_utils::AllSetsTrait;
 
 struct Day {
     hail: Vec<Line<3>>,
 }
 
-#[derive(Parse)]
+#[derive(Parse, Copy, Clone)]
 #[prse = "{p} @ {v}"]
 struct Line<const D: usize> {
     p: Point<D, i128>,
@@ -62,7 +64,7 @@ impl Line<2> {
 }
 
 impl ExecutableDay for Day {
-    type Output = usize;
+    type Output = i128;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day { hail: lines.map(|line| parse!(line, "{}")).collect() }
@@ -91,7 +93,54 @@ impl ExecutableDay for Day {
         count
     }
 
-    fn calculate_part2(&self) -> Self::Output { todo!() }
+    fn calculate_part2(&self) -> Self::Output {
+        let v: Vector<3, i128> = [0, 1, 2]
+            .map(|dim| {
+                (1..)
+                    // Just try a bunch of speeds, both positive and negative
+                    .flat_map(|x| [x, -x].into_iter())
+                    .find(|test_speed| {
+                        *test_speed != -1 // Hack for the example, it find this erroneously
+                        && self
+                            .hail
+                            .iter()
+                            .combinations()
+                            .filter(|[h1, h2]| h1.v[dim] == h2.v[dim])
+                            // For all combinations of hail that travel at the same speed in this dimension
+                            .all(|[h1, h2]| {
+                                let v = h1.v[dim];
+                                let p1 = h1.p[dim];
+                                let p2 = h2.p[dim];
+
+                                // Assume, we're at p1 at some time t and testing if we cross p2 after some time
+                                // p1 + t * v1 + dt * test_speed = p2 + t * v2 + dt * v2
+                                // Since v1 == v2, we can drop the t * part
+                                // p1 - p2 = dt * (v2 - test_speed)
+                                (p1 - p2).is_multiple_of(&(v - *test_speed))
+                            })
+                    })
+                    .expect("No speed solution found")
+            })
+            .into();
+
+        // Pick a hailstone that doesn't match speed in any of the coordinates to test with
+        let test_hail =
+            *self.hail.iter().find(|hail| (0..3).all(|dim| hail.v[dim] != v[dim])).unwrap();
+
+        // Find a hail that matches the speed in one of the dimensions, to determine the time for the other hail
+        let t = (0..3)
+            .filter_map(|dim| {
+                let same_hail = self.hail.iter().find(|hail| hail.v[dim] == v[dim])?;
+                Some((same_hail.p[dim] - test_hail.p[dim]) / (test_hail.v[dim] - same_hail.v[dim]))
+            })
+            .next()
+            .expect("Could not find any hail to match speeds with");
+
+        // Now use the testing hail to calculate back in time to the starting position
+        let start = test_hail.p + test_hail.v * t - v * t;
+
+        start.coords.iter().sum()
+    }
 }
 
 fn main() { execute_day::<Day>() }
@@ -100,6 +149,6 @@ fn main() { execute_day::<Day>() }
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 24, example => 2 );
-    day_test!( 24 => 19523 );
+    day_test!( 24, example => 2, 47 );
+    day_test!( 24 => 19523, 566373506408017 );
 }

@@ -1,3 +1,4 @@
+use std::array::from_fn;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem;
@@ -241,17 +242,7 @@ impl<I, T> SingleTrait<T> for I
 where
     I: Iterator<Item = T>,
 {
-    fn single(mut self) -> Option<T> {
-        if let Some(first) = self.next() {
-            if self.next().is_none() {
-                Some(first)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
+    fn single(mut self) -> Option<T> { self.next().filter(|_| self.next().is_none()) }
 }
 
 #[test]
@@ -260,4 +251,86 @@ fn check_single() {
     assert_eq!(None, [1, 2].iter().single());
     assert_eq!(Some(&1), [1].iter().single());
     assert_eq!(None::<&i32>, [].iter().single());
+}
+
+pub struct AllSetsIterator<const D: usize, I, T> {
+    iters: [I; D],
+    current_values: [Option<T>; D],
+}
+
+impl<const D: usize, I, T> AllSetsIterator<D, I, T>
+where
+    I: Iterator<Item = T> + Clone,
+    T: Clone,
+{
+    fn get_next_item(&mut self, from: usize) -> bool {
+        if let Some(value) = self.iters[from].next() {
+            self.current_values[from] = Some(value);
+            true
+        } else if from > 0 {
+            if self.get_next_item(from - 1) {
+                self.iters[from] = self.iters[from - 1].clone();
+                self.get_next_item(from)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
+pub trait AllSetsTrait<T>
+where
+    Self: Sized,
+{
+    fn combinations<const D: usize>(self) -> AllSetsIterator<D, Self, T>;
+}
+
+impl<I, T> AllSetsTrait<T> for I
+where
+    I: Iterator<Item = T> + Clone,
+    T: Clone,
+{
+    fn combinations<const D: usize>(self) -> AllSetsIterator<D, Self, T> {
+        let mut result =
+            AllSetsIterator { iters: from_fn(|_| self.clone()), current_values: from_fn(|_| None) };
+        for ix in 0..(D - 1) {
+            result.current_values[ix] = result.iters[ix].next();
+            result.iters[ix + 1] = result.iters[ix].clone();
+        }
+        result
+    }
+}
+
+impl<const D: usize, I, T> Iterator for AllSetsIterator<D, I, T>
+where
+    I: Iterator<Item = T> + Clone,
+    T: Clone,
+{
+    type Item = [T; D];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.get_next_item(D - 1) {
+            Some(self.current_values.clone().map(|x| x.unwrap()))
+        } else {
+            None
+        }
+    }
+}
+
+#[test]
+fn check_all_pairs() {
+    assert_eq!(
+        vec![[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]],
+        [1, 2, 3, 4].into_iter().combinations().collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn check_all_triples() {
+    assert_eq!(
+        vec![[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]],
+        [1, 2, 3, 4].into_iter().combinations().collect::<Vec<_>>()
+    );
 }

@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Index, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use num_traits::{abs, One, Signed};
@@ -84,6 +84,13 @@ pub struct Vector<const D: usize, T> {
     pub coords: [T; D],
 }
 
+impl<const D: usize, T, R> From<[T; D]> for Vector<D, R>
+where
+    T: Into<R>,
+{
+    fn from(value: [T; D]) -> Self { Vector { coords: value.map(T::into) } }
+}
+
 impl<const D: usize, T> FromStr for Vector<D, T>
 where
     T: FromStr + Default + Copy,
@@ -119,6 +126,18 @@ impl<const D: usize, T> Vector<D, T> {
         }
         result
     }
+}
+
+impl<const D: usize, T> Index<usize> for Vector<D, T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output { &self.coords[index] }
+}
+
+impl<const D: usize, T> Index<usize> for Point<D, T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output { &self.coords[index] }
 }
 
 impl<T> Vector<2, T>
