@@ -8,10 +8,10 @@ use advent_lib::day::*;
 use advent_lib::direction::Direction;
 use Direction::*;
 
-#[cfg(big)]
+#[cfg(feature = "big")]
 type Number = i128;
 
-#[cfg(not(big))]
+#[cfg(not(feature = "big"))]
 type Number = i64;
 
 struct Day {

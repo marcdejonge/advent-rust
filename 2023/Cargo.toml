@@ -9,14 +9,11 @@ big = []
 [dependencies]
 advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
-lazy_static = "1.4.0"
-bit-set = "0.5.3"
+bit-set = "0.8.0"
 fxhash = "0.2.1"
-rusttype = "0.9.3"
-num = "0.4.1"
-num-traits = "0.2.15"
-prse = "1.0.3"
-prse-derive = "1.0.1"
-rayon = "1.8.0"
-enum-map = "2.7.0"
-petgraph = "0.6.4"
+num = "0.4.3"
+prse = "1.2.1"
+prse-derive = "1.1.2"
+rayon = "1.10.0"
+enum-map = "2.7.3"
+petgraph = "0.6.5"

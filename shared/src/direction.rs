@@ -85,3 +85,14 @@ impl Neg for Direction {
         }
     }
 }
+
+impl From<Direction> for usize {
+    fn from(value: Direction) -> Self {
+        match value {
+            North => 3,
+            East => 0,
+            South => 1,
+            West => 2,
+        }
+    }
+}

@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::geometry::{unit_vector, vector3, BoundingBox, FindBoundingBox};
+use advent_lib::geometry::{unit_vector, vector3, FindBoundingBox};
 use advent_lib::search::depth_first_search;
 use fxhash::FxBuildHasher;
 use std::collections::HashSet;

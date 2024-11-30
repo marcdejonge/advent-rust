@@ -4,12 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-advent-macros = { path = "../macros" }
-num-format = "0.4.3"
-priority-queue = "1.3.1"
-fxhash = "0.2.1"
-rusttype = "0.9.3"
-num-traits = "0.2.15"
-prse = "1.0.3"
-nom = "7.1.3"
-petgraph = "0.6.4"
+num-format = "0.4"
+priority-queue = "2"
+fxhash = "0.2"
+num-traits = "0.2"
+prse = "1"
+petgraph = "0.6"
