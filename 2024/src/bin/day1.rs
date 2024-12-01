@@ -1,15 +1,42 @@
 #![feature(test)]
 
 use advent_lib::day::*;
+use fxhash::FxHashMap;
 
-struct Day;
+struct Day {
+    left: Vec<i32>,
+    right: Vec<i32>,
+}
+
+impl Day {
+    fn new() -> Self { Day { left: Vec::new(), right: Vec::new() } }
+}
 
 impl ExecutableDay for Day {
-    type Output = u32;
+    type Output = i32;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self { Day }
-    fn calculate_part1(&self) -> Self::Output { 0 }
-    fn calculate_part2(&self) -> Self::Output { 0 }
+    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
+        let mut day = Day::new();
+
+        for line in lines {
+            let mut split = line.split("   ");
+            day.left.push(split.next().unwrap().parse().unwrap());
+            day.right.push(split.next().unwrap().parse().unwrap());
+        }
+
+        day.left.sort();
+        day.right.sort();
+
+        day
+    }
+    fn calculate_part1(&self) -> Self::Output {
+        self.left.iter().zip(self.right.iter()).map(|(l, r)| (l - r).abs()).sum()
+    }
+    fn calculate_part2(&self) -> Self::Output {
+        let mut map = FxHashMap::default();
+        self.right.iter().for_each(|r| *map.entry(r).or_insert(0) += 1);
+        self.left.iter().map(|l| map.get(l).unwrap_or(&0) * l).sum()
+    }
 }
 
 fn main() { execute_day::<Day>() }
@@ -18,7 +45,6 @@ fn main() { execute_day::<Day>() }
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 1, example1 => 1, 1 );
-    day_test!( 1, example2 => 1, 1 );
-    day_test!( 1 => 1, 1);
+    day_test!( 1, example1 => 11, 31 );
+    day_test!( 1 => 1889772, 23228917);
 }

@@ -64,6 +64,7 @@ name = "advent-rust-2024"
 version = "0.1.0"
 dependencies = [
  "advent-lib",
+ "fxhash",
 ]
 
 [[package]]
