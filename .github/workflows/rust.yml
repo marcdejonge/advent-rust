@@ -7,10 +7,6 @@ env:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        directory: [ "shared", "2022", "2023", "2024" ]
-
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +15,10 @@ jobs:
         run: rustup update nightly && rustup default nightly
       - name: Setup Rust Cache
         uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: ${{ matrix.directory }}
       - name: Run tests
         run: cargo test -- -Z unstable-options --format json --report-time | tee results.json
-        working-directory: ${{ matrix.directory }}
-      - name: Generate report
-        uses: innoq/action-cargo-test-report@v1
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
         with:
-          cargo-test-report-json: "${{ matrix.directory }}/results.json"
+          name: test-results
+          path: results.json
