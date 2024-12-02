@@ -19,7 +19,7 @@ impl ExecutableDay for Day {
         let mut day = Day::new();
 
         for line in lines {
-            let mut split = line.split("   ");
+            let mut split = line.split_whitespace();
             day.left.push(split.next().unwrap().parse().unwrap());
             day.right.push(split.next().unwrap().parse().unwrap());
         }
