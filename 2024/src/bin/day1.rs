@@ -2,10 +2,11 @@
 
 use advent_lib::day::*;
 use fxhash::FxHashMap;
+use rayon::prelude::*;
 
 struct Day {
-    left: Vec<i32>,
-    right: Vec<i32>,
+    left: Vec<i64>,
+    right: Vec<i64>,
 }
 
 impl Day {
@@ -13,7 +14,7 @@ impl Day {
 }
 
 impl ExecutableDay for Day {
-    type Output = i32;
+    type Output = i64;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         let mut day = Day::new();
@@ -35,7 +36,7 @@ impl ExecutableDay for Day {
     fn calculate_part2(&self) -> Self::Output {
         let mut map = FxHashMap::default();
         self.right.iter().for_each(|r| *map.entry(r).or_insert(0) += 1);
-        self.left.iter().map(|l| map.get(l).unwrap_or(&0) * l).sum()
+        self.left.par_iter().map(|l| map.get(l).unwrap_or(&0) * l).sum()
     }
 }
 
