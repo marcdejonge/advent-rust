@@ -7,7 +7,7 @@ use advent_lib::day::{execute_day, ExecutableDay};
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
-use advent_lib::iter_utils::ZipWithNextTrait;
+use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::lines::LineSegment;
 
 type Line = LineSegment<2, i32>;
@@ -44,7 +44,7 @@ impl ExecutableDay for Day {
             .flat_map(|line: String| {
                 parse!(line, "{: -> :}")
                     .into_iter()
-                    .zip_with_next::<Point<2, _>>()
+                    .zip_with_next()
                     .map(|(start, end)| LineSegment { start, end })
             })
             .collect();

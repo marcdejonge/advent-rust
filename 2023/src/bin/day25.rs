@@ -8,7 +8,7 @@ use prse_derive::parse;
 
 use advent_lib::day::*;
 use advent_lib::graph_utils::dijkstra_explore;
-use advent_lib::iter_utils::TopSelectTrait;
+use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
 
 struct Day {

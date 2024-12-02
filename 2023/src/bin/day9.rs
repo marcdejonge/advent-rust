@@ -4,7 +4,7 @@
 use rayon::prelude::*;
 
 use advent_lib::day::*;
-use advent_lib::iter_utils::ZipWithNextTrait;
+use advent_lib::iter_utils::IteratorUtils;
 
 struct Day {
     input: Vec<Vec<i64>>,

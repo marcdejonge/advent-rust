@@ -7,7 +7,7 @@ use prse::*;
 
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
-use advent_lib::iter_utils::AllSetsTrait;
+use advent_lib::iter_utils::IteratorUtils;
 
 struct Day {
     hail: Vec<Line<3>>,

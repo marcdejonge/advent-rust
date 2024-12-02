@@ -6,7 +6,7 @@ use prse_derive::parse;
 use rayon::prelude::*;
 
 use advent_lib::day::*;
-use advent_lib::iter_utils::RepeatingIteratorTrait;
+use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
 
 struct Day {

@@ -6,30 +6,166 @@ use std::mem;
 
 use fxhash::FxHashMap;
 
-pub struct Chunked<I, T>
+pub trait IteratorUtils: Iterator {
+    fn chunk_by(self, split_item: Self::Item) -> impl Iterator<Item = Vec<Self::Item>>
+    where
+        Self: Sized,
+        Self::Item: Eq,
+    {
+        Chunked { iter: self, match_item: split_item }
+    }
+
+    fn repeat(self) -> impl Iterator<Item = Self::Item>
+    where
+        Self: Sized + Clone,
+    {
+        RepeatingIterator { current: self.clone(), source: self }
+    }
+
+    fn zip_with_next(self) -> impl Iterator<Item = (Self::Item, Self::Item)>
+    where
+        Self: Sized,
+        Self::Item: Clone,
+    {
+        ZipWithNext { iter: self, last_result: None }
+    }
+
+    fn counts_fx(self) -> FxHashMap<Self::Item, usize>
+    where
+        Self: Sized,
+        Self::Item: Eq + Hash,
+    {
+        let mut counts = FxHashMap::default();
+        self.for_each(|item| *counts.entry(item).or_insert(0) += 1);
+        counts
+    }
+
+    #[inline]
+    fn take_n<const N: usize>(mut self) -> [Self::Item; N]
+    where
+        Self: Sized,
+        Self::Item: Default + Copy,
+    {
+        let mut result: [Self::Item; N] = [Default::default(); N];
+        for ix in 0..N {
+            result[ix] = self.next().unwrap();
+        }
+        result
+    }
+
+    fn max_n<const N: usize>(self) -> [Self::Item; N]
+    where
+        Self: Sized,
+        Self::Item: Default + Copy + PartialOrd + Debug,
+    {
+        let mut result: [Self::Item; N] = [Default::default(); N];
+
+        for item in self {
+            if item > result[N - 1] {
+                result[N - 1] = item;
+                for ix in (0..(N - 1)).rev() {
+                    if item > result[ix] {
+                        result[ix + 1] = result[ix];
+                        result[ix] = item;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    fn single(mut self) -> Option<Self::Item>
+    where
+        Self: Sized,
+    {
+        self.next().filter(|_| self.next().is_none())
+    }
+
+    fn combinations<const D: usize>(self) -> impl Iterator<Item = [Self::Item; D]>
+    where
+        Self: Sized + Clone,
+        Self::Item: Clone,
+    {
+        let mut result =
+            AllSetsIterator { iters: from_fn(|_| self.clone()), current_values: from_fn(|_| None) };
+        for ix in 0..(D - 1) {
+            result.current_values[ix] = result.iters[ix].next();
+            result.iters[ix + 1] = result.iters[ix].clone();
+        }
+        result
+    }
+
+    fn top<const D: usize>(
+        self,
+        sort_with: impl Fn(&Self::Item, &Self::Item) -> Ordering,
+    ) -> Option<[Self::Item; D]>
+    where
+        Self: Sized,
+        Self::Item: Clone,
+    {
+        let mut top: [Option<Self::Item>; D] = from_fn(|_| None);
+        self.for_each(|item| {
+            for test_ix in 0..D {
+                if let Some(stored) = top[test_ix].clone() {
+                    if sort_with(&item, &stored) == Ordering::Greater {
+                        for move_ix in ((test_ix + 1)..D).rev() {
+                            top[move_ix] = top[move_ix - 1].clone();
+                        }
+                        top[test_ix] = Some(item);
+                        break;
+                    }
+                } else {
+                    top[test_ix] = Some(item);
+                    break;
+                }
+            }
+        });
+
+        if top.iter().any(|option| option.is_none()) {
+            None
+        } else {
+            unsafe { Some(top.map(|option| option.unwrap_unchecked())) }
+        }
+    }
+
+    fn find_cyclic_result_at<S, T>(mut self, target_index: usize) -> Option<T>
+    where
+        Self: Sized + Iterator<Item = (S, T)>,
+        S: Eq + Hash,
+        T: PartialEq + Clone + Debug,
+    {
+        let mut results = Vec::<T>::with_capacity(512);
+        let mut states = FxHashMap::<S, usize>::default();
+
+        loop {
+            let (state, result) = self.next()?;
+            results.push(result);
+
+            if let Some(last_length) = states.get(&state) {
+                // Found same state, we can determine the location of previous
+                let cycle_size = results.len() - last_length;
+                let steps_needed = target_index - results.len();
+                let cycles = steps_needed / cycle_size;
+                let index = target_index - (cycles * cycle_size) - cycle_size;
+                return Some(results[index - 1].clone());
+            }
+
+            states.insert(state, results.len());
+        }
+    }
+}
+
+impl<T> IteratorUtils for T where T: Iterator + ?Sized {}
+
+struct Chunked<I, T>
 where
     I: Iterator<Item = T>,
 {
     iter: I,
     match_item: T,
-}
-
-pub trait ChunkedTrait {
-    fn chunk_by<T>(self, split_item: T) -> Chunked<Self, T>
-    where
-        Self: Iterator<Item = T> + Sized;
-}
-
-impl<I> ChunkedTrait for I
-where
-    I: Iterator,
-{
-    fn chunk_by<T>(self, split_item: T) -> Chunked<Self, T>
-    where
-        Self: Iterator<Item = T> + Sized,
-    {
-        Chunked { iter: self, match_item: split_item }
-    }
 }
 
 impl<I, T> Iterator for Chunked<I, T>
@@ -59,30 +195,12 @@ where
 }
 
 // implementation to generate .zip_with_next() function for all iterators
-pub struct ZipWithNext<I, T>
+struct ZipWithNext<I, T>
 where
     I: Iterator<Item = T>,
 {
     iter: I,
     last_result: Option<T>,
-}
-
-pub trait ZipWithNextTrait {
-    fn zip_with_next<T>(self) -> ZipWithNext<Self, T>
-    where
-        Self: Iterator<Item = T> + Sized;
-}
-
-impl<I> ZipWithNextTrait for I
-where
-    I: Iterator,
-{
-    fn zip_with_next<T>(self) -> ZipWithNext<Self, T>
-    where
-        Self: Iterator<Item = T>,
-    {
-        ZipWithNext { iter: self, last_result: None }
-    }
 }
 
 impl<I, T> Iterator for ZipWithNext<I, T>
@@ -107,30 +225,12 @@ where
     }
 }
 
-pub struct RepeatingIterator<I, T>
+struct RepeatingIterator<I, T>
 where
     I: Iterator<Item = T> + Clone,
 {
     source: I,
     current: I,
-}
-
-pub trait RepeatingIteratorTrait {
-    fn repeat<T>(self) -> RepeatingIterator<Self, T>
-    where
-        Self: Iterator<Item = T> + Clone + Sized;
-}
-
-impl<I> RepeatingIteratorTrait for I
-where
-    I: Iterator + Clone + Sized,
-{
-    fn repeat<T>(self) -> RepeatingIterator<Self, T>
-    where
-        I: Iterator<Item = T>,
-    {
-        RepeatingIterator { current: self.clone(), source: self }
-    }
 }
 
 impl<I, T> Iterator for RepeatingIterator<I, T>
@@ -152,7 +252,7 @@ where
 
 #[cfg(test)]
 mod zip_with_next_tests {
-    use super::*;
+    use super::IteratorUtils;
 
     #[test]
     fn test_normal_behavior() {
@@ -173,77 +273,11 @@ mod zip_with_next_tests {
     fn single_item() { assert_eq!([1].iter().zip_with_next().collect::<Vec<_>>(), vec![]) }
 }
 
-pub fn max_n<const N: usize, T>(it: impl Iterator<Item = T>) -> [T; N]
-where
-    T: Default + Copy + PartialOrd + Debug,
-{
-    let mut result: [T; N] = [Default::default(); N];
-
-    for item in it {
-        if item > result[N - 1] {
-            result[N - 1] = item;
-            for ix in (0..(N - 1)).rev() {
-                if item > result[ix] {
-                    result[ix + 1] = result[ix];
-                    result[ix] = item;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    result
-}
-
 #[test]
 fn test_max_n() {
-    assert_eq!(max_n(0..100), [99, 98, 97]);
-    assert_eq!(max_n((0..100).step_by(5)), [95, 90]);
-    assert_eq!(max_n((0..100).step_by(5).rev()), [95, 90, 85, 80]);
-}
-
-pub trait DetectingCycleTrait<T> {
-    fn find_cyclic_result_at(self, target_index: usize) -> Option<T>;
-}
-
-impl<I, S, T> DetectingCycleTrait<T> for I
-where
-    I: Iterator<Item = (S, T)> + Sized,
-    S: Eq + Hash,
-    T: PartialEq + Clone + Debug,
-{
-    fn find_cyclic_result_at(mut self, target_index: usize) -> Option<T> {
-        let mut results = Vec::<T>::with_capacity(512);
-        let mut states = FxHashMap::<S, usize>::default();
-
-        loop {
-            let (state, result) = self.next()?;
-            results.push(result);
-
-            if let Some(last_length) = states.get(&state) {
-                // Found same state, we can determine the location of previous
-                let cycle_size = results.len() - last_length;
-                let steps_needed = target_index - results.len();
-                let cycles = steps_needed / cycle_size;
-                let index = target_index - (cycles * cycle_size) - cycle_size;
-                return Some(results[index - 1].clone());
-            }
-
-            states.insert(state, results.len());
-        }
-    }
-}
-
-pub trait SingleTrait<T> {
-    fn single(self) -> Option<T>;
-}
-
-impl<I, T> SingleTrait<T> for I
-where
-    I: Iterator<Item = T>,
-{
-    fn single(mut self) -> Option<T> { self.next().filter(|_| self.next().is_none()) }
+    assert_eq!((0..100).max_n(), [99, 98, 97]);
+    assert_eq!((0..100).step_by(5).max_n(), [95, 90]);
+    assert_eq!((0..100).step_by(5).rev().max_n(), [95, 90, 85, 80]);
 }
 
 #[test]
@@ -254,7 +288,7 @@ fn check_single() {
     assert_eq!(None::<&i32>, [].iter().single());
 }
 
-pub struct AllSetsIterator<const D: usize, I, T> {
+struct AllSetsIterator<const D: usize, I, T> {
     iters: [I; D],
     current_values: [Option<T>; D],
 }
@@ -278,29 +312,6 @@ where
         } else {
             false
         }
-    }
-}
-
-pub trait AllSetsTrait<T>
-where
-    Self: Sized,
-{
-    fn combinations<const D: usize>(self) -> AllSetsIterator<D, Self, T>;
-}
-
-impl<I, T> AllSetsTrait<T> for I
-where
-    I: Iterator<Item = T> + Clone,
-    T: Clone,
-{
-    fn combinations<const D: usize>(self) -> AllSetsIterator<D, Self, T> {
-        let mut result =
-            AllSetsIterator { iters: from_fn(|_| self.clone()), current_values: from_fn(|_| None) };
-        for ix in 0..(D - 1) {
-            result.current_values[ix] = result.iters[ix].next();
-            result.iters[ix + 1] = result.iters[ix].clone();
-        }
-        result
     }
 }
 
@@ -334,42 +345,6 @@ fn check_all_triples() {
         vec![[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]],
         [1, 2, 3, 4].into_iter().combinations().collect::<Vec<_>>()
     );
-}
-
-pub trait TopSelectTrait<T> {
-    fn top<const D: usize>(self, sort_with: impl Fn(&T, &T) -> Ordering) -> Option<[T; D]>;
-}
-
-impl<I, T> TopSelectTrait<T> for I
-where
-    I: Iterator<Item = T>,
-    T: Copy,
-{
-    fn top<const D: usize>(self, sort_with: impl Fn(&T, &T) -> Ordering) -> Option<[T; D]> {
-        let mut top: [Option<T>; D] = from_fn(|_| None);
-        self.for_each(|item| {
-            for test_ix in 0..D {
-                if let Some(stored) = top[test_ix] {
-                    if sort_with(&item, &stored) == Ordering::Greater {
-                        for move_ix in ((test_ix + 1)..D).rev() {
-                            top[move_ix] = top[move_ix - 1];
-                        }
-                        top[test_ix] = Some(item);
-                        break;
-                    }
-                } else {
-                    top[test_ix] = Some(item);
-                    break;
-                }
-            }
-        });
-
-        if top.iter().any(|option| option.is_none()) {
-            None
-        } else {
-            unsafe { Some(top.map(|option| option.unwrap_unchecked())) }
-        }
-    }
 }
 
 #[test]

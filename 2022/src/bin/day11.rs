@@ -1,6 +1,6 @@
 #![feature(test)]
 use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::iter_utils::{max_n, ChunkedTrait};
+use advent_lib::iter_utils::IteratorUtils;
 use std::cell::RefCell;
 
 struct Day {
@@ -152,7 +152,7 @@ impl Day {
             }
         }
 
-        let [first, second] = max_n(calc_monkeys.iter().map(|m| m.borrow().inspected_items));
+        let [first, second] = calc_monkeys.iter().map(|m| m.borrow().inspected_items).max_n();
         first * second
     }
 }

@@ -1,42 +1,40 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use fxhash::FxHashMap;
+use advent_lib::iter_utils::IteratorUtils;
+use itertools::Itertools;
 use rayon::prelude::*;
 
-struct Day {
-    left: Vec<i64>,
-    right: Vec<i64>,
-}
+type NR = i64;
 
-impl Day {
-    fn new() -> Self { Day { left: Vec::new(), right: Vec::new() } }
+#[derive(Debug)]
+struct Day {
+    left: Vec<NR>,
+    right: Vec<NR>,
 }
 
 impl ExecutableDay for Day {
-    type Output = i64;
+    type Output = NR;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut day = Day::new();
-
-        for line in lines {
-            let mut split = line.split_whitespace();
-            day.left.push(split.next().unwrap().parse().unwrap());
-            day.right.push(split.next().unwrap().parse().unwrap());
-        }
-
-        day.left.sort();
-        day.right.sort();
-
-        day
+        let (mut left, mut right): (Vec<NR>, Vec<NR>) = lines
+            .map(|line| {
+                line.split_whitespace()
+                    .map(|s| s.parse::<NR>().unwrap())
+                    .collect_tuple()
+                    .unwrap()
+            })
+            .unzip();
+        left.sort();
+        right.sort();
+        Day { left, right }
     }
     fn calculate_part1(&self) -> Self::Output {
         self.left.iter().zip(self.right.iter()).map(|(l, r)| (l - r).abs()).sum()
     }
     fn calculate_part2(&self) -> Self::Output {
-        let mut map = FxHashMap::default();
-        self.right.iter().for_each(|r| *map.entry(r).or_insert(0) += 1);
-        self.left.par_iter().map(|l| map.get(l).unwrap_or(&0) * l).sum()
+        let map = self.right.iter().counts_fx();
+        self.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as NR * l).sum()
     }
 }
 

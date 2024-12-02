@@ -9,7 +9,7 @@ use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
-use advent_lib::iter_utils::ZipWithNextTrait;
+use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::FromRepr;
 
 use crate::Cell::*;
