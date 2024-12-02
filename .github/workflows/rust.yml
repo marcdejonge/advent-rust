@@ -16,9 +16,4 @@ jobs:
       - name: Setup Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Run tests
-        run: cargo test -- -Z unstable-options --format json --report-time | tee results.json
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: results.json
+        run: cargo test --tests --no-fail-fast
