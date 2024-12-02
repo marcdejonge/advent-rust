@@ -12,16 +12,25 @@ struct Day {
 const UP: RangeInclusive<i32> = 1..=3;
 const DOWN: RangeInclusive<i32> = -3..=-1;
 
-fn is_safe(report: &&Vec<i32>) -> bool {
+fn find_unsafe_index(report: &&Vec<i32>) -> Option<usize> {
     if report.len() < 2 {
-        return true;
+        return None;
     }
-    let mut diffs = report.iter().zip_with_next().map(|(a, b)| b - a);
+    let mut diffs = report.iter().zip_with_next().map(|(a, b)| b - a).enumerate();
     match diffs.next().unwrap() {
-        s if UP.contains(&s) => diffs.all(|d| UP.contains(&d)),
-        s if DOWN.contains(&s) => diffs.all(|d| DOWN.contains(&d)),
-        _ => false,
+        (_, s) if UP.contains(&s) => diffs.find(|(_, d)| !UP.contains(&d)).map(|(ix, _)| ix),
+        (_, s) if DOWN.contains(&s) => diffs.find(|(_, d)| !DOWN.contains(&d)).map(|(ix, _)| ix),
+        _ => Some(0),
     }
+}
+
+fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
+    report
+        .iter()
+        .enumerate()
+        .filter(|(ix, _)| ix != &remove_ix)
+        .map(|(_, nr)| *nr)
+        .collect()
 }
 
 impl ExecutableDay for Day {
@@ -34,28 +43,24 @@ impl ExecutableDay for Day {
                 .collect(),
         }
     }
-    fn calculate_part1(&self) -> Self::Output { self.reports.par_iter().filter(is_safe).count() }
+    fn calculate_part1(&self) -> Self::Output {
+        self.reports
+            .par_iter()
+            .filter(|report| find_unsafe_index(report) == None)
+            .count()
+    }
     fn calculate_part2(&self) -> Self::Output {
         self.reports
             .par_iter()
-            .filter(|report| {
-                if is_safe(report) {
-                    return true;
+            .filter(|report| match find_unsafe_index(report) {
+                None => true,
+                Some(remove_ix) => {
+                    // Either the first or second number can be removed
+                    find_unsafe_index(&&remove_index(report, remove_ix)) == None
+                        || find_unsafe_index(&&remove_index(report, remove_ix + 1)) == None
+                        // Or if it finds it at the beginning, the start might be wrong
+                        || (remove_ix == 1 && find_unsafe_index(&&remove_index(report, 0)) == None)
                 }
-
-                for remove_ix in 0..report.len() {
-                    let report: Vec<i32> = report
-                        .iter()
-                        .enumerate()
-                        .filter(|(ix, _)| ix != &remove_ix)
-                        .map(|(_, nr)| *nr)
-                        .collect();
-                    if is_safe(&&report) {
-                        return true;
-                    }
-                }
-
-                false
             })
             .count()
     }
