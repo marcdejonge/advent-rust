@@ -52,17 +52,15 @@ impl ExecutableDay for Day {
             .sum()
     }
     fn calculate_part2(&self) -> Self::Output {
-        let mut sum = 0;
-        let mut enabled = true;
-        for command in &self.commands {
-            match command {
-                Command::Mul(a, b) if enabled => sum += a * b,
-                Command::Do => enabled = true,
-                Command::Dont => enabled = false,
-                _ => {}
-            }
-        }
-        sum
+        self.commands
+            .iter()
+            .fold((0, true), |(sum, enabled), command| match command {
+                Command::Mul(a, b) if enabled => (sum + a * b, enabled),
+                Command::Do => (sum, true),
+                Command::Dont => (sum, false),
+                _ => (sum, enabled),
+            })
+            .0
     }
 }
 
