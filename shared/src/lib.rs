@@ -6,6 +6,7 @@ pub mod grid;
 pub mod iter_utils;
 pub mod key;
 pub mod lines;
+pub mod parsing;
 pub mod rgb;
 pub mod search;
 pub mod test_utils;
