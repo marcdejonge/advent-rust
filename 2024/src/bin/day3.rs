@@ -48,11 +48,7 @@ impl ExecutableDay for Day {
     fn calculate_part1(&self) -> Self::Output {
         self.commands
             .iter()
-            .map(|command| match command {
-                Command::Mul(a, b) => a * b,
-                Command::Do => 0,
-                Command::Dont => 0,
-            })
+            .map(|command| if let Command::Mul(a, b) = command { a * b } else { 0 })
             .sum()
     }
     fn calculate_part2(&self) -> Self::Output {
