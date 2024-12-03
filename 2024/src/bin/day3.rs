@@ -3,20 +3,23 @@
 use advent_lib::day::*;
 use advent_lib::parsing::find_many;
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while};
+use nom::bytes::complete::{tag, take_while_m_n};
 use nom::combinator::{map, map_res};
 use nom::sequence::{delimited, separated_pair};
 use nom::IResult;
 
 #[derive(Debug, PartialEq, Eq)]
 enum Command {
-    Mul(i32, i32),
+    Mul(i64, i64),
     Do,
     Dont,
 }
 
-fn number_parser(input: &str) -> IResult<&str, i32> {
-    map_res(take_while(|c: char| c.is_ascii_digit()), str::parse)(input)
+fn number_parser(input: &str) -> IResult<&str, i64> {
+    map_res(
+        take_while_m_n(1, 3, |c: char| c.is_ascii_digit()),
+        str::parse,
+    )(input)
 }
 
 fn command_parser(input: &str) -> IResult<&str, Command> {
@@ -40,7 +43,7 @@ struct Day {
 }
 
 impl ExecutableDay for Day {
-    type Output = i32;
+    type Output = i64;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day { commands: lines.flat_map(|line| find_many(command_parser, &line)).collect() }
