@@ -144,8 +144,8 @@ impl<T> Vector<2, T>
 where
     T: Copy,
 {
-    pub fn x(&self) -> T { self.coords[0] }
-    pub fn y(&self) -> T { self.coords[1] }
+    pub const fn x(&self) -> T { self.coords[0] }
+    pub const fn y(&self) -> T { self.coords[1] }
 
     pub fn euler(&self) -> T
     where
@@ -159,19 +159,19 @@ impl<T> Vector<3, T>
 where
     T: Copy,
 {
-    pub fn x(&self) -> T { self.coords[0] }
-    pub fn y(&self) -> T { self.coords[1] }
-    pub fn z(&self) -> T { self.coords[2] }
+    pub const fn x(&self) -> T { self.coords[0] }
+    pub const fn y(&self) -> T { self.coords[1] }
+    pub const fn z(&self) -> T { self.coords[2] }
 }
 
 impl<T> Vector<4, T>
 where
     T: Copy,
 {
-    pub fn x(&self) -> T { self.coords[0] }
-    pub fn y(&self) -> T { self.coords[1] }
-    pub fn z(&self) -> T { self.coords[2] }
-    pub fn w(&self) -> T { self.coords[3] }
+    pub const fn x(&self) -> T { self.coords[0] }
+    pub const fn y(&self) -> T { self.coords[1] }
+    pub const fn z(&self) -> T { self.coords[2] }
+    pub const fn w(&self) -> T { self.coords[3] }
 }
 
 pub const fn vector2<T>(x: T, y: T) -> Vector<2, T> { Vector { coords: [x, y] } }

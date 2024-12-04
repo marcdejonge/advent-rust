@@ -9,9 +9,9 @@ pub struct Grid<T> {
     size: Size,
 }
 
-type Location = Point<2, i32>;
+pub type Location = Point<2, i32>;
 
-type Size = Vector<2, i32>;
+pub type Size = Vector<2, i32>;
 
 impl From<(Size, usize)> for Location {
     fn from(value: (Size, usize)) -> Self {
