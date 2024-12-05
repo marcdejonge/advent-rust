@@ -1,4 +1,6 @@
-use nom::{InputLength, InputTake, Parser};
+use nom::character::complete::digit1;
+use nom::combinator::map_res;
+use nom::{IResult, InputLength, InputTake, Parser};
 
 #[inline]
 pub fn find_many<Input, Output, Error, ParseFunction>(
@@ -21,6 +23,11 @@ where
         }
     }
     res
+}
+
+#[inline]
+pub fn parse_u32(input: &str) -> IResult<&str, u32> {
+    map_res(digit1, |s: &str| s.parse::<u32>())(input)
 }
 
 #[cfg(test)]
