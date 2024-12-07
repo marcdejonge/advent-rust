@@ -30,6 +30,11 @@ pub fn parse_u32(input: &str) -> IResult<&str, u32> {
     map_res(digit1, |s: &str| s.parse::<u32>())(input)
 }
 
+#[inline]
+pub fn parse_u64(input: &str) -> IResult<&str, u64> {
+    map_res(digit1, |s: &str| s.parse::<u64>())(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
