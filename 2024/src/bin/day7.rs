@@ -40,10 +40,17 @@ impl FromStr for Puzzle {
 fn can_make_target(target: u64, input: &[u64], allow_concat: bool) -> bool {
     let (&nr, input) = input.split_last().unwrap();
     if nr > target {
+        // If the current number is larger than the target, then this can't be a working solution
         return false;
     } else if input.is_empty() {
+        // If there are no numbers left after this, we should have hit the target now
         return nr == target;
+    } else if nr == target {
+        // If we've hit the target, but there are more numbers; then there should be a zero we can
+        // multiply all with (or add if it's all zeroes), or it should be all ones to multiply with
+        return input.contains(&0) || input.iter().all(|&x| x == 1);
     } else if nr == 0 {
+        // If the current number is 0, and we've not hit the target, we have to add it
         return can_make_target(target, input, allow_concat);
     }
 
@@ -53,7 +60,7 @@ fn can_make_target(target: u64, input: &[u64], allow_concat: bool) -> bool {
 }
 
 fn can_make_target_concat(target: u64, input: &[u64], nr: u64, allow_concat: bool) -> bool {
-    let decimal_size = 10u64.pow(nr.ilog10() + 1);
+    let decimal_size = if nr == 0 { 10 } else { 10u64.pow(nr.ilog10() + 1) };
     let rest = target - nr;
     let (front_part, rem) = (rest / decimal_size, rest % decimal_size);
     rem == 0 && can_make_target(front_part, input, allow_concat)
