@@ -57,7 +57,7 @@ impl Day {
             .iter()
             .take_while(|&&file_ix| file_ix != EMPTY)
             .enumerate()
-            .map(|(ix, &file_ix)| (file_ix as usize * ix) as u128)
+            .map(|(ix, &file_ix)| file_ix as u128 * ix as u128)
             .sum()
     }
 
@@ -69,14 +69,13 @@ impl Day {
         let mut empty = false;
 
         for &size in &self.input {
-            let size = size as usize;
             if empty {
                 free_space.push(Space { size, location });
-                location += size;
+                location += size as u32;
                 empty = false;
             } else {
                 files.push(File { file_ix, size, location });
-                location += size;
+                location += size as u32;
                 file_ix += 1;
                 empty = true;
             }
@@ -89,27 +88,18 @@ impl Day {
         let mut first_free_space = [0usize; 10];
 
         for file in files.iter_mut().rev() {
-            for space_ix in first_free_space[file.size]..spaces.len() {
+            let size_ix = file.size as usize;
+            for space_ix in first_free_space[size_ix]..spaces.len() {
                 let space = &mut spaces[space_ix];
 
-                // Detect if we can move the file to a free space
                 if space.location > file.location {
                     break;
                 } else if space.size >= file.size {
                     file.location = space.location;
                     space.size -= file.size;
-                    space.location += file.size;
-                    first_free_space[file.size] = max(first_free_space[file.size], space_ix);
+                    space.location += file.size as u32;
+                    first_free_space[size_ix] = max(first_free_space[size_ix], space_ix);
                     break;
-                }
-
-                // Then look for compaction of free space
-                if spaces[space_ix].location + spaces[space_ix].size
-                    == spaces[space_ix + 1].location
-                {
-                    spaces[space_ix + 1].location = spaces[space_ix].location;
-                    spaces[space_ix + 1].size += spaces[space_ix].size;
-                    spaces[space_ix].size = 0;
                 }
             }
         }
@@ -119,21 +109,22 @@ impl Day {
         files
             .iter()
             .flat_map(|file| {
-                (0..file.size).map(|byte_ix| (file.file_ix * (file.location + byte_ix)) as u128)
+                (0..file.size)
+                    .map(|byte_ix| file.file_ix as u128 * (file.location + byte_ix as u32) as u128)
             })
             .sum()
     }
 }
 
 struct File {
-    file_ix: usize,
-    size: usize,
-    location: usize,
+    file_ix: u32,
+    size: u8,
+    location: u32,
 }
 
 struct Space {
-    size: usize,
-    location: usize,
+    size: u8,
+    location: u32,
 }
 
 impl ExecutableDay for Day {
