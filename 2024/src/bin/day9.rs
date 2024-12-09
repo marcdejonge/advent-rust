@@ -13,23 +13,17 @@ const EMPTY: u32 = u32::MAX;
 impl Day {
     fn generate_memory(&self) -> Vec<u32> {
         let mut memory = Vec::new();
-        let mut location = 0;
-        let mut empty = false;
 
-        for &size in &self.input {
-            for _ in 0..size {
-                if empty {
-                    memory.push(EMPTY);
-                } else {
-                    memory.push(location);
+        for (location, input) in self.input.chunks(2).enumerate() {
+            if input.len() >= 1 {
+                for _ in 0..input[0] {
+                    memory.push(location as u32);
                 }
             }
-
-            if empty {
-                location += 1;
-                empty = false;
-            } else {
-                empty = true;
+            if input.len() == 2 {
+                for _ in 0..input[1] {
+                    memory.push(EMPTY);
+                }
             }
         }
 
@@ -48,6 +42,8 @@ impl Day {
             }
             if left_empty_ix < right_ix {
                 memory.swap(left_empty_ix, right_ix);
+                right_ix -= 1;
+                left_empty_ix += 1;
             }
         }
     }
