@@ -2,145 +2,86 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use std::cmp::max;
 
+#[derive(Clone)]
 struct Day {
-    input: Vec<u8>,
+    files: Vec<File>,
+    free_space: Vec<Space>,
 }
 
-mod contiguous_memory {
-    pub(crate) struct Memory {
-        memory: Vec<u32>,
-    }
-
-    impl Memory {
-        const EMPTY: u32 = u32::MAX;
-
-        pub(crate) fn defragment_memory(&mut self) {
-            let mut left_empty_ix = 0;
-            let mut right_ix = self.memory.len() - 1;
-            while left_empty_ix < right_ix {
-                while self.memory[right_ix] == Self::EMPTY {
-                    right_ix -= 1;
-                }
-                while self.memory[left_empty_ix] != Self::EMPTY {
-                    left_empty_ix += 1;
-                }
-                if left_empty_ix < right_ix {
-                    self.memory.swap(left_empty_ix, right_ix);
-                    right_ix -= 1;
-                    left_empty_ix += 1;
-                }
-            }
-        }
-
-        pub(crate) fn checksum_memory(&self) -> u128 {
-            self.memory
-                .iter()
-                .take_while(|&&file_ix| file_ix != Self::EMPTY)
-                .enumerate()
-                .map(|(ix, &file_ix)| file_ix as u128 * ix as u128)
-                .sum()
-        }
-    }
-
-    impl From<&super::Day> for Memory {
-        fn from(day: &super::Day) -> Self {
-            let mut memory = Vec::new();
-
-            for (location, input) in day.input.chunks(2).enumerate() {
-                if input.len() >= 1 {
-                    for _ in 0..input[0] {
-                        memory.push(location as u32);
-                    }
-                }
-                if input.len() == 2 {
-                    for _ in 0..input[1] {
-                        memory.push(Memory::EMPTY);
-                    }
-                }
-            }
-
-            Memory { memory }
-        }
-    }
+#[derive(Clone, Debug)]
+struct File {
+    file_ix: u32,
+    size: u8,
+    location: u32,
 }
 
-mod sparse_memory {
-    use std::cmp::max;
+#[derive(Clone, Debug)]
+struct Space {
+    size: u8,
+    location: u32,
+}
 
-    pub(crate) struct Memory {
-        files: Vec<File>,
-        free_space: Vec<Space>,
-    }
-
-    struct File {
-        file_ix: u32,
-        size: u8,
-        location: u32,
-    }
-
-    struct Space {
-        size: u8,
-        location: u32,
-    }
-
-    impl From<&super::Day> for Memory {
-        fn from(day: &super::Day) -> Self {
-            let mut files = Vec::new();
-            let mut free_space = Vec::new();
-            let mut file_ix = 0;
-            let mut location = 0;
-            let mut empty = false;
-
-            for &size in &day.input {
-                if empty {
-                    free_space.push(Space { size, location });
-                    location += size as u32;
-                    empty = false;
-                } else {
-                    files.push(File { file_ix, size, location });
-                    location += size as u32;
-                    file_ix += 1;
-                    empty = true;
-                }
+impl Day {
+    fn defragment_fractional_files(&mut self) {
+        let mut space_ix = 0;
+        let mut file_ix = self.files.len() - 1;
+        loop {
+            let space = self.free_space.get_mut(space_ix).unwrap();
+            let last_file = self.files.get_mut(file_ix).unwrap();
+            if last_file.location < space.location {
+                break;
             }
 
-            Memory { files, free_space }
+            if space.size >= last_file.size {
+                last_file.location = space.location;
+                space.size -= last_file.size;
+                space.location += last_file.size as u32;
+                file_ix -= 1;
+                if space.size == 0 {
+                    space_ix += 1;
+                }
+            } else {
+                let size = space.size;
+                last_file.size -= size;
+                space.size = 0;
+                let file_ix = last_file.file_ix;
+                self.files.push(File { file_ix, size, location: space.location });
+                space_ix += 1;
+            }
         }
     }
 
-    impl Memory {
-        pub(crate) fn defragment_files(&mut self) {
-            let mut first_free_space = [0usize; 10];
+    fn defragment_whole_files(&mut self) {
+        let mut first_free_space = [0usize; 10];
 
-            for file in self.files.iter_mut().rev() {
-                let size_ix = file.size as usize;
-                for space_ix in first_free_space[size_ix]..self.free_space.len() {
-                    let space = &mut self.free_space[space_ix];
+        for file in self.files.iter_mut().rev() {
+            let size_ix = file.size as usize;
+            for space_ix in first_free_space[size_ix]..self.free_space.len() {
+                let space = &mut self.free_space[space_ix];
 
-                    if space.location > file.location {
-                        break;
-                    } else if space.size >= file.size {
-                        file.location = space.location;
-                        space.size -= file.size;
-                        space.location += file.size as u32;
-                        first_free_space[size_ix] = max(first_free_space[size_ix], space_ix);
-                        break;
-                    }
+                if space.location > file.location {
+                    break;
+                } else if space.size >= file.size {
+                    file.location = space.location;
+                    space.size -= file.size;
+                    space.location += file.size as u32;
+                    first_free_space[size_ix] = max(first_free_space[size_ix], space_ix);
+                    break;
                 }
             }
         }
+    }
 
-        pub(crate) fn checksum_files(&self) -> u128 {
-            self.files
-                .iter()
-                .flat_map(|file| {
-                    (0..file.size).map(|byte_ix| {
-                        file.file_ix as u128 * (file.location + byte_ix as u32) as u128
-                    })
-                })
-                .sum()
-        }
+    fn checksum(&self) -> u128 {
+        self.files
+            .iter()
+            .flat_map(|file| {
+                (0..file.size)
+                    .map(|byte_ix| file.file_ix as u128 * (file.location + byte_ix as u32) as u128)
+            })
+            .sum()
     }
 }
 
@@ -148,17 +89,36 @@ impl ExecutableDay for Day {
     type Output = u128;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { input: lines.single().unwrap().bytes().map(|c| c - b'0').collect() }
+        let mut files = Vec::new();
+        let mut free_space = Vec::new();
+        let mut file_ix = 0;
+        let mut location = 0;
+        let mut empty = false;
+
+        for size in lines.single().unwrap().bytes().map(|c| c - b'0') {
+            if empty {
+                free_space.push(Space { size, location });
+                location += size as u32;
+                empty = false;
+            } else {
+                files.push(File { file_ix, size, location });
+                location += size as u32;
+                file_ix += 1;
+                empty = true;
+            }
+        }
+
+        Day { files, free_space }
     }
     fn calculate_part1(&self) -> Self::Output {
-        let mut memory: contiguous_memory::Memory = self.into();
-        memory.defragment_memory();
-        memory.checksum_memory()
+        let mut memory = self.clone();
+        memory.defragment_fractional_files();
+        memory.checksum()
     }
     fn calculate_part2(&self) -> Self::Output {
-        let mut memory: sparse_memory::Memory = self.into();
-        memory.defragment_files();
-        memory.checksum_files()
+        let mut memory = self.clone();
+        memory.defragment_whole_files();
+        memory.checksum()
     }
 }
 
