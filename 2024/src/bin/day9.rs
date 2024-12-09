@@ -2,6 +2,7 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use std::cmp::max;
 
 struct Day {
     input: Vec<u8>,
@@ -51,12 +52,12 @@ impl Day {
         }
     }
 
-    fn checksum_memory(memory: &mut Vec<u32>) -> u64 {
+    fn checksum_memory(memory: &mut Vec<u32>) -> u128 {
         memory
             .iter()
             .take_while(|&&file_ix| file_ix != EMPTY)
             .enumerate()
-            .map(|(ix, &file_ix)| file_ix as u64 * ix as u64)
+            .map(|(ix, &file_ix)| (file_ix as usize * ix) as u128)
             .sum()
     }
 
@@ -68,7 +69,7 @@ impl Day {
         let mut empty = false;
 
         for &size in &self.input {
-            let size = size as u64;
+            let size = size as usize;
             if empty {
                 free_space.push(Space { size, location });
                 location += size;
@@ -85,59 +86,58 @@ impl Day {
     }
 
     fn defragment_files(files: &mut Vec<File>, spaces: &mut Vec<Space>) {
+        let mut first_free_space = [0usize; 10];
+
         for file in files.iter_mut().rev() {
-            let mut space_ix = 0;
-            while space_ix < spaces.len() - 1 {
+            for space_ix in first_free_space[file.size]..spaces.len() {
                 let space = &mut spaces[space_ix];
+
+                // Detect if we can move the file to a free space
                 if space.location > file.location {
                     break;
-                }
-
-                if space.size >= file.size {
+                } else if space.size >= file.size {
                     file.location = space.location;
                     space.size -= file.size;
-                    if space.size == 0 {
-                        spaces.remove(space_ix);
-                    } else {
-                        space.location += file.size;
-                    }
+                    space.location += file.size;
+                    first_free_space[file.size] = max(first_free_space[file.size], space_ix);
                     break;
                 }
 
-                // Compaction of free space
+                // Then look for compaction of free space
                 if spaces[space_ix].location + spaces[space_ix].size
                     == spaces[space_ix + 1].location
                 {
-                    spaces[space_ix].size += spaces[space_ix + 1].size;
-                    spaces.remove(space_ix + 1);
-                } else {
-                    space_ix += 1; // Only move to the next space if this one wasn't expanded
+                    spaces[space_ix + 1].location = spaces[space_ix].location;
+                    spaces[space_ix + 1].size += spaces[space_ix].size;
+                    spaces[space_ix].size = 0;
                 }
             }
         }
     }
 
-    fn checksum_files(files: &Vec<File>) -> u64 {
+    fn checksum_files(files: &Vec<File>) -> u128 {
         files
             .iter()
-            .flat_map(|file| (0..file.size).map(|byte_ix| file.file_ix * (file.location + byte_ix)))
+            .flat_map(|file| {
+                (0..file.size).map(|byte_ix| (file.file_ix * (file.location + byte_ix)) as u128)
+            })
             .sum()
     }
 }
 
 struct File {
-    file_ix: u64,
-    size: u64,
-    location: u64,
+    file_ix: usize,
+    size: usize,
+    location: usize,
 }
 
 struct Space {
-    size: u64,
-    location: u64,
+    size: usize,
+    location: usize,
 }
 
 impl ExecutableDay for Day {
-    type Output = u64;
+    type Output = u128;
 
     fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
         Day { input: lines.single().unwrap().bytes().map(|c| c - b'0').collect() }
