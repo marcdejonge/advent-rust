@@ -4,6 +4,7 @@ use advent_lib::day::*;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::grid::{Grid, Location};
 use fxhash::FxHashSet;
+use rayon::prelude::*;
 
 struct Day {
     grid: Grid<u8>,
@@ -54,6 +55,7 @@ impl ExecutableDay for Day {
     }
     fn calculate_part1(&self) -> Self::Output {
         self.start_nodes()
+            .par_bridge()
             .map(|loc| {
                 let mut result = Default::default();
                 self.find_unique_trail_locations(loc, &mut result);
@@ -63,7 +65,7 @@ impl ExecutableDay for Day {
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        self.start_nodes().map(|loc| self.find_all_trails(loc)).sum()
+        self.start_nodes().par_bridge().map(|loc| self.find_all_trails(loc)).sum()
     }
 }
 
