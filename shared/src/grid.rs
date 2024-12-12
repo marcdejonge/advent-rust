@@ -344,10 +344,10 @@ impl<T> Grid<T> {
         let mut visited = BitVec::from_elem(self.items.len(), false);
         for start in self.locations() {
             let start_ix = self.index_from_location(start).unwrap();
-            let current_value = self.items[start_ix].clone();
             if visited[start_ix] {
                 continue;
             }
+            let current_value = self.items[start_ix].clone();
 
             let mut region = Vec::new();
             let mut stack = vec![start];

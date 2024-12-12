@@ -2,7 +2,7 @@
 
 use advent_lib::day::*;
 use advent_lib::direction::CardinalDirections::*;
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};
 
@@ -28,7 +28,8 @@ impl ExecutableDay for Day {
 
     fn calculate_part1(&self) -> Self::Output {
         let fences_grid = self.plot.map_entries(|location, current| {
-            ALL_DIRECTIONS.count_if(|&d| self.plot.get(location + d) != Some(current))
+            (&[North, East, South, West])
+                .count_if(|&&d| self.plot.get(location + d) != Some(current))
         });
 
         self.sum_regions(&fences_grid)
@@ -36,7 +37,7 @@ impl ExecutableDay for Day {
 
     fn calculate_part2(&self) -> Self::Output {
         let corners_grid = self.plot.map_entries(|location, current| {
-            [[N, NE, E], [E, SE, S], [S, SW, W], [W, NW, N]].count_if(|dirs| {
+            (&[[N, NE, E], [E, SE, S], [S, SW, W], [W, NW, N]]).count_if(|dirs| {
                 let [forward, diagonal, side] =
                     dirs.map(|dir| self.plot.get(location + dir) == Some(current));
                 (forward && !diagonal && side) || (!forward && !side)
