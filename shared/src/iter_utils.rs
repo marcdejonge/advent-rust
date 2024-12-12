@@ -2,6 +2,7 @@ use std::array::from_fn;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::iter::Sum;
 use std::mem;
 
 use fxhash::FxHashMap;
@@ -351,4 +352,31 @@ fn check_all_triples() {
 fn test_getting_top_results() {
     assert_eq!(Some([9, 8, 7]), (1..10).top(usize::cmp));
     assert_eq!(None, (1..3).top::<3>(usize::cmp));
+}
+
+pub trait CountIf<F> {
+    fn count_if(self, predicate: F) -> usize;
+}
+
+impl<F, L> CountIf<F> for L
+where
+    L: IntoIterator,
+    F: FnMut(&L::Item) -> bool,
+{
+    #[inline]
+    fn count_if(self, predicate: F) -> usize { self.into_iter().filter(predicate).count() }
+}
+
+pub trait SumWith<O, F> {
+    fn sum_with(self, mapping: F) -> O;
+}
+
+impl<I, O, L, F> SumWith<O, F> for L
+where
+    L: IntoIterator<Item = I>,
+    F: FnMut(I) -> O,
+    O: Sum,
+{
+    #[inline]
+    fn sum_with(self, mapping: F) -> O { self.into_iter().map(mapping).sum() }
 }

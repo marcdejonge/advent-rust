@@ -221,11 +221,11 @@ fn debug<const D: usize, T: Debug>(
 }
 
 // point + vector -> point
-impl<const D: usize, T: Add<Output = T> + Copy> Add<Vector<D, T>> for Point<D, T> {
+impl<const D: usize, T: Add<Output = T> + Copy, V: Into<Vector<D, T>>> Add<V> for Point<D, T> {
     type Output = Point<D, T>;
-    fn add(self, rhs: Vector<D, T>) -> Point<D, T> {
+    fn add(self, rhs: V) -> Point<D, T> {
         let mut coords = self.coords;
-        for (ix, v) in rhs.coords.into_iter().enumerate() {
+        for (ix, v) in rhs.into().coords.into_iter().enumerate() {
             coords[ix] = coords[ix] + v;
         }
         Point { coords }
@@ -233,11 +233,11 @@ impl<const D: usize, T: Add<Output = T> + Copy> Add<Vector<D, T>> for Point<D, T
 }
 
 // vector + vector -> vector
-impl<const D: usize, T: Add<Output = T> + Copy> Add for Vector<D, T> {
+impl<const D: usize, T: Add<Output = T> + Copy, V: Into<Vector<D, T>>> Add<V> for Vector<D, T> {
     type Output = Vector<D, T>;
-    fn add(self, rhs: Vector<D, T>) -> Vector<D, T> {
+    fn add(self, rhs: V) -> Vector<D, T> {
         let mut coords = self.coords;
-        for (ix, v) in rhs.coords.into_iter().enumerate() {
+        for (ix, v) in rhs.into().coords.into_iter().enumerate() {
             coords[ix] = coords[ix] + v;
         }
         Vector { coords }
@@ -257,11 +257,11 @@ impl<const D: usize, T: Sub<Output = T> + Copy> Sub for Point<D, T> {
 }
 
 // point - vector -> point
-impl<const D: usize, T: Sub<Output = T> + Copy> Sub<Vector<D, T>> for Point<D, T> {
+impl<const D: usize, T: Sub<Output = T> + Copy, V: Into<Vector<D, T>>> Sub<V> for Point<D, T> {
     type Output = Point<D, T>;
-    fn sub(self, rhs: Vector<D, T>) -> Point<D, T> {
+    fn sub(self, rhs: V) -> Point<D, T> {
         let mut coords = self.coords;
-        for (ix, v) in rhs.coords.into_iter().enumerate() {
+        for (ix, v) in rhs.into().coords.into_iter().enumerate() {
             coords[ix] = coords[ix] - v;
         }
         Point { coords }

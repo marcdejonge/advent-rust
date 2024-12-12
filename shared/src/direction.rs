@@ -96,3 +96,40 @@ impl From<Direction> for usize {
         }
     }
 }
+
+impl<T> From<Direction> for Vector<2, T>
+where
+    T: Zero + One + Neg<Output = T>,
+{
+    fn from(value: Direction) -> Self { value.as_vec() }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum CardinalDirections {
+    N,
+    NE,
+    E,
+    SE,
+    S,
+    SW,
+    W,
+    NW,
+}
+
+impl<T> From<CardinalDirections> for Vector<2, T>
+where
+    T: Zero + One + Neg<Output = T>,
+{
+    fn from(value: CardinalDirections) -> Self {
+        match value {
+            CardinalDirections::N => vector2(T::zero(), T::one().neg()),
+            CardinalDirections::NE => vector2(T::one(), T::one().neg()),
+            CardinalDirections::E => vector2(T::one(), T::zero()),
+            CardinalDirections::SE => vector2(T::one(), T::one()),
+            CardinalDirections::S => vector2(T::zero(), T::one()),
+            CardinalDirections::SW => vector2(T::one().neg(), T::one()),
+            CardinalDirections::W => vector2(T::one().neg(), T::zero()),
+            CardinalDirections::NW => vector2(T::one().neg(), T::one().neg()),
+        }
+    }
+}

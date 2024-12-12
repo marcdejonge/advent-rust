@@ -1,7 +1,7 @@
+use crate::direction::ALL_DIRECTIONS;
+use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
-
-use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 
 #[derive(Clone, Hash)]
 pub struct Grid<T> {
@@ -122,6 +122,13 @@ impl<T> Grid<T> {
         Ok(())
     }
 
+    pub fn locations(&self) -> impl Iterator<Item = Location> {
+        let ys = self.y_range();
+        let xs = self.x_range();
+
+        ys.flat_map(move |y| xs.clone().map(move |x| point2(x, y)))
+    }
+
     pub fn entries(&self) -> impl Iterator<Item = (Location, &T)> {
         self.items
             .iter()
@@ -144,6 +151,19 @@ impl<T> Grid<T> {
     {
         let mut items = Vec::with_capacity(self.items.len());
         self.items.iter().map(function).for_each(|result| items.push(result));
+        Grid { items, size: self.size }
+    }
+
+    pub fn map_entries<U, F>(&self, function: F) -> Grid<U>
+    where
+        F: Fn(Location, &T) -> U,
+    {
+        let mut items = Vec::with_capacity(self.items.len());
+        self.items
+            .iter()
+            .enumerate()
+            .map(|(ix, value)| function((self.size, ix).into(), value))
+            .for_each(|result| items.push(result));
         Grid { items, size: self.size }
     }
 
@@ -313,6 +333,41 @@ impl<T> Grid<T> {
         }
 
         println!("{char_grid:?}");
+    }
+
+    pub fn detect_regions(&self) -> Vec<Vec<Location>>
+    where
+        T: Eq + Clone,
+    {
+        let mut regions = Vec::new();
+        let mut visited = vec![false; self.items.len()];
+        for start in self.locations() {
+            let start_ix = self.index_from_location(start).unwrap();
+            let current_value = self.items.get(start_ix);
+            if visited[start_ix] {
+                continue;
+            }
+
+            let mut region = Vec::new();
+            let mut stack = vec![start];
+            while let Some(location) = stack.pop() {
+                let location_ix = self.index_from_location(location).unwrap();
+                if visited[location_ix] {
+                    continue;
+                }
+                visited[location_ix] = true;
+                region.push(location);
+                for d in ALL_DIRECTIONS {
+                    let neighbour = location + d;
+                    if self.get(neighbour) == current_value {
+                        stack.push(neighbour);
+                    }
+                }
+            }
+            regions.push(region);
+        }
+
+        regions
     }
 }
 
