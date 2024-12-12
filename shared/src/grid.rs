@@ -1,5 +1,6 @@
 use crate::direction::ALL_DIRECTIONS;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
+use bit_vec::BitVec;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
 
@@ -340,10 +341,10 @@ impl<T> Grid<T> {
         T: Eq + Clone,
     {
         let mut regions = Vec::new();
-        let mut visited = vec![false; self.items.len()];
+        let mut visited = BitVec::from_elem(self.items.len(), false);
         for start in self.locations() {
             let start_ix = self.index_from_location(start).unwrap();
-            let current_value = self.items.get(start_ix);
+            let current_value = self.items[start_ix].clone();
             if visited[start_ix] {
                 continue;
             }
@@ -355,12 +356,18 @@ impl<T> Grid<T> {
                 if visited[location_ix] {
                     continue;
                 }
-                visited[location_ix] = true;
+                visited.set(location_ix, true);
                 region.push(location);
                 for d in ALL_DIRECTIONS {
                     let neighbour = location + d;
-                    if self.get(neighbour) == current_value {
-                        stack.push(neighbour);
+                    if let Some(neighbour_ix) = self.index_from_location(neighbour) {
+                        unsafe {
+                            if self.items.get_unchecked(neighbour_ix).clone() == current_value
+                                && !visited.get_unchecked(neighbour_ix)
+                            {
+                                stack.push(neighbour);
+                            }
+                        }
                     }
                 }
             }
