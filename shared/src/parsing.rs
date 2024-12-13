@@ -26,13 +26,8 @@ where
 }
 
 #[inline]
-pub fn parse_u32(input: &str) -> IResult<&str, u32> {
-    map_res(digit1, |s: &str| s.parse::<u32>())(input)
-}
-
-#[inline]
-pub fn parse_u64(input: &str) -> IResult<&str, u64> {
-    map_res(digit1, |s: &str| s.parse::<u64>())(input)
+pub fn digits<T: std::str::FromStr>(input: &str) -> IResult<&str, T> {
+    map_res(digit1, |s: &str| s.parse::<T>())(input)
 }
 
 #[cfg(test)]

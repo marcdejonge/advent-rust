@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::parse_u32;
+use advent_lib::parsing::digits;
 use fxhash::FxHashSet;
 use nom::character::complete::char;
 use nom::multi::separated_list1;
@@ -44,12 +44,11 @@ impl ExecutableDay for Day {
         let ordering_rules = lines
             .by_ref()
             .take_while(|line| !line.is_empty())
-            .map(|line| separated_pair(parse_u32, char('|'), parse_u32)(&line).unwrap().1)
+            .map(|line| separated_pair(digits, char('|'), digits)(&line).unwrap().1)
             .collect();
 
-        let pages = lines
-            .map(|line| separated_list1(char(','), parse_u32)(&line).unwrap().1)
-            .collect();
+        let pages =
+            lines.map(|line| separated_list1(char(','), digits)(&line).unwrap().1).collect();
 
         Day { ordering_rules, pages }
     }

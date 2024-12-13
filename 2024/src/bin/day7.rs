@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::parse_u64;
+use advent_lib::parsing::digits;
 use nom::bytes::complete::tag;
 use nom::multi::separated_list1;
 use nom::sequence::separated_pair;
@@ -31,7 +31,7 @@ impl FromStr for Puzzle {
     type Err = ();
 
     fn from_str(line: &str) -> Result<Self, Self::Err> {
-        separated_pair(parse_u64, tag(": "), separated_list1(tag(" "), parse_u64))(line)
+        separated_pair(digits, tag(": "), separated_list1(tag(" "), digits))(line)
             .map(|(_, (target, input))| Puzzle { target, input })
             .map_err(|_| ())
     }
