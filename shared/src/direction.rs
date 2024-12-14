@@ -116,6 +116,19 @@ pub enum CardinalDirections {
     NW,
 }
 
+impl CardinalDirections {
+    pub const ALL: [CardinalDirections; 8] = [
+        CardinalDirections::N,
+        CardinalDirections::NE,
+        CardinalDirections::E,
+        CardinalDirections::SE,
+        CardinalDirections::S,
+        CardinalDirections::SW,
+        CardinalDirections::W,
+        CardinalDirections::NW,
+    ];
+}
+
 impl<T> From<CardinalDirections> for Vector<2, T>
 where
     T: Zero + One + Neg<Output = T>,

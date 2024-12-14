@@ -1,6 +1,7 @@
 use std::cmp::min;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Add, Index, Mul, Neg, Sub};
+use std::iter::Sum;
+use std::ops::{Add, Div, Index, Mul, Neg, Rem, Sub};
 use std::str::FromStr;
 
 use num_traits::{abs, One, Signed};
@@ -256,6 +257,18 @@ impl<const D: usize, T: Add<Output = T> + Copy, V: Into<Vector<D, T>>> Add<V> fo
     }
 }
 
+impl<const D: usize, T: Add<Output = T> + Copy + Default, V: Into<Vector<D, T>>> Sum<V>
+    for Vector<D, T>
+{
+    fn sum<I: Iterator<Item = V>>(iter: I) -> Self {
+        let mut sum = Vector::default();
+        for v in iter {
+            sum = sum + v.into();
+        }
+        sum
+    }
+}
+
 // point - point -> vector
 impl<const D: usize, T: Sub<Output = T> + Copy> Sub for Point<D, T> {
     type Output = Vector<D, T>;
@@ -304,6 +317,11 @@ impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Vector<D, T> {
     fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
 }
 
+impl<const D: usize, T: Div<Output = T> + Copy> Div<T> for Vector<D, T> {
+    type Output = Vector<D, T>;
+    fn div(self, rhs: T) -> Self::Output { Vector { coords: self.coords.map(|c| c / rhs) } }
+}
+
 impl<T: Mul<Output = T> + Sub<Output = T> + Copy> Vector<2, T> {
     pub fn cross(self, rhs: Vector<2, T>) -> T { rhs.x() * self.y() - self.x() * rhs.y() }
 }
@@ -318,6 +336,24 @@ impl<const D: usize, T: Neg<Output = T>> Neg for Vector<D, T> {
     type Output = Vector<D, T>;
 
     fn neg(self) -> Self::Output { Vector { coords: self.coords.map(|x| x.neg()) } }
+}
+
+impl<const D: usize, T: Rem<Output = T> + Add<Output = T> + PartialOrd + Default + Copy>
+    Rem<Vector<D, T>> for Point<D, T>
+{
+    type Output = Point<D, T>;
+
+    fn rem(self, rhs: Vector<D, T>) -> Self::Output {
+        let mut coords = [T::default(); D];
+        for (ix, coord) in coords.iter_mut().enumerate() {
+            *coord = self.coords[ix] % rhs.coords[ix];
+
+            if *coord < T::default() {
+                *coord = *coord + rhs.coords[ix];
+            }
+        }
+        Point { coords }
+    }
 }
 
 impl<const D: usize, T> From<Vector<D, T>> for Point<D, T> {
@@ -381,6 +417,15 @@ impl<const D: usize, T> BoundingBox<D, T>
 where
     T: PartialOrd,
 {
+    pub fn contains(&self, point: &Point<D, T>) -> bool {
+        for ix in 0..D {
+            if point.coords[ix] <= self.min.coords[ix] || point.coords[ix] > self.max.coords[ix] {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn contains_inclusive(&self, point: &Point<D, T>) -> bool {
         for ix in 0..D {
             if point.coords[ix] < self.min.coords[ix] || point.coords[ix] > self.max.coords[ix] {
