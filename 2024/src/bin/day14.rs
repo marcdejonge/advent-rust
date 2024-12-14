@@ -60,13 +60,14 @@ impl ExecutableDay for Day {
         if self.robots.len() != 500 {
             return 0;
         }
+        let size = vector2(101, 103);
 
-        let (time, grid) = (0..)
-            .filter_map(|t| {
-                let mut grid = Grid::new_default(b' ', 101, 103);
+        let (time, grid) = (0..(size.x() * size.y()))
+            .map(|t| {
+                let mut grid = Grid::new_default(b' ', size.x(), size.y());
                 self.robots
                     .iter()
-                    .map(|robot| (robot.p + robot.v * t) % vector2(101, 103))
+                    .map(|robot| (robot.p + robot.v * t) % size)
                     .for_each(|p| grid[p] = b'#');
                 let neighbours: usize = grid
                     .entries()
@@ -79,14 +80,9 @@ impl ExecutableDay for Day {
                             .count()
                     })
                     .sum();
-
-                if neighbours > self.robots.len() * 2 {
-                    Some((t, grid))
-                } else {
-                    None
-                }
+                (neighbours, grid)
             })
-            .next()
+            .max_by(|(n1, _), (n2, _)| n1.cmp(n2))
             .unwrap();
 
         println!("{:?}", grid);
