@@ -35,7 +35,7 @@ fn drop_cell(
             *last_location = location + direction.as_vec();
         }
         Stone::Rolling => {
-            grid.swap(location, *last_location).unwrap();
+            grid.swap(location, *last_location);
             *last_location = *last_location + direction.as_vec()
         }
         Stone::None => {}

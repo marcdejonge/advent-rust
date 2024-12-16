@@ -60,6 +60,10 @@ impl Direction {
         }
     }
 
+    pub const fn is_horizontal(self) -> bool { matches!(self, East | West) }
+
+    pub const fn is_vertical(self) -> bool { matches!(self, North | South) }
+
     pub fn as_vec<T>(self) -> Vector<2, T>
     where
         T: Zero + One + Neg<Output = T>,

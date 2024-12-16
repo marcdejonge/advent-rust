@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 advent-lib = { path = "../shared" }
+advent-macros = { path = "../macros" }
 rayon = "1"
 itertools = "0.13"
 nom = "7"
 fxhash = "0.2"
+prse = "1.2.1"

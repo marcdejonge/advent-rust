@@ -110,17 +110,16 @@ impl<T> Grid<T> {
         self.items.get_mut(ix)
     }
 
-    pub fn swap(&mut self, first: Location, second: Location) -> Result<(), &str> {
+    pub fn swap(&mut self, first: Location, second: Location) {
         if first == second {
-            return Ok(()); // Nothing to swap
+            return; // Nothing to swap
         }
 
-        let first_ix = self.index_from_location(first).ok_or("Could not find first index")?;
-        let second_ix = self.index_from_location(second).ok_or("Could not find second index")?;
-
-        self.items.swap(first_ix, second_ix);
-
-        Ok(())
+        if let Some(first_ix) = self.index_from_location(first) {
+            if let Some(second_ix) = self.index_from_location(second) {
+                self.items.swap(first_ix, second_ix);
+            }
+        }
     }
 
     pub fn locations(&self) -> impl Iterator<Item = Location> {
