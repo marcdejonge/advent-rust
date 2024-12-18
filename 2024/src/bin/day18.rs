@@ -22,12 +22,12 @@ struct Memory {
 
 impl SearchGraph for Memory {
     type Node = Location;
-    type Score = u32;
+    type Score = i32;
 
-    fn neighbours(&self, node: Self::Node) -> Vec<(Self::Node, Self::Score)> {
+    fn neighbours(&self, loc: Location) -> Vec<(Location, i32)> {
         let mut neighbours = Vec::new();
         for direction in ALL_DIRECTIONS.iter() {
-            let neighbour = node + *direction;
+            let neighbour = loc + *direction;
             if self.valid_range.contains(&neighbour.x())
                 && self.valid_range.contains(&neighbour.y())
                 && !self.blocked.contains(&neighbour)
@@ -41,7 +41,7 @@ impl SearchGraph for Memory {
 
 impl SearchGraphWithGoal for Memory {
     fn is_goal(&self, loc: Location) -> bool { loc == self.target }
-    fn heuristic(&self, loc: Location) -> Self::Score { (loc - self.target).euler() as u32 }
+    fn heuristic(&self, loc: Location) -> Self::Score { (loc - self.target).euler() }
 }
 
 impl Day {
@@ -58,13 +58,10 @@ impl Day {
     }
 
     fn find_first_blocking_memory(&self, range: Range<usize>) -> Location {
-        if range.len() < 2 {
-            return self.locations[range.start];
-        }
-
         let test_ix = range.start + (range.len() / 2);
-        let memory = self.create_memory(test_ix);
-        if let Some(_route) = a_star_search(&memory, point2(0, 0)) {
+        if test_ix == range.start {
+            self.locations[test_ix]
+        } else if self.find_path(test_ix).is_some() {
             self.find_first_blocking_memory(test_ix..range.end)
         } else {
             self.find_first_blocking_memory(range.start..test_ix)
@@ -81,7 +78,9 @@ impl ExecutableDay for Day {
         let start_take = if locations.len() >= 1024 { 1024 } else { 12 };
         Day { locations, size, start_take }
     }
+
     fn calculate_part1(&self) -> Self::Output { self.find_path(self.start_take).unwrap() }
+
     fn calculate_part2(&self) -> Self::Output {
         let found = self.find_first_blocking_memory(self.start_take..self.locations.len());
         println!("Found: {:?}", found);
