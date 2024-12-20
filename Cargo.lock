@@ -20,6 +20,7 @@ dependencies = [
  "petgraph",
  "priority-queue",
  "prse",
+ "smallvec",
 ]
 
 [[package]]
@@ -71,7 +72,6 @@ dependencies = [
  "itertools 0.13.0",
  "nom",
  "priority-queue",
- "prse",
  "rayon",
  "smallvec",
 ]
