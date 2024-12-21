@@ -1,5 +1,6 @@
 #![feature(step_trait)]
 
+pub mod builder;
 pub mod day;
 pub mod direction;
 pub mod geometry;
@@ -12,4 +13,5 @@ pub mod numbers;
 pub mod parsing;
 pub mod rgb;
 pub mod search;
+pub mod small_string;
 pub mod test_utils;
