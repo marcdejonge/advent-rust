@@ -43,7 +43,7 @@ fn generate_steps(max_size: i32) -> Vec<Vector<2, i32>> {
 }
 
 impl Day {
-    fn find_shortcuts(&self, locations: &[Vector<2, i32>]) -> usize {
+    fn find_cheats(&self, locations: &[Vector<2, i32>], min_saved: usize) -> usize {
         let mut distances = Grid::new_empty(self.grid.width(), self.grid.height());
         self.walk.iter().for_each(|&(ix, loc)| distances[loc] = ix);
 
@@ -58,7 +58,7 @@ impl Day {
                             .map(|&end_dist| {
                                 let cheat_dist = step.euler() as usize;
                                 end_dist > start_dist
-                                    && (end_dist - (start_dist + cheat_dist)) >= 100
+                                    && (end_dist - (start_dist + cheat_dist)) >= min_saved
                             })
                             .unwrap_or(false)
                     })
@@ -78,8 +78,8 @@ impl ExecutableDay for Day {
         Day { grid, walk }
     }
 
-    fn calculate_part1(&self) -> Self::Output { self.find_shortcuts(&generate_steps(2)) }
-    fn calculate_part2(&self) -> Self::Output { self.find_shortcuts(&generate_steps(20)) }
+    fn calculate_part1(&self) -> Self::Output { self.find_cheats(&generate_steps(2), 100) }
+    fn calculate_part2(&self) -> Self::Output { self.find_cheats(&generate_steps(20), 100) }
 }
 
 fn main() { execute_day::<Day>() }
