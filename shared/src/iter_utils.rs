@@ -16,6 +16,30 @@ pub trait IteratorUtils: Iterator {
         Chunked { iter: self, match_item: split_item }
     }
 
+    fn windowed<const D: usize>(mut self) -> impl Iterator<Item = [Self::Item; D]>
+    where
+        Self: Sized,
+        Self::Item: Default + Copy,
+    {
+        let mut window: [Self::Item; D] = [Default::default(); D];
+        for ix in 1..D {
+            let value = self.next();
+            if let Some(value) = value {
+                window[ix] = value;
+            } else {
+                break;
+            }
+        }
+
+        self.map(move |item| {
+            for ix in 1..D {
+                window[ix - 1] = window[ix];
+            }
+            window[D - 1] = item;
+            window
+        })
+    }
+
     fn repeat(self) -> impl Iterator<Item = Self::Item>
     where
         Self: Sized + Clone,
