@@ -40,6 +40,7 @@ dependencies = [
  "advent-macros",
  "bit-set",
  "fxhash",
+ "nom",
  "prse",
  "prse-derive",
  "rayon",
@@ -55,6 +56,7 @@ dependencies = [
  "bit-set",
  "enum-map",
  "fxhash",
+ "nom",
  "num",
  "petgraph",
  "prse",
@@ -72,6 +74,7 @@ dependencies = [
  "itertools 0.13.0",
  "nom",
  "priority-queue",
+ "prse",
  "rayon",
  "smallvec",
 ]

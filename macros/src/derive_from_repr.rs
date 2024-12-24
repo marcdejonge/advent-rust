@@ -80,7 +80,6 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
 
         let mut extra_parsers = Vec::<TokenStream>::new();
 
-        #[cfg(feature = "prse")]
         extra_parsers.push(quote! {
             impl<'a> prse::Parse<'a> for #name {
                 fn from_str(value: &str) -> Result<Self, prse::ParseError> {
@@ -90,27 +89,24 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
             }
         });
 
-        #[cfg(feature = "nom")]
-        {
-            let parse_lines = variants.iter().map(|(ident, expr, _, _)| {
-                quote! { #expr => Ok((rest, #name::#ident)), }
-            });
-            extra_parsers.push(quote! {
-                impl #name {
-                    fn parse(input: &str) -> nom::IResult<&str, Self> {
-                        if input.len() == 0 {
-                            return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
-                        }
-                        
-                        let (first, rest) = input.split_at(1);
-                        match first.as_bytes()[0] {
-                            #(#parse_lines)*
-                            _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
-                        }
+        let parse_lines = variants.iter().map(|(ident, expr, _, _)| {
+            quote! { #expr => Ok((rest, #name::#ident)), }
+        });
+        extra_parsers.push(quote! {
+            impl #name {
+                fn parse(input: &str) -> nom::IResult<&str, Self> {
+                    if input.len() == 0 {
+                        return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
+                    }
+
+                    let (first, rest) = input.split_at(1);
+                    match first.as_bytes()[0] {
+                        #(#parse_lines)*
+                        _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
                     }
                 }
-            });
-        }
+            }
+        });
 
         Ok(quote! {
             impl From<#rep> for #name {
@@ -165,7 +161,8 @@ fn parse_ident_from(attr: &Attribute) -> Result<Ident, Error> {
                     .ok_or(Error::new(
                         expr.span(),
                         "Expression is not a valid identifier",
-                    )).cloned()
+                    ))
+                    .cloned()
             } else {
                 Err(Error::new(
                     namevalue.value.span(),

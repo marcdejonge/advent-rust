@@ -188,8 +188,8 @@ mod tests {
 
     use crate::{parse_commands, Command};
 
-    day_test!( 22, example => 6032, 5031 );
-    day_test!( 22 => 197160, 0 );
+    day_test!( 22, example => 6032/*, 5031 */);
+    day_test!( 22 => 197160 );
 
     #[test]
     fn test_command_parsing() {

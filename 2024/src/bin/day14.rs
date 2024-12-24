@@ -4,6 +4,7 @@ use advent_lib::day::*;
 use advent_lib::direction::CardinalDirections;
 use advent_lib::geometry::{vector2, vector4, Point, Vector};
 use advent_lib::grid::Grid;
+use rayon::prelude::*;
 use std::str::FromStr;
 
 struct Day {
@@ -62,7 +63,8 @@ impl ExecutableDay for Day {
         }
         let size = vector2(101, 103);
 
-        let (time, grid) = (0..(size.x() * size.y()))
+        let (_, time, grid) = (0..(size.x() * size.y()))
+            .par_bridge()
             .map(|t| {
                 let mut grid = Grid::new_default(b' ', size.x(), size.y());
                 self.robots
@@ -80,9 +82,9 @@ impl ExecutableDay for Day {
                             .count()
                     })
                     .sum();
-                (neighbours, grid)
+                (neighbours, t, grid)
             })
-            .max_by(|(n1, _), (n2, _)| n1.cmp(n2))
+            .max_by(|(n1, _, _), (n2, _, _)| n1.cmp(n2))
             .unwrap();
 
         println!("{:?}", grid);
