@@ -1,11 +1,16 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::digits;
+use advent_lib::parsing::double_line_ending;
 use fxhash::FxHashSet;
-use nom::character::complete::char;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
 use nom::multi::separated_list1;
 use nom::sequence::separated_pair;
+use nom::Parser;
 
 struct Day {
     ordering_rules: FxHashSet<(u32, u32)>,
@@ -40,18 +45,23 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u32;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let ordering_rules = lines
-            .by_ref()
-            .take_while(|line| !line.is_empty())
-            .map(|line| separated_pair(digits, char('|'), digits)(&line).unwrap().1)
-            .collect();
-
-        let pages =
-            lines.map(|line| separated_list1(char(','), digits)(&line).unwrap().1).collect();
-
-        Day { ordering_rules, pages }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                separated_list1(
+                    line_ending,
+                    separated_pair(complete::u32, tag(b"|"), complete::u32),
+                ),
+                double_line_ending,
+                separated_list1(line_ending, separated_list1(tag(b","), complete::u32)),
+            ),
+            |(ordering_rules, pages)| Day {
+                ordering_rules: ordering_rules.into_iter().collect(),
+                pages,
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output { self.calculate_middle(false) }
 
     fn calculate_part2(&self) -> Self::Output { self.calculate_middle(true) }

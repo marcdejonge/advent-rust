@@ -4,8 +4,15 @@ use advent_lib::day::*;
 use advent_lib::direction::CardinalDirections;
 use advent_lib::geometry::{vector2, vector4, Point, Vector};
 use advent_lib::grid::Grid;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair};
+use nom::Parser;
 use rayon::prelude::*;
-use std::str::FromStr;
 
 struct Day {
     robots: Vec<Robot>,
@@ -17,23 +24,34 @@ struct Robot {
     v: Vector<2, i32>,
 }
 
-impl FromStr for Robot {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.split_whitespace();
-        let p = parts.next().unwrap()[2..].parse().unwrap();
-        let v = parts.next().unwrap()[2..].parse().unwrap();
-        Ok(Robot { p, v })
-    }
-}
-
 impl ExecutableDay for Day {
     type Output = u32;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { robots: lines.filter_map(|line| line.parse().ok()).collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(
+                    preceded(
+                        tag(b"p="),
+                        separated_pair(complete::i32, tag(b","), complete::i32),
+                    ),
+                    space1,
+                    preceded(
+                        tag(b"v="),
+                        separated_pair(complete::i32, tag(b","), complete::i32),
+                    ),
+                ),
+            ),
+            |robots| Day {
+                robots: robots
+                    .into_iter()
+                    .map(|(p, v)| Robot { p: p.into(), v: v.into() })
+                    .collect(),
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         let size = if self.robots.len() < 20 { vector2(11, 7) } else { vector2(101, 103) };
 

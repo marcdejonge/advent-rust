@@ -1,12 +1,15 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::digits;
 use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
 use nom::multi::separated_list1;
 use nom::sequence::separated_pair;
+use nom::Parser;
 use rayon::prelude::*;
-use std::str::FromStr;
 
 struct Day {
     puzzles: Vec<Puzzle>,
@@ -25,16 +28,6 @@ impl Day {
 struct Puzzle {
     target: u64,
     input: Vec<u64>,
-}
-
-impl FromStr for Puzzle {
-    type Err = ();
-
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
-        separated_pair(digits, tag(": "), separated_list1(tag(" "), digits))(line)
-            .map(|(_, (target, input))| Puzzle { target, input })
-            .map_err(|_| ())
-    }
 }
 
 fn can_make_target(target: u64, input: &[u64], allow_concat: bool) -> bool {
@@ -74,9 +67,23 @@ fn can_make_target_multiply(target: u64, nr: u64, input: &[u64], allow_concat: b
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { puzzles: lines.map(|s| s.parse()).filter_map(Result::ok).collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                map(
+                    separated_pair(
+                        complete::u64,
+                        tag(b": "),
+                        separated_list1(tag(b" "), complete::u64),
+                    ),
+                    |(target, input)| Puzzle { target, input },
+                ),
+            ),
+            |puzzles| Day { puzzles },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output { self.sum_of_targets(false) }
     fn calculate_part2(&self) -> Self::Output { self.sum_of_targets(true) }
 }

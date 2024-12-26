@@ -1,7 +1,7 @@
-use std::ops::Neg;
-
+use nom::IResult;
 use num_traits::{One, Zero};
 use prse::{Parse, ParseError};
+use std::ops::Neg;
 
 use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
@@ -37,6 +37,30 @@ impl<'a> Parse<'a> for Direction {
             .map(Direction::from)
             .ok_or(ParseError::new("Missing character"))
     }
+}
+
+pub fn direction_parser(input: &[u8]) -> IResult<&[u8], Direction, nom::error::Error<&[u8]>> {
+    if input.is_empty() {
+        return Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Eof,
+        )));
+    }
+
+    let direction = match input[0] {
+        b'N' | b'U' | b'^' | b'3' => North,
+        b'E' | b'R' | b'>' | b'0' => East,
+        b'S' | b'D' | b'v' | b'1' => South,
+        b'W' | b'L' | b'<' | b'2' => West,
+        _ => {
+            return Err(nom::Err::Error(nom::error::Error::new(
+                input,
+                nom::error::ErrorKind::OneOf,
+            )))
+        }
+    };
+
+    Ok((&input[1..], direction))
 }
 
 pub const ALL_DIRECTIONS: [Direction; 4] = [North, East, South, West];

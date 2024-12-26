@@ -1,12 +1,14 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::find_many;
+use advent_lib::parsing::find_many_skipping_unknown;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while_m_n};
 use nom::combinator::{map, map_res};
+use nom::error::{Error, FromExternalError, ParseError};
 use nom::sequence::{delimited, separated_pair};
-use nom::IResult;
+use nom::Parser;
+use std::num::ParseIntError;
 
 #[derive(Debug, PartialEq, Eq)]
 enum Command {
@@ -15,26 +17,27 @@ enum Command {
     Dont,
 }
 
-fn number_parser(input: &str) -> IResult<&str, i64> {
-    map_res(
-        take_while_m_n(1, 3, |c: char| c.is_ascii_digit()),
-        str::parse,
-    )(input)
+fn number_parser<'a, E: FromExternalError<&'a [u8], ParseIntError> + ParseError<&'a [u8]>>(
+) -> impl Parser<&'a [u8], i64, E> {
+    map_res(take_while_m_n(1, 3, |b: u8| b.is_ascii_digit()), |bs| {
+        std::str::from_utf8(bs).unwrap().parse::<i64>()
+    })
 }
 
-fn command_parser(input: &str) -> IResult<&str, Command> {
+fn command_parser<'a, E: FromExternalError<&'a [u8], ParseIntError> + ParseError<&'a [u8]>>(
+) -> impl Parser<&'a [u8], Command, E> {
     alt((
         map(
             delimited(
-                tag("mul("),
-                separated_pair(number_parser, tag(","), number_parser),
-                tag(")"),
+                tag(b"mul("),
+                separated_pair(number_parser(), tag(b","), number_parser()),
+                tag(b")"),
             ),
             |(a, b)| Command::Mul(a, b),
         ),
-        map(tag("do()"), |_| Command::Do),
-        map(tag("don't()"), |_| Command::Dont),
-    ))(input)
+        map(tag(b"do()"), |_| Command::Do),
+        map(tag(b"don't()"), |_| Command::Dont),
+    ))
 }
 
 #[derive(Debug)]
@@ -45,15 +48,19 @@ struct Day {
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { commands: lines.flat_map(|line| find_many(command_parser, &line)).collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(find_many_skipping_unknown(command_parser()), |commands| {
+            Day { commands }
+        })
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.commands
             .iter()
             .map(|command| if let Command::Mul(a, b) = command { a * b } else { 0 })
             .sum()
     }
+
     fn calculate_part2(&self) -> Self::Output {
         self.commands
             .iter()

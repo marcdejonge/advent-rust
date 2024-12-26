@@ -2,42 +2,47 @@
 
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
+use advent_lib::parsing::double_line_parser;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::Parser;
 
 #[derive(Debug)]
 struct Day {
-    locks: Vec<Vec<u32>>,
-    keys: Vec<Vec<u32>>,
+    locks: Vec<Vec<usize>>,
+    keys: Vec<Vec<usize>>,
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut lines = lines.peekable();
-        let mut locks = Vec::new();
-        let mut keys = Vec::new();
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(double_line_parser(), |grids: Vec<Grid<u8>>| {
+            let mut locks = Vec::new();
+            let mut keys = Vec::new();
 
-        while lines.peek().is_some() {
-            let grid = Grid::<u8>::from(lines.by_ref().take_while(|l| !l.is_empty()));
-            if grid.east_line(0).all(|(_, &b)| b == b'#') {
-                locks.push(
-                    grid.x_range()
-                        .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count() as u32)
-                        .collect(),
-                )
-            } else if grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#') {
-                keys.push(
-                    grid.x_range()
-                        .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count() as u32)
-                        .collect(),
-                )
-            } else {
-                println!("WARN unexpected grid: \n{:?}", grid);
+            for grid in grids {
+                if grid.east_line(0).all(|(_, &b)| b == b'#') {
+                    locks.push(
+                        grid.x_range()
+                            .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count())
+                            .collect(),
+                    )
+                } else if grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#') {
+                    keys.push(
+                        grid.x_range()
+                            .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count())
+                            .collect(),
+                    )
+                } else {
+                    println!("WARN unexpected grid: \n{:?}", grid);
+                }
             }
-        }
 
-        Day { locks, keys }
+            Day { locks, keys }
+        })
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.keys
             .iter()

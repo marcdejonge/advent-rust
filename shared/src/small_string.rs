@@ -11,7 +11,7 @@ where
 {
     pub fn new() -> Self { Self::default() }
 
-    pub fn from(s: &str) -> Self { SmallString(s.bytes().collect()) }
+    pub fn from(s: &[u8]) -> Self { SmallString(s.into()) }
 
     pub fn len(&self) -> usize { self.0.len() }
 

@@ -1,6 +1,12 @@
 use crate::direction::ALL_DIRECTIONS;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
+use crate::parsing::Parsable;
 use bit_vec::BitVec;
+use nom::bytes::complete::{take_while, take_while_m_n};
+use nom::character::complete::line_ending;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
 
@@ -20,6 +26,31 @@ impl From<(Size, usize)> for Location {
         let x = index % value.0.x();
         let y = index / value.0.x();
         point2(x, y)
+    }
+}
+
+impl<T> Parsable for Grid<T>
+where
+    T: From<u8> + Clone,
+{
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        |input: &'a [u8]| {
+            let not_newline = |b: u8| b != b'\n' && b != b'\r';
+            let (_, first_line) = take_while(not_newline)(input)?;
+            let width = first_line.len();
+
+            let (rest, lines) =
+                separated_list1(line_ending, take_while_m_n(width, width, not_newline))(input)?;
+
+            let height = lines.len();
+            let items: Vec<T> =
+                lines.into_iter().flat_map(|line| line.iter().map(|&b| T::from(b))).collect();
+
+            Ok((
+                rest,
+                Grid { items, size: vector2(width as i32, height as i32) },
+            ))
+        }
     }
 }
 

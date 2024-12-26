@@ -1,8 +1,12 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::iter_utils::IteratorUtils;
 use fxhash::FxHashMap;
+use nom::character::complete;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 
 type Count = u64;
 
@@ -41,16 +45,13 @@ impl Memoized {
 impl ExecutableDay for Day {
     type Output = Count;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            starting_numbers: lines
-                .single()
-                .unwrap()
-                .split_whitespace()
-                .filter_map(|str| str.parse().ok())
-                .collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(complete::space1, complete::u64),
+            |starting_numbers| Day { starting_numbers },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         let mut memoized = Memoized::new();
         self.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 25)).sum()

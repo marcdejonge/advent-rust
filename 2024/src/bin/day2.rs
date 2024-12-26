@@ -2,6 +2,11 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use nom::character::complete;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 use rayon::prelude::*;
 use std::ops::RangeInclusive;
 
@@ -36,19 +41,23 @@ fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            reports: lines
-                .map(|line| line.split_whitespace().map(|s| s.parse().unwrap()).collect())
-                .collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                complete::line_ending::<&[u8], _>,
+                separated_list1(complete::space1, complete::i32),
+            ),
+            |reports| Day { reports },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.reports
             .par_iter()
-            .filter(|report| find_unsafe_index(report) == None)
+            .filter(|report| find_unsafe_index(report).is_none())
             .count()
     }
+
     fn calculate_part2(&self) -> Self::Output {
         self.reports
             .par_iter()

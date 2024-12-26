@@ -2,12 +2,15 @@
 
 use advent_lib::day::*;
 use advent_lib::geometry::{vector2, Vector};
-use advent_lib::parsing::digits;
-use itertools::Itertools;
-use nom::branch::alt;
+use advent_lib::parsing::double_line_ending;
 use nom::bytes::complete::tag;
-use nom::sequence::{preceded, separated_pair};
-use nom::{IResult, Parser};
+use nom::character::complete;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{delimited, preceded, separated_pair, tuple};
+use nom::Parser;
 
 type Move = Vector<2, i64>;
 
@@ -35,42 +38,43 @@ impl Game {
     }
 }
 
-fn parse_line(input: &str) -> IResult<&str, Move> {
-    alt((
-        preceded(
-            tag("Button A: X+"),
-            separated_pair(digits, tag(", Y+"), digits),
-        ),
-        preceded(
-            tag("Button B: X+"),
-            separated_pair(digits, tag(", Y+"), digits),
-        ),
-        preceded(
-            tag("Prize: X="),
-            separated_pair(digits, tag(", Y="), digits),
-        ),
-    ))
-    .map(Into::into)
-    .parse(input)
-}
-
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            games: lines
-                .chunks(4)
-                .into_iter()
-                .map(|mut lines| {
-                    let button_a = parse_line(&lines.next().unwrap()).unwrap().1;
-                    let button_b = parse_line(&lines.next().unwrap()).unwrap().1;
-                    let target = parse_line(&lines.next().unwrap()).unwrap().1;
-                    Game { button_a, button_b, target }
-                })
-                .collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                double_line_ending,
+                tuple((
+                    delimited(
+                        tag(b"Button A: X+"),
+                        separated_pair(complete::i64, tag(b", Y+"), complete::i64),
+                        line_ending,
+                    ),
+                    delimited(
+                        tag(b"Button B: X+"),
+                        separated_pair(complete::i64, tag(b", Y+"), complete::i64),
+                        line_ending,
+                    ),
+                    preceded(
+                        tag(b"Prize: X="),
+                        separated_pair(complete::i64, tag(b", Y="), complete::i64),
+                    ),
+                )),
+            ),
+            |games| Day {
+                games: games
+                    .into_iter()
+                    .map(|(button_a, button_b, target)| Game {
+                        button_a: button_a.into(),
+                        button_b: button_b.into(),
+                        target: target.into(),
+                    })
+                    .collect(),
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.games.iter().filter_map(Game::find_score).sum()
     }

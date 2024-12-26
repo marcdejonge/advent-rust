@@ -5,6 +5,9 @@ use advent_lib::direction::CardinalDirections::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};
+use advent_lib::parsing::map_parser;
+use nom::error::Error;
+use nom::Parser;
 
 struct Day {
     plot: Grid<u8>,
@@ -20,10 +23,11 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let plot = Grid::from(lines);
-        let regions = plot.detect_regions();
-        Day { plot, regions }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map_parser(|plot: Grid<u8>| {
+            let regions = plot.detect_regions();
+            Day { plot, regions }
+        })
     }
 
     fn calculate_part1(&self) -> Self::Output {

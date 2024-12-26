@@ -1,18 +1,46 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::full;
+use advent_lib::parsing::{double_line_ending, multi_line_parser, Parsable};
 use fxhash::FxHashMap;
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
+use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alphanumeric1, digit1};
-use nom::sequence::tuple;
+use nom::character::{complete, is_alphanumeric};
+use nom::combinator::map;
+use nom::error::{Error, ErrorKind};
+use nom::sequence::{separated_pair, tuple};
+use nom::{IResult, InputTake, Parser};
 use std::fmt::{Display, Formatter};
 use std::mem::swap;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Name([u8; 3]);
+
+fn parse_name(input: &[u8]) -> IResult<&[u8], Name> {
+    if input.len() < 3 {
+        return Err(nom::Err::Error(Error::new(input, ErrorKind::Eof)));
+    }
+
+    let (rest, name) = input.take_split(3);
+    if !name.iter().all(|&b| is_alphanumeric(b)) {
+        return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
+    }
+
+    Ok((rest, Name([name[0], name[1], name[2]])))
+}
+
+struct StartingValue(Name, bool);
+
+impl Parsable for StartingValue {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(parse_name, tag(b": "), complete::u8),
+            |(name, value)| StartingValue(name, value != 0),
+        )
+    }
+}
 
 impl Name {
     fn from(prefix: u8, id: u16) -> Name {
@@ -26,32 +54,23 @@ impl Name {
 
 impl Display for Name {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}{}{}",
-            self.0[0] as char, self.0[1] as char, self.0[2] as char
-        )
+        write!(f, "{}", String::from_utf8_lossy(&self.0))
     }
-}
-
-fn parse_name(s: &str) -> (Name, bool) {
-    let (name, _, nr) = full(tuple((alphanumeric1, tag(": "), digit1)))(s).unwrap();
-    (Name(name.as_bytes().try_into().unwrap()), nr != "0")
 }
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 enum Operation {
-    AND,
-    XOR,
-    OR,
+    And,
+    Xor,
+    Or,
 }
 
 impl Display for Operation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Operation::AND => write!(f, "AND"),
-            Operation::XOR => write!(f, "XOR"),
-            Operation::OR => write!(f, "OR"),
+            Operation::And => write!(f, "AND"),
+            Operation::Xor => write!(f, "XOR"),
+            Operation::Or => write!(f, "OR"),
         }
     }
 }
@@ -94,32 +113,29 @@ impl Display for Expression {
     }
 }
 
-fn parse_expression(s: &str) -> Expression {
-    let (left, _, operation, _, right, _, target) = full(tuple((
-        alphanumeric1,
-        tag(" "),
-        alphanumeric1,
-        tag(" "),
-        alphanumeric1,
-        tag(" -> "),
-        alphanumeric1,
-    )))(s)
-    .unwrap();
-    Expression {
-        left: Name(left.as_bytes().try_into().unwrap()),
-        operation: match operation {
-            "AND" => Operation::AND,
-            "XOR" => Operation::XOR,
-            "OR" => Operation::OR,
-            _ => panic!("Unknown operation: {}", operation),
-        },
-        right: Name(right.as_bytes().try_into().unwrap()),
-        target: Name(target.as_bytes().try_into().unwrap()),
+impl Parsable for Expression {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                tuple((
+                    parse_name,
+                    alt((
+                        map(tag(b" AND "), |_| Operation::And),
+                        map(tag(b" XOR "), |_| Operation::Xor),
+                        map(tag(b" OR "), |_| Operation::Or),
+                    )),
+                    parse_name,
+                )),
+                tag(b" -> "),
+                parse_name,
+            ),
+            |((left, operation, right), target)| Expression { left, operation, right, target },
+        )
     }
 }
 
 struct Day {
-    starting_values: Vec<(Name, bool)>,
+    starting_values: FxHashMap<Name, bool>,
     expressions: FxHashMap<Name, Expression>,
 }
 
@@ -141,7 +157,7 @@ impl Day {
     }
 
     fn evaluate(&self, name: &Name) -> Option<bool> {
-        if let Some(&(_, value)) = self.starting_values.iter().find(|(n, _)| n == name) {
+        if let Some(&value) = self.starting_values.get(name) {
             return Some(value);
         }
 
@@ -149,9 +165,9 @@ impl Day {
         let left = self.evaluate(&expression.left)?;
         let right = self.evaluate(&expression.right)?;
         match expression.operation {
-            Operation::AND => Some(left & right),
-            Operation::XOR => Some(left ^ right),
-            Operation::OR => Some(left | right),
+            Operation::And => Some(left & right),
+            Operation::Xor => Some(left ^ right),
+            Operation::Or => Some(left | right),
         }
     }
 
@@ -161,8 +177,8 @@ impl Day {
         let from_y = Name::from(b'y', id);
 
         if let Some(expr) = self.expressions.get(&target) {
-            if expr == &target.wired_from(from_x, Operation::XOR, from_y) {
-                self.find_target_of_expression(&target.wired_from(from_x, Operation::AND, from_y))
+            if expr == &target.wired_from(from_x, Operation::Xor, from_y) {
+                self.find_target_of_expression(&target.wired_from(from_x, Operation::And, from_y))
             } else {
                 None
             }
@@ -178,12 +194,12 @@ impl Day {
 
         let carry_in_expr = self.find_expression(target).unwrap();
         let source_target = carry_in_expr.get_other_input(&carry_in);
-        if source_target.is_none() || carry_in_expr.operation != Operation::XOR {
+        if source_target.is_none() || carry_in_expr.operation != Operation::Xor {
             let other_target = self
                 .expressions
                 .values()
                 .find(|expr| {
-                    expr.operation == Operation::XOR
+                    expr.operation == Operation::Xor
                         && (expr.left == carry_in || expr.right == carry_in)
                 })
                 .unwrap()
@@ -194,13 +210,13 @@ impl Day {
         let source_target = *source_target.unwrap();
 
         let from_expr = self.find_expression(source_target).unwrap();
-        let expected_expr = target.wired_from(from_x, Operation::XOR, from_y);
+        let expected_expr = target.wired_from(from_x, Operation::Xor, from_y);
         if from_expr != &expected_expr {
             let other_target = self
                 .expressions
                 .values()
                 .find(|expr| {
-                    expr.operation == Operation::XOR
+                    expr.operation == Operation::Xor
                         && (expr.left == from_x || expr.right == from_x)
                         && (expr.left == from_y || expr.right == from_y)
                 })
@@ -211,17 +227,17 @@ impl Day {
         }
 
         let carry_out_left = self
-            .find_target_of_expression(&target.wired_from(source_target, Operation::AND, carry_in))
+            .find_target_of_expression(&target.wired_from(source_target, Operation::And, carry_in))
             .unwrap();
 
         let carry_out_right = self
-            .find_target_of_expression(&target.wired_from(from_x, Operation::AND, from_y))
+            .find_target_of_expression(&target.wired_from(from_x, Operation::And, from_y))
             .unwrap();
 
         Left(
             self.find_target_of_expression(&target.wired_from(
                 carry_out_left,
-                Operation::OR,
+                Operation::Or,
                 carry_out_right,
             ))
             .unwrap(),
@@ -232,16 +248,21 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let starting_values = lines
-            .by_ref()
-            .take_while(|line| !line.is_empty())
-            .map(|s| parse_name(&s))
-            .collect();
-        let expressions =
-            lines.map(|s| parse_expression(&s)).map(|expr| (expr.target, expr)).collect();
-
-        Day { starting_values, expressions }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                multi_line_parser::<StartingValue>(),
+                double_line_ending,
+                multi_line_parser::<Expression>(),
+            ),
+            |(starting_values, expressions)| Day {
+                starting_values: starting_values
+                    .into_iter()
+                    .map(|starting_value| (starting_value.0, starting_value.1))
+                    .collect(),
+                expressions: expressions.into_iter().map(|expr| (expr.target, expr)).collect(),
+            },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {

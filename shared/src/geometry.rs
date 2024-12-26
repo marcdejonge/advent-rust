@@ -1,11 +1,10 @@
+use num_traits::{abs, One, Signed};
+use prse::*;
 use std::cmp::min;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::Sum;
 use std::ops::{Add, Div, Index, Mul, Neg, Rem, Sub};
 use std::str::FromStr;
-
-use num_traits::{abs, One, Signed};
-use prse::*;
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
@@ -189,6 +188,18 @@ impl<T> From<(T, T, T)> for Vector<3, T> {
 
 impl<T> From<(T, T, T, T)> for Vector<4, T> {
     fn from(value: (T, T, T, T)) -> Self { Vector { coords: [value.0, value.1, value.2, value.3] } }
+}
+
+impl<T> From<(T, T)> for Point<2, T> {
+    fn from(value: (T, T)) -> Self { Point { coords: [value.0, value.1] } }
+}
+
+impl<T> From<(T, T, T)> for Point<3, T> {
+    fn from(value: (T, T, T)) -> Self { Point { coords: [value.0, value.1, value.2] } }
+}
+
+impl<T> From<(T, T, T, T)> for Point<4, T> {
+    fn from(value: (T, T, T, T)) -> Self { Point { coords: [value.0, value.1, value.2, value.3] } }
 }
 
 pub fn unit_vector<const D: usize, T: Copy + One>() -> Vector<D, T> {

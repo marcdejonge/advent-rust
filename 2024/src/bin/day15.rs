@@ -1,11 +1,18 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
+use advent_lib::direction::{direction_parser, Direction};
 use advent_lib::geometry::point2;
 use advent_lib::grid::{Grid, Location};
+use advent_lib::parsing::{double_line_ending, Parsable};
 use advent_macros::FromRepr;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::{many1, separated_list1};
+use nom::sequence::separated_pair;
+use nom::Parser;
 use std::cmp::PartialEq;
 use Block::*;
 
@@ -83,6 +90,17 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = u32;
+
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                Grid::parser(),
+                double_line_ending,
+                separated_list1(line_ending, many1(direction_parser)),
+            ),
+            |(grid, commands)| Day { grid, commands: commands.into_iter().flatten().collect() },
+        )
+    }
 
     fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
         let grid = Grid::from(lines.by_ref().take_while(|line| !line.is_empty()));

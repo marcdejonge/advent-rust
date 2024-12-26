@@ -4,6 +4,13 @@ use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
 use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
+use nom::bytes::complete::{tag, take_while_m_n};
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::separated_pair;
+use nom::Parser;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -56,16 +63,27 @@ fn bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes, collector: 
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut graph = Graph::default();
-        for line in lines {
-            let mut parts = line.split("-");
-            let from = Name(parts.next().unwrap().as_bytes().try_into().unwrap());
-            let to = Name(parts.next().unwrap().as_bytes().try_into().unwrap());
-            graph.entry(from).or_insert_with(FxHashSet::default).insert(to);
-            graph.entry(to).or_insert_with(FxHashSet::default).insert(from);
-        }
-        Day { graph }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(
+                    take_while_m_n(2, 2, |b: u8| b.is_ascii_alphabetic()),
+                    tag(b"-"),
+                    take_while_m_n(2, 2, |b: u8| b.is_ascii_alphabetic()),
+                ),
+            ),
+            |pairs: Vec<(&[u8], &[u8])>| {
+                let mut graph = Graph::default();
+                for (from, to) in pairs {
+                    let from = Name(from.try_into().unwrap());
+                    let to = Name(to.try_into().unwrap());
+                    graph.entry(from).or_insert_with(FxHashSet::default).insert(to);
+                    graph.entry(to).or_insert_with(FxHashSet::default).insert(from);
+                }
+                Day { graph }
+            },
+        )
     }
     fn calculate_part1(&self) -> Self::Output {
         self.graph

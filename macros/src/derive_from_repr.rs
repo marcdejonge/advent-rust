@@ -90,17 +90,16 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
         });
 
         let parse_lines = variants.iter().map(|(ident, expr, _, _)| {
-            quote! { #expr => Ok((rest, #name::#ident)), }
+            quote! { #expr => Ok((&input[1..], #name::#ident)), }
         });
         extra_parsers.push(quote! {
             impl #name {
-                fn parse(input: &str) -> nom::IResult<&str, Self> {
+                fn parse(input: &[u8]) -> nom::IResult<&[u8], Self> {
                     if input.len() == 0 {
                         return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
                     }
 
-                    let (first, rest) = input.split_at(1);
-                    match first.as_bytes()[0] {
+                    match input[0] {
                         #(#parse_lines)*
                         _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
                     }

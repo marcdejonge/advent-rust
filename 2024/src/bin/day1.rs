@@ -2,39 +2,45 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
-use itertools::Itertools;
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::separated_pair;
+use nom::Parser;
 use rayon::prelude::*;
-
-type NR = i64;
 
 #[derive(Debug)]
 struct Day {
-    left: Vec<NR>,
-    right: Vec<NR>,
+    left: Vec<i64>,
+    right: Vec<i64>,
 }
 
 impl ExecutableDay for Day {
-    type Output = NR;
+    type Output = i64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let (mut left, mut right): (Vec<NR>, Vec<NR>) = lines
-            .map(|line| {
-                line.split_whitespace()
-                    .map(|s| s.parse::<NR>().unwrap())
-                    .collect_tuple()
-                    .unwrap()
-            })
-            .unzip();
-        left.sort();
-        right.sort();
-        Day { left, right }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(complete::i64, space1, complete::i64),
+            ),
+            |list| {
+                let (mut left, mut right): (Vec<_>, Vec<_>) = list.into_iter().unzip();
+                left.sort();
+                right.sort();
+                Day { left, right }
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.left.iter().zip(self.right.iter()).map(|(l, r)| (l - r).abs()).sum()
     }
-    fn calculate_part2(&self) -> Self::Output {
+    fn calculate_part2(&self) -> Self::AltOutput {
         let map = self.right.iter().counts_fx();
-        self.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as NR * l).sum()
+        self.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as i64 * l).sum()
     }
 }
 

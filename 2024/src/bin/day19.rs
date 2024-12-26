@@ -2,10 +2,15 @@
 extern crate core;
 
 use advent_lib::day::*;
-use advent_lib::parsing::{full, many_1_n};
+use advent_lib::parsing::{double_line_ending, many_1_n};
 use advent_macros::FromRepr;
 use nom::bytes::complete::tag;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
 use nom::multi::{many1, separated_list1};
+use nom::sequence::separated_pair;
+use nom::Parser;
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
@@ -106,15 +111,20 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let first_line = lines.next().expect("First line with available patterns");
-        let available_patterns =
-            full(separated_list1(tag(", "), many_1_n(Color::parse)))(&first_line).unwrap();
-        lines.next().expect("Empty line after available patterns");
-        let towels = lines.filter_map(|s| full(many1(Color::parse))(&s).ok()).collect();
-
-        Day { nodes: Node::generate_nodes(available_patterns), towels }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                separated_list1(tag(", "), many_1_n(Color::parse)),
+                double_line_ending,
+                separated_list1(line_ending, many1(Color::parse)),
+            ),
+            |(available_patterns, towels)| Day {
+                nodes: Node::generate_nodes(available_patterns),
+                towels,
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         self.towels.par_iter().filter(|&towel| self.can_be_made(towel) > 0).count()
     }

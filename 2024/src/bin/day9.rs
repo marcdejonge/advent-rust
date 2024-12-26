@@ -1,7 +1,10 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::iter_utils::IteratorUtils;
+use nom::bytes::complete::is_a;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::Parser;
 use std::cmp::max;
 
 #[derive(Clone)]
@@ -88,28 +91,31 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u128;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut files = Vec::new();
-        let mut free_space = Vec::new();
-        let mut file_ix = 0;
-        let mut location = 0;
-        let mut empty = false;
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(is_a("0123456789"), |input: &[u8]| {
+            let mut files = Vec::new();
+            let mut free_space = Vec::new();
+            let mut file_ix = 0;
+            let mut location = 0;
+            let mut empty = false;
 
-        for size in lines.single().unwrap().bytes().map(|c| c - b'0') {
-            if empty {
-                free_space.push(Space { size, location });
-                location += size as u32;
-                empty = false;
-            } else {
-                files.push(File { file_ix, size, location });
-                location += size as u32;
-                file_ix += 1;
-                empty = true;
+            for size in input.iter().map(|c| c - b'0') {
+                if empty {
+                    free_space.push(Space { size, location });
+                    location += size as u32;
+                    empty = false;
+                } else {
+                    files.push(File { file_ix, size, location });
+                    location += size as u32;
+                    file_ix += 1;
+                    empty = true;
+                }
             }
-        }
 
-        Day { files, free_space }
+            Day { files, free_space }
+        })
     }
+
     fn calculate_part1(&self) -> Self::Output {
         let mut memory = self.clone();
         memory.defragment_fractional_files();

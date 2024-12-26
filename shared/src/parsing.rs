@@ -1,35 +1,54 @@
-use nom::character::complete::digit1;
-use nom::combinator::map_res;
+use nom::character::complete::line_ending;
+use nom::combinator::{all_consuming, map};
 use nom::error::{Error, ParseError};
-use nom::{Finish, IResult, InputLength, InputTake, Parser};
+use nom::multi::separated_list1;
+use nom::sequence::tuple;
+use nom::{Compare, Finish, IResult, InputIter, InputLength, InputTake, Parser, Slice};
 use smallvec::SmallVec;
+use std::ops::{Range, RangeFrom, RangeTo};
+
+pub fn handle_parser_error<'a, T>(
+    input: &'a [u8],
+    parser: impl Parser<&'a [u8], T, Error<&'a [u8]>>,
+) -> T {
+    match all_consuming(parser).parse(input).finish() {
+        Ok((_, day)) => day,
+        Err(e) => {
+            panic!(
+                "Error parsing input, code: {:?}. Rest input:\n{}",
+                e.code,
+                String::from_utf8_lossy(if e.input.len() > 100 {
+                    &e.input[0..100]
+                } else {
+                    e.input
+                })
+            );
+        }
+    }
+}
 
 #[inline]
-pub fn find_many<Input, Output, Error, ParseFunction>(
+pub fn find_many_skipping_unknown<Input, Output, Error, ParseFunction>(
     mut f: ParseFunction,
-    mut input: Input,
-) -> Vec<Output>
+) -> impl Parser<Input, Vec<Output>, Error>
 where
     Input: Clone + InputLength + InputTake,
     ParseFunction: Parser<Input, Output, Error>,
 {
-    let mut res = Vec::new();
-    while input.input_len() > 0 {
-        let value = f.parse(input.clone());
-        match value {
-            Ok((left, o)) => {
-                res.push(o);
-                input = left;
+    move |mut input: Input| {
+        let mut res = Vec::new();
+        while input.input_len() > 0 {
+            let value = f.parse(input.clone());
+            match value {
+                Ok((left, o)) => {
+                    res.push(o);
+                    input = left;
+                }
+                Err(_) => input = input.take_split(1).0,
             }
-            Err(_) => input = input.take_split(1).0,
         }
+        Ok((input, res))
     }
-    res
-}
-
-#[inline]
-pub fn digits<T: std::str::FromStr>(input: &str) -> IResult<&str, T> {
-    map_res(digit1, |s: &str| s.parse::<T>())(input)
 }
 
 pub fn many_1_n<const MAX: usize, Input, Output, Error, ParserFunction>(
@@ -73,21 +92,42 @@ where
     }
 }
 
-pub fn full<Input: InputLength, Output>(
-    mut parser: impl Parser<Input, Output, Error<Input>>,
-) -> impl FnMut(Input) -> Result<Output, Error<Input>> {
-    move |input| {
-        parser.parse(input).finish().and_then(|(rest, output)| {
-            if rest.input_len() == 0 {
-                Ok(output)
-            } else {
-                Err(Error::from_error_kind(
-                    rest,
-                    nom::error::ErrorKind::Complete,
-                ))
-            }
-        })
-    }
+pub trait Parsable
+where
+    Self: Sized,
+{
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>>;
+}
+
+pub fn double_line_ending<I>(input: I) -> IResult<I, (I, I)>
+where
+    I: Slice<Range<usize>> + Slice<RangeFrom<usize>> + Slice<RangeTo<usize>>,
+    I: InputIter + InputLength + Clone,
+    I: Compare<&'static str>,
+{
+    tuple((line_ending, line_ending))(input)
+}
+
+pub fn multi_line_parser<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
+where
+    T: Parsable,
+{
+    separated_list1(line_ending, T::parser())
+}
+
+pub fn double_line_parser<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
+where
+    T: Parsable,
+{
+    separated_list1(tuple((line_ending, line_ending)), T::parser())
+}
+
+pub fn map_parser<'a, T, U, F>(function: F) -> impl Parser<&'a [u8], U, Error<&'a [u8]>>
+where
+    T: Parsable,
+    F: FnMut(T) -> U,
+{
+    map(T::parser(), function)
 }
 
 #[cfg(test)]
@@ -99,14 +139,16 @@ mod tests {
     #[test]
     fn test_find0() {
         let input = "a1b2c3";
-        let res = find_many::<_, _, (), _>(pair(char('a'), char('1')), input);
-        assert_eq!(res, vec![('a', '1')]);
+        let res =
+            find_many_skipping_unknown::<_, _, (), _>(pair(char('a'), char('1'))).parse(input);
+        assert_eq!(res, Ok(("", vec![('a', '1')])));
     }
 
     #[test]
     fn test_find0_many() {
         let input = "a1b2a1b2a1";
-        let res = find_many::<_, _, (), _>(pair(char('a'), char('1')), input);
-        assert_eq!(res, vec![('a', '1'); 3]);
+        let res =
+            find_many_skipping_unknown::<_, _, (), _>(pair(char('a'), char('1'))).parse(input);
+        assert_eq!(res, Ok(("", vec![('a', '1'); 3])));
     }
 }

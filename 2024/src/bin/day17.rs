@@ -2,6 +2,14 @@
 
 use advent_lib::day::*;
 use fxhash::FxHashMap;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{delimited, preceded, tuple};
+use nom::Parser;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
@@ -94,19 +102,22 @@ impl Machine {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let registers = ["Register A: ", "Register B: ", "Register C: "]
-            .map(|prefix| lines.next().unwrap().trim_start_matches(prefix).parse().unwrap());
-        lines.next(); // Skip the empty line
-        let program = lines
-            .next()
-            .unwrap()
-            .trim_start_matches("Program: ")
-            .split(",")
-            .map(|s| s.parse().unwrap())
-            .collect();
-        Day { registers, program: Program(program) }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            tuple((
+                delimited(tag(b"Register A: "), complete::u64, line_ending),
+                delimited(tag(b"Register B: "), complete::u64, line_ending),
+                delimited(tag(b"Register C: "), complete::u64, line_ending),
+                line_ending,
+                preceded(tag(b"Program: "), separated_list1(tag(b","), complete::u8)),
+            )),
+            |(a, b, c, _, program)| Day {
+                registers: [a, b, c],
+                program: Program(program.as_slice().into()),
+            },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output { Machine::new(self).execute_program().into() }
 
     /*

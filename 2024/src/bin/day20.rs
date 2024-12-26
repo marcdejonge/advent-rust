@@ -4,7 +4,10 @@ use advent_lib::day::*;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
+use advent_lib::parsing::map_parser;
 use advent_macros::FromRepr;
+use nom::error::Error;
+use nom::Parser;
 use rayon::prelude::*;
 use std::iter::successors;
 use Block::*;
@@ -71,11 +74,12 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let grid = Grid::from(lines);
-        let start = grid.find(|&b| b == Start).unwrap();
-        let walk = walk_grid(&grid, start).enumerate().collect();
-        Day { grid, walk }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map_parser(|grid: Grid<Block>| {
+            let start = grid.find(|&b| b == Start).unwrap();
+            let walk = walk_grid(&grid, start).enumerate().collect();
+            Day { walk, grid }
+        })
     }
 
     fn calculate_part1(&self) -> Self::Output { self.find_cheats(&generate_steps(2), 100) }

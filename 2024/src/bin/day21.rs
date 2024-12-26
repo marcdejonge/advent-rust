@@ -7,10 +7,15 @@ use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::small_string::SmallString;
 use fxhash::FxHashMap;
+use nom::character::complete::{alphanumeric1, line_ending};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 use smallvec::{smallvec, SmallVec};
 
 struct Day {
-    lines: Vec<String>,
+    lines: Vec<SmallString<8>>,
 }
 
 type MoveString = SmallString<8>;
@@ -107,16 +112,20 @@ impl Moves {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { lines: lines.collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(line_ending, alphanumeric1),
+            |lines: Vec<&[u8]>| Day { lines: lines.into_iter().map(SmallString::from).collect() },
+        )
     }
+
     fn calculate_part1(&self) -> Self::Output {
         let mut moves = Moves::new();
-        self.lines.iter().map(|line| moves.score(SmallString::from(line), 2)).sum()
+        self.lines.iter().map(|line| moves.score(line.clone(), 2)).sum()
     }
     fn calculate_part2(&self) -> Self::Output {
         let mut moves = Moves::new();
-        self.lines.iter().map(|line| moves.score(SmallString::from(line), 25)).sum()
+        self.lines.iter().map(|line| moves.score(line.clone(), 25)).sum()
     }
 }
 

@@ -3,12 +3,9 @@ use std::fmt::Debug;
 use crate::day::ExecutableDay;
 
 #[inline]
-pub fn assert_day<Day: ExecutableDay>(
-    input: &Day,
-    calc: fn(&Day) -> Day::Output,
-    expected: Day::Output,
-) where
-    Day::Output: PartialEq + Debug,
+pub fn assert_day<Day: ExecutableDay, O>(input: &Day, calc: fn(&Day) -> O, expected: O)
+where
+    O: PartialEq + Debug,
 {
     let result = calc(input);
     assert_eq!(
@@ -24,7 +21,7 @@ macro_rules! day_test {
         mod $name {
             use super::super::*;
 
-            const input: &str = include_str!(concat!(
+            const input: &[u8] = include_bytes!(concat!(
                 "../../input/day",
                 stringify!($day),
                 "_",
@@ -34,7 +31,7 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
             }
         }
@@ -43,7 +40,7 @@ macro_rules! day_test {
         mod $name {
             use super::super::*;
 
-            const input: &str = include_str!(concat!(
+            const input: &[u8] = include_bytes!(concat!(
                 "../../input/day",
                 stringify!($day),
                 "_",
@@ -53,13 +50,13 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
             }
 
             #[test]
             fn part2() {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 advent_lib::test_utils::assert_day(&day, Day::calculate_part2, $part2_result);
             }
         }
@@ -70,11 +67,12 @@ macro_rules! day_test {
             use super::super::*;
             use test::Bencher;
 
-            const input: &str = include_str!(concat!("../../input/day", stringify!($day), ".txt"));
+            const input: &[u8] =
+                include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
                 })
@@ -87,11 +85,12 @@ macro_rules! day_test {
             use super::super::*;
             use test::Bencher;
 
-            const input: &str = include_str!(concat!("../../input/day", stringify!($day), ".txt"));
+            const input: &[u8] =
+                include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&day, Day::calculate_part1, $part1_result);
                 })
@@ -99,7 +98,7 @@ macro_rules! day_test {
 
             #[bench]
             fn part2(b: &mut Bencher) {
-                let day = Day::from_lines(input.lines().map(|line| line.to_owned()));
+                let day = advent_lib::parsing::handle_parser_error(input, Day::parser());
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&day, Day::calculate_part2, $part2_result);
                 })
