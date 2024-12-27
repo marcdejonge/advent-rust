@@ -3,33 +3,30 @@
 use std::ops::Add;
 
 use fxhash::FxHashMap;
-use prse_derive::parse;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::{many1, separated_list1};
+use nom::sequence::separated_pair;
+use nom::Parser;
 use rayon::prelude::*;
 
-use advent_lib::day::*;
-
 use crate::Spring::{Broken, Operational, Unknown};
+use advent_lib::day::*;
+use advent_macros::FromRepr;
 
 struct Day {
     lines: Vec<(Vec<Spring>, Vec<usize>)>,
 }
 
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+#[repr(u8)]
+#[derive(FromRepr, Eq, PartialEq, Debug, Copy, Clone)]
 enum Spring {
-    Unknown,
-    Operational,
-    Broken,
-}
-
-fn parse_springs(line: &str) -> Vec<Spring> {
-    line.chars()
-        .map(|c| match c {
-            '.' => Operational,
-            '#' => Broken,
-            '?' => Unknown,
-            _ => panic!("Unknown state {c}"),
-        })
-        .collect()
+    Unknown = b'?',
+    Operational = b'.',
+    Broken = b'#',
 }
 
 fn find_options(
@@ -78,15 +75,18 @@ fn find_options(
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let lines = lines
-            .map(|line| {
-                let (line, counts): (String, Vec<_>) = parse!(line, "{} {:,:}");
-                (parse_springs(&line), counts)
-            })
-            .collect::<Vec<_>>();
-
-        Day { lines }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(
+                    many1(Spring::parse),
+                    space1,
+                    separated_list1(tag(b","), map(complete::u64, |nr| nr as usize)),
+                ),
+            ),
+            |lines| Day { lines },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {

@@ -1,6 +1,14 @@
 #![feature(test)]
 
 use advent_lib::day::*;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair, tuple};
+use nom::Parser;
 
 struct Day {
     races: Vec<Race>,
@@ -35,31 +43,27 @@ impl Race {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let times = lines
-            .next()
-            .unwrap()
-            .strip_prefix("Time:     ")
-            .unwrap()
-            .split(' ')
-            .flat_map(|nr| nr.parse().ok())
-            .collect::<Vec<_>>();
-        let distances = lines
-            .next()
-            .unwrap()
-            .strip_prefix("Distance: ")
-            .unwrap()
-            .split(' ')
-            .flat_map(|nr| nr.parse().ok())
-            .collect::<Vec<_>>();
-
-        Day {
-            races: times
-                .iter()
-                .zip(distances.iter())
-                .map(|(&time, &distance)| Race { time, distance })
-                .collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                preceded(
+                    tuple((tag(b"Time:"), space1)),
+                    separated_list1(space1, complete::u64),
+                ),
+                line_ending,
+                preceded(
+                    tuple((tag(b"Distance:"), space1)),
+                    separated_list1(space1, complete::u64),
+                ),
+            ),
+            |(times, distances)| Day {
+                races: times
+                    .iter()
+                    .zip(distances.iter())
+                    .map(|(&time, &distance)| Race { time, distance })
+                    .collect(),
+            },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output { self.races.iter().map(Race::solve).product() }

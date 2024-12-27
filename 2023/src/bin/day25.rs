@@ -1,15 +1,22 @@
 #![feature(test)]
 
 use fxhash::FxHashMap;
+use nom::bytes::complete::tag;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::separated_pair;
+use nom::Parser;
 use num::integer::sqrt;
 use petgraph::algo::dijkstra;
 use petgraph::prelude::*;
-use prse_derive::parse;
 
 use advent_lib::day::*;
 use advent_lib::graph_utils::dijkstra_explore;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
+use advent_lib::parsing::Parsable;
 
 struct Day {
     graph: UnGraph<Key, ()>,
@@ -18,19 +25,32 @@ struct Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut graph = UnGraph::<Key, ()>::new_undirected();
-        let mut indices = FxHashMap::<Key, NodeIndex>::default();
-        for line in lines {
-            let (source, targets): (Key, Vec<Key>) = parse!(line, "{}: {: :}");
-            let source_ix = *indices.entry(source).or_insert_with(|| graph.add_node(source));
-            for target in targets {
-                let target_ix = *indices.entry(target).or_insert_with(|| graph.add_node(target));
-                graph.add_edge(source_ix, target_ix, ());
-            }
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(
+                    Key::parser(),
+                    tag(": "),
+                    separated_list1(space1, Key::parser()),
+                ),
+            ),
+            |lines| {
+                let mut graph = UnGraph::<Key, ()>::new_undirected();
+                let mut indices = FxHashMap::<Key, NodeIndex>::default();
+                for (source, targets) in lines {
+                    let source_ix =
+                        *indices.entry(source).or_insert_with(|| graph.add_node(source));
+                    for target in targets {
+                        let target_ix =
+                            *indices.entry(target).or_insert_with(|| graph.add_node(target));
+                        graph.add_edge(source_ix, target_ix, ());
+                    }
+                }
 
-        Day { graph }
+                Day { graph }
+            },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {

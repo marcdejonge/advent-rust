@@ -1,6 +1,12 @@
 #![feature(test)]
 #![feature(iter_collect_into)]
 
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 use rayon::prelude::*;
 
 use advent_lib::day::*;
@@ -48,12 +54,11 @@ fn calc_prev(nrs: &Vec<i64>) -> i64 {
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            input: lines
-                .map(|line| line.split(' ').filter_map(|nr| nr.parse().ok()).collect())
-                .collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(line_ending, separated_list1(space1, complete::i64)),
+            |input| Day { input },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output { self.input.par_iter().map(calc_next).sum() }

@@ -1,13 +1,21 @@
 #![feature(test)]
 
 use fxhash::FxHashMap;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::character::complete::line_ending;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::{many1, separated_list1};
+use nom::sequence::{delimited, separated_pair};
+use nom::Parser;
 use num::integer::lcm;
-use prse_derive::parse;
 use rayon::prelude::*;
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
+use advent_lib::parsing::{double_line_ending, Parsable};
 
 struct Day {
     instructions: Vec<Turn>,
@@ -52,26 +60,29 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let instructions = lines
-            .next()
-            .unwrap()
-            .chars()
-            .map(|c| match c {
-                'L' => Turn::Left,
-                'R' => Turn::Right,
-                _ => panic!("Unknown turn {c}"),
-            })
-            .collect();
-        lines.next().unwrap(); // Empty line
-
-        let mut steps = FxHashMap::default();
-        lines.for_each(|line| {
-            let (from, left, right) = parse!(line, "{} = ({}, {})");
-            steps.insert(from, (left, right));
-        });
-
-        Day { instructions, steps }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                many1(alt((
+                    map(tag(b"L"), |_| Turn::Left),
+                    map(tag(b"R"), |_| Turn::Right),
+                ))),
+                double_line_ending,
+                separated_list1(
+                    line_ending,
+                    separated_pair(
+                        Key::parser(),
+                        tag(b" = "),
+                        delimited(
+                            tag(b"("),
+                            separated_pair(Key::parser(), tag(b", "), Key::parser()),
+                            tag(b")"),
+                        ),
+                    ),
+                ),
+            ),
+            |(instructions, steps)| Day { instructions, steps: steps.into_iter().collect() },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {

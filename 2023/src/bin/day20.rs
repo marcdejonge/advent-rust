@@ -4,11 +4,18 @@ use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 
 use fxhash::FxHashMap;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair};
+use nom::Parser;
 use num::integer::lcm;
-use prse::*;
 
 use advent_lib::day::*;
 use advent_lib::key::Key;
+use advent_lib::parsing::{multi_line_parser, Parsable};
 use Module::*;
 
 const BUTTON: Key = Key::fixed(b"button");
@@ -50,8 +57,8 @@ impl State {
     fn handle_incoming_signal(&mut self, signal: &Signal) -> (Option<&Vec<Key>>, bool) {
         if let Some(module) = self.modules.get_mut(&signal.target) {
             match module {
-                Broadcaster { connections } => (Some(connections), false),
-                FlipFlop { connections, state } => {
+                Broadcaster { connections, .. } => (Some(connections), false),
+                FlipFlop { connections, state, .. } => {
                     if !signal.is_high {
                         *state = !*state;
                         (Some(connections), *state)
@@ -59,7 +66,7 @@ impl State {
                         (None, false)
                     }
                 }
-                Conjunction { connections, incoming_state } => {
+                Conjunction { connections, incoming_state, .. } => {
                     incoming_state.insert(signal.source, signal.is_high);
                     let next_signal = !incoming_state.values().all(|b| *b);
                     (Some(connections), next_signal)
@@ -98,56 +105,94 @@ impl State {
 
 #[derive(Debug, Clone)]
 enum Module {
-    Broadcaster { connections: Vec<Key> },
-    FlipFlop { connections: Vec<Key>, state: bool },
-    Conjunction { connections: Vec<Key>, incoming_state: FxHashMap<Key, bool> },
+    Broadcaster { name: Key, connections: Vec<Key> },
+    FlipFlop { name: Key, connections: Vec<Key>, state: bool },
+    Conjunction { name: Key, connections: Vec<Key>, incoming_state: FxHashMap<Key, bool> },
+}
+
+impl Module {
+    fn connections(&self) -> &[Key] {
+        match self {
+            Broadcaster { connections, .. } => connections,
+            FlipFlop { connections, .. } => connections,
+            Conjunction { connections, .. } => connections,
+        }
+    }
+
+    fn name(&self) -> Key {
+        match self {
+            Broadcaster { name, .. } => *name,
+            FlipFlop { name, .. } => *name,
+            Conjunction { name, .. } => *name,
+        }
+    }
+}
+
+impl Parsable for Module {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        alt((
+            map(
+                separated_pair(
+                    tag(b"broadcaster"),
+                    tag(b" -> "),
+                    separated_list1(tag(b", "), Key::parser()),
+                ),
+                |(_, connections)| Broadcaster { name: BROADCASTER, connections },
+            ),
+            map(
+                separated_pair(
+                    preceded(tag(b"%"), Key::parser()),
+                    tag(b" -> "),
+                    separated_list1(tag(b", "), Key::parser()),
+                ),
+                |(name, connections)| FlipFlop { name, connections, state: false },
+            ),
+            map(
+                separated_pair(
+                    preceded(tag(b"&"), Key::parser()),
+                    tag(b" -> "),
+                    separated_list1(tag(b", "), Key::parser()),
+                ),
+                |(name, connections)| Conjunction {
+                    name,
+                    connections,
+                    incoming_state: Default::default(),
+                },
+            ),
+        ))
+    }
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut reverse_mapping: FxHashMap<Key, Vec<Key>> = Default::default();
-        let mut modules: FxHashMap<Key, Module> = lines
-            .map(|line| {
-                let (name, connections): (String, Vec<Key>) = parse!(line, "{} -> {:, :}");
-
-                for connection in &connections {
-                    if !reverse_mapping.contains_key(connection) {
-                        reverse_mapping.insert(*connection, Vec::new());
-                    }
-                    reverse_mapping
-                        .get_mut(connection)
-                        .unwrap()
-                        .push(Key::from_str(&name[1..]).unwrap());
-                }
-
-                if name == "broadcaster" {
-                    (BROADCASTER, Broadcaster { connections })
-                } else if let Some(name) = name.strip_prefix('%') {
-                    let name = Key::from_str(name).unwrap();
-                    (name, FlipFlop { connections, state: false })
-                } else if let Some(name) = name.strip_prefix('&') {
-                    let name = Key::from_str(name).unwrap();
-                    (
-                        name,
-                        Conjunction { connections, incoming_state: Default::default() },
-                    )
-                } else {
-                    panic!("Unknown module variant")
-                }
-            })
-            .collect();
-
-        for (name, module) in &mut modules {
-            if let Conjunction { incoming_state, .. } = module {
-                reverse_mapping.get(name).unwrap().iter().for_each(|from| {
-                    incoming_state.insert(*from, false);
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(multi_line_parser(), |mut modules: Vec<Module>| {
+            let reverse_mapping: FxHashMap<Key, Vec<Key>> = modules
+                .iter()
+                .flat_map(|module| {
+                    module.connections().iter().map(move |connection| (*connection, module.name()))
                 })
-            }
-        }
+                .fold(FxHashMap::default(), |mut map, (connection, name)| {
+                    map.entry(connection).or_insert_with(Vec::new).push(name);
+                    map
+                });
 
-        Day { initial_state: State { modules }, reverse_mapping }
+            for module in &mut modules {
+                if let Conjunction { name, incoming_state, .. } = module {
+                    reverse_mapping.get(name).unwrap().iter().for_each(|from| {
+                        incoming_state.insert(*from, false);
+                    })
+                }
+            }
+
+            Day {
+                initial_state: State {
+                    modules: modules.into_iter().map(|module| (module.name(), module)).collect(),
+                },
+                reverse_mapping,
+            }
+        })
     }
 
     fn calculate_part1(&self) -> Self::Output {

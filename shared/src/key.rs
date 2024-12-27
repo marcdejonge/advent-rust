@@ -1,6 +1,10 @@
+use crate::parsing::Parsable;
+use nom::bytes::complete::take_while_m_n;
+use nom::character::is_alphabetic;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::Parser;
 use std::fmt::{Debug, Display, Formatter, Write};
-
-use prse::{Parse, ParseError};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct Key {
@@ -8,7 +12,7 @@ pub struct Key {
 }
 
 impl Key {
-    /// This const function is to be able to create const Keys. It contains less checks that the
+    /// This const function is to be able to create const Keys. It contains fewer checks that the
     /// from_str, so it shouldn't be used in normal parsing.
     pub const fn fixed(s: &'static [u8]) -> Key {
         let mut value: u64 = 0;
@@ -31,38 +35,26 @@ impl Key {
     pub const fn last_char(&self) -> u8 { b'a' + (self.value % 26) as u8 }
 }
 
-const LOW_OFFSET: u64 = 'a' as u64;
-const HIGH_OFFSET: u64 = 'A' as u64;
+const LOW_OFFSET: u64 = b'a' as u64;
+const HIGH_OFFSET: u64 = b'A' as u64;
 
-impl<'a> Parse<'a> for Key {
-    fn from_str(s: &'a str) -> Result<Self, ParseError>
-    where
-        Self: Sized,
-    {
-        if s.is_empty() {
-            ParseError::new("Empty strings are not supported");
-        }
+impl Parsable for Key {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(take_while_m_n(1, 12, is_alphabetic), |key: &[u8]| {
+            let value = key.iter().fold(0, |acc, &c| {
+                let codepoint = if c.is_ascii_lowercase() {
+                    c as u64 - LOW_OFFSET
+                } else if c.is_ascii_uppercase() {
+                    c as u64 - HIGH_OFFSET
+                } else {
+                    unreachable!("Invalid character found");
+                };
 
-        let mut value: u64 = 0;
-        for c in s.chars() {
-            let codepoint = if c.is_ascii_lowercase() {
-                c as u64 - LOW_OFFSET
-            } else if c.is_ascii_uppercase() {
-                c as u64 - HIGH_OFFSET
-            } else {
-                return Err(ParseError::new("Invalid character found"));
-            };
+                acc * 26 + codepoint + 1
+            }) - 1;
 
-            value = value
-                .checked_mul(26)
-                .ok_or(ParseError::new("Overflow error"))?
-                .checked_add(codepoint)
-                .ok_or(ParseError::new("Overflow error"))?
-                + 1;
-        }
-        value -= 1;
-
-        Ok(Key { value })
+            Key { value }
+        })
     }
 }
 
@@ -111,41 +103,44 @@ mod tests {
 
     #[test]
     fn back_and_forth() {
-        for test_string in ["aaa", "zzz", "hello", "world"] {
-            let key = match Key::from_str(test_string) {
-                Ok(x) => x,
+        for test_string in [&b"aaa"[..], &b"zzz"[..], &b"hello"[..], &b"world"[..]] {
+            let key = match Key::parser().parse(test_string) {
+                Ok((_, x)) => x,
                 Err(_) => panic!("Could not parse"),
             };
 
-            assert_eq!(test_string, &key.to_string())
+            assert_eq!(test_string, key.to_string().as_bytes())
         }
     }
 
     #[test]
-    fn other_characters_should_fail() {
+    fn stop_parsing_on_other_characters() {
         assert_eq!(
-            Err(ParseError::Other("Invalid character found".to_string())),
-            Key::from_str("abc7")
+            Ok((&b"7"[..], Key::fixed(b"abc"))),
+            Key::parser().parse(b"abc7")
         );
     }
 
     #[test]
-    fn string_too_long_error() {
+    fn parse_maximum_of_12_characters() {
         assert_eq!(
-            Err(ParseError::Other("Overflow error".to_string())),
-            Key::from_str("abcdefghijklmno")
+            Ok((&b"mno"[..], Key::fixed(b"abcdefghijkl"))),
+            Key::parser().parse(b"abcdefghijklmno")
         );
     }
 
     #[test]
     fn predictable_raw_keys() {
-        assert_eq!(Key::from_str("a"), Ok(Key::from(0)));
-        assert_eq!(Key::from_str("ab"), Ok(Key::from(27)));
-        assert_eq!(Key::from_str("columns"), Ok(Key::from(1110829946)));
+        assert_eq!(Key::parser().parse(b"a").unwrap().1, Key::from(0));
+        assert_eq!(Key::parser().parse(b"ab").unwrap().1, Key::from(27));
+        assert_eq!(
+            Key::parser().parse(b"columns").unwrap().1,
+            Key::from(1110829946)
+        );
     }
 
     #[test]
     fn const_keys_should_match() {
-        assert_eq!(Key::from_str("text"), Ok(Key::fixed(b"text")));
+        assert_eq!(Key::parser().parse(b"text").unwrap().1, Key::fixed(b"text"));
     }
 }

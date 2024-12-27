@@ -2,9 +2,13 @@
 
 extern crate core;
 
+use nom::error::Error;
+use nom::Parser;
 use rayon::prelude::*;
 
 use advent_lib::day::*;
+use advent_lib::grid::{Grid, Location};
+use advent_lib::parsing::map_parser;
 
 struct Day {
     symbols: Vec<Symbol>,
@@ -15,19 +19,19 @@ struct Day {
 struct GridNumber {
     value: usize,
     length: i32,
-    index: (i32, i32),
+    index: Location,
 }
 
 #[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 struct Symbol {
-    index: (i32, i32),
+    index: Location,
     is_gear: bool,
 }
 
 impl GridNumber {
-    fn add_digit(&mut self, x: usize, y: usize, digit: u8) {
+    fn add_digit(&mut self, location: Location, digit: u8) {
         if self.length == 0 {
-            self.index = (x as i32, y as i32)
+            self.index = location
         }
         self.value = self.value * 10 + (digit - b'0') as usize;
         self.length += 1;
@@ -42,36 +46,38 @@ impl GridNumber {
     }
 
     fn is_next_to(&self, symbol: &Symbol) -> bool {
-        (-1..=1).contains(&(symbol.index.1 - self.index.1))
-            && (-1..=self.length).contains(&(symbol.index.0 - self.index.0))
+        (-1..=1).contains(&(symbol.index.y() - self.index.y()))
+            && (-1..=self.length).contains(&(symbol.index.x() - self.index.x()))
     }
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut numbers = Vec::<GridNumber>::new();
-        let mut saved_number = GridNumber::default();
-        let mut symbols = Vec::<Symbol>::new();
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map_parser(|grid: Grid<u8>| {
+            let mut numbers = Vec::<GridNumber>::new();
+            let mut saved_number = GridNumber::default();
+            let mut symbols = Vec::<Symbol>::new();
 
-        lines.enumerate().for_each(|(y, line)| {
-            line.bytes().enumerate().for_each(|(x, b)| match b {
-                b'.' => saved_number.save(&mut numbers),
-                b'0'..=b'9' => saved_number.add_digit(x, y, b),
-                b'*' => {
-                    saved_number.save(&mut numbers);
-                    symbols.push(Symbol { index: (x as i32, y as i32), is_gear: true });
-                }
-                _ => {
-                    saved_number.save(&mut numbers);
-                    symbols.push(Symbol { index: (x as i32, y as i32), is_gear: false });
-                }
+            grid.east_lines().for_each(|line| {
+                line.for_each(|(index, &b)| match b {
+                    b'.' => saved_number.save(&mut numbers),
+                    b'0'..=b'9' => saved_number.add_digit(index, b),
+                    b'*' => {
+                        saved_number.save(&mut numbers);
+                        symbols.push(Symbol { index, is_gear: true });
+                    }
+                    _ => {
+                        saved_number.save(&mut numbers);
+                        symbols.push(Symbol { index, is_gear: false });
+                    }
+                });
+                saved_number.save(&mut numbers);
             });
-            saved_number.save(&mut numbers);
-        });
 
-        Day { symbols, numbers }
+            Day { symbols, numbers }
+        })
     }
 
     fn calculate_part1(&self) -> Self::Output {

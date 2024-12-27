@@ -3,11 +3,18 @@
 use std::fmt::{Debug, Formatter, Write};
 
 use enum_map::{Enum, EnumMap};
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::{many_m_n, separated_list1};
+use nom::sequence::separated_pair;
+use nom::{IResult, Parser};
 use rayon::prelude::*;
 
-use advent_lib::day::*;
-
 use crate::Score::*;
+use advent_lib::day::*;
+use advent_macros::FromRepr;
 
 struct Day {
     bets: Vec<([Card; 5], u64)>,
@@ -25,22 +32,7 @@ impl Debug for Hand {
 
         f.write_char('\t')?;
         for c in self.cards {
-            f.write_char(match c {
-                Card::Joker => '_',
-                Card::Two => '2',
-                Card::Three => '3',
-                Card::Four => '4',
-                Card::Five => '5',
-                Card::Six => '6',
-                Card::Seven => '7',
-                Card::Eight => '8',
-                Card::Nine => '9',
-                Card::Ten => 'T',
-                Card::Jack => 'J',
-                Card::Queen => 'Q',
-                Card::King => 'K',
-                Card::Ace => 'A',
-            })?
+            f.write_char(c.into())?
         }
         Ok(())
     }
@@ -53,22 +45,31 @@ impl Hand {
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Enum)]
+#[repr(u8)]
+#[derive(FromRepr, Debug, Eq, PartialEq, Copy, Clone, Enum)]
 enum Card {
-    Joker,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    Ten,
-    Jack,
-    Queen,
-    King,
-    Ace,
+    Joker = b'*',
+    Two = b'2',
+    Three = b'3',
+    Four = b'4',
+    Five = b'5',
+    Six = b'6',
+    Seven = b'7',
+    Eight = b'8',
+    Nine = b'9',
+    Ten = b'T',
+    Jack = b'J',
+    Queen = b'Q',
+    King = b'K',
+    Ace = b'A',
+}
+
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(other)) }
+}
+
+impl Ord for Card {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering { self.into_usize().cmp(&other.into_usize()) }
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
@@ -135,29 +136,8 @@ impl Score {
     }
 }
 
-impl From<char> for Card {
-    fn from(value: char) -> Self {
-        match value {
-            'A' => Card::Ace,
-            'K' => Card::King,
-            'Q' => Card::Queen,
-            'J' => Card::Jack,
-            'T' => Card::Ten,
-            '9' => Card::Nine,
-            '8' => Card::Eight,
-            '7' => Card::Seven,
-            '6' => Card::Six,
-            '5' => Card::Five,
-            '4' => Card::Four,
-            '3' => Card::Three,
-            '2' => Card::Two,
-            _ => panic!("Unknown card {value}"),
-        }
-    }
-}
-
-fn parse_hand(s: &str) -> [Card; 5] {
-    s.chars().take(5).map(Card::from).collect::<Vec<_>>().try_into().unwrap()
+fn parse_hand(input: &[u8]) -> IResult<&[u8], [Card; 5]> {
+    map(many_m_n(5, 5, Card::parse), |list| list.try_into().unwrap())(input)
 }
 
 fn jokers(cards: [Card; 5]) -> [Card; 5] {
@@ -172,23 +152,22 @@ fn end_score(mut bets: Vec<(Hand, u64)>) -> u64 {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            bets: lines.map(|line| (parse_hand(&line), line[6..].parse().unwrap())).collect(),
-        }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(parse_hand, space1, complete::u64),
+            ),
+            |bets| Day { bets },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {
-        end_score(self.bets.par_iter().map(|(c, b)| (Hand::new(*c), *b)).collect())
+        end_score(self.bets.par_iter().map(|&(c, bet)| (Hand::new(c), bet)).collect())
     }
 
     fn calculate_part2(&self) -> Self::Output {
-        end_score(
-            self.bets
-                .par_iter()
-                .map(|(c, bet)| (Hand::new(jokers(*c)), *bet))
-                .collect::<Vec<_>>(),
-        )
+        end_score(self.bets.par_iter().map(|&(c, bet)| (Hand::new(jokers(c)), bet)).collect())
     }
 }
 
@@ -204,35 +183,41 @@ mod tests {
     mod parsing {
         use crate::*;
 
+        fn score_from(hand: &[u8]) -> Score { Score::from(&parse_hand(hand).unwrap().1) }
+
         #[test]
         fn test_scores() {
-            assert_eq!(HighCard, Score::from(&parse_hand("23456")));
-            assert_eq!(OnePair, Score::from(&parse_hand("22456")));
-            assert_eq!(TwoPair, Score::from(&parse_hand("22446")));
-            assert_eq!(ThreeOfAKind, Score::from(&parse_hand("22246")));
-            assert_eq!(FullHouse, Score::from(&parse_hand("22244")));
-            assert_eq!(FourOfAKind, Score::from(&parse_hand("22224")));
-            assert_eq!(FiveOfAKind, Score::from(&parse_hand("22222")));
+            assert_eq!(HighCard, score_from(b"23456"));
+            assert_eq!(OnePair, score_from(b"22456"));
+            assert_eq!(TwoPair, score_from(b"22446"));
+            assert_eq!(ThreeOfAKind, score_from(b"22246"));
+            assert_eq!(FullHouse, score_from(b"22244"));
+            assert_eq!(FourOfAKind, score_from(b"22224"));
+            assert_eq!(FiveOfAKind, score_from(b"22222"));
+        }
+
+        fn score_from_jokers(hand: &[u8]) -> Score {
+            Score::from(&jokers(parse_hand(hand).unwrap().1))
         }
 
         #[test]
         fn test_scores_with_jokers() {
-            assert_eq!(OnePair, Score::from(&jokers(parse_hand("2345J"))));
+            assert_eq!(OnePair, score_from_jokers(b"2345J"));
 
-            assert_eq!(ThreeOfAKind, Score::from(&jokers(parse_hand("2245J"))));
-            assert_eq!(ThreeOfAKind, Score::from(&jokers(parse_hand("2J45J"))));
+            assert_eq!(ThreeOfAKind, score_from_jokers(b"2245J"));
+            assert_eq!(ThreeOfAKind, score_from_jokers(b"2J45J"));
 
-            assert_eq!(FullHouse, Score::from(&jokers(parse_hand("2244J"))));
+            assert_eq!(FullHouse, score_from_jokers(b"2244J"));
 
-            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("2JJ4J"))));
-            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("22J4J"))));
-            assert_eq!(FourOfAKind, Score::from(&jokers(parse_hand("2224J"))));
+            assert_eq!(FourOfAKind, score_from_jokers(b"2JJ4J"));
+            assert_eq!(FourOfAKind, score_from_jokers(b"22J4J"));
+            assert_eq!(FourOfAKind, score_from_jokers(b"2224J"));
 
-            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("JJJJJ"))));
-            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("2JJJJ"))));
-            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("22JJJ"))));
-            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("222JJ"))));
-            assert_eq!(FiveOfAKind, Score::from(&jokers(parse_hand("2222J"))));
+            assert_eq!(FiveOfAKind, score_from_jokers(b"JJJJJ"));
+            assert_eq!(FiveOfAKind, score_from_jokers(b"2JJJJ"));
+            assert_eq!(FiveOfAKind, score_from_jokers(b"22JJJ"));
+            assert_eq!(FiveOfAKind, score_from_jokers(b"222JJ"));
+            assert_eq!(FiveOfAKind, score_from_jokers(b"2222J"));
         }
     }
 }

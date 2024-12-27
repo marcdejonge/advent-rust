@@ -1,10 +1,17 @@
 #![feature(test)]
 
-use fxhash::FxHashSet;
-use std::ops::Shl;
-use std::str::FromStr;
-
 use advent_lib::day::*;
+use advent_lib::parsing::{multi_line_parser, Parsable};
+use fxhash::FxHashSet;
+use nom::bytes::streaming::tag;
+use nom::character::complete;
+use nom::character::complete::space1;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair, tuple};
+use nom::Parser;
+use std::ops::Shl;
 
 struct Day {
     cards: Vec<Card>,
@@ -15,16 +22,19 @@ struct Card {
     drawn: Vec<u8>,
 }
 
-impl FromStr for Card {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, nrs) = s.split_at(s.find(':').ok_or("Could not find colon")? + 2);
-        let (winning, drawn) = nrs.split_at(nrs.find('|').ok_or("Could not find pipe")?);
-        Ok(Card {
-            winning: winning.split(' ').filter_map(|n| n.parse().ok()).collect(),
-            drawn: drawn.split(' ').filter_map(|n| n.parse().ok()).collect(),
-        })
+impl Parsable for Card {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            preceded(
+                tuple((tag(b"Card"), space1, complete::u64, tag(b":"), space1)),
+                separated_pair(
+                    separated_list1(space1, complete::u8),
+                    tuple((tag(b" |"), space1)),
+                    separated_list1(space1, complete::u8),
+                ),
+            ),
+            |(winning, drawn)| Card { winning: winning.into_iter().collect(), drawn },
+        )
     }
 }
 
@@ -37,8 +47,8 @@ impl Card {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { cards: lines.map(|line| line.parse().unwrap()).collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(multi_line_parser(), |cards| Day { cards })
     }
 
     fn calculate_part1(&self) -> Self::Output {

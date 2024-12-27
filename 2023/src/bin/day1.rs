@@ -1,6 +1,11 @@
 #![feature(test)]
 
 use advent_lib::day::*;
+use nom::character::complete::{alphanumeric1, line_ending};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::Parser;
 
 struct Day {
     digits: Vec<String>,
@@ -21,8 +26,13 @@ const DIGITS: &[(&[u8], u32)] = &[
 impl ExecutableDay for Day {
     type Output = u32;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { digits: lines.collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(line_ending, alphanumeric1),
+            |digits: Vec<&[u8]>| Day {
+                digits: digits.iter().map(|bs| String::from_utf8_lossy(bs).to_string()).collect(),
+            },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {

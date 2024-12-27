@@ -1,58 +1,88 @@
 #![feature(test)]
 
-use std::cmp::max;
-
-use prse::*;
-
 use advent_lib::day::*;
+use advent_lib::parsing::{multi_line_parser, Parsable};
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::character::complete;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair, terminated};
+use nom::Parser;
+use std::cmp::max;
 
 struct Day {
     games: Vec<Game>,
 }
 
-#[derive(Parse, Debug)]
-#[prse = "Game {index}: {draws:; :}"]
+#[derive(Debug)]
 struct Game {
-    index: usize,
+    index: u64,
     draws: Vec<Draw>,
+}
+
+impl Parsable for Game {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                preceded(tag(b"Game "), complete::u64),
+                tag(b": "),
+                separated_list1(tag(b"; "), Draw::parser()),
+            ),
+            |(index, draws)| Game { index, draws },
+        )
+    }
 }
 
 #[derive(Debug)]
 struct Draw {
-    red: usize,
-    green: usize,
-    blue: usize,
+    red: u64,
+    green: u64,
+    blue: u64,
 }
 
 impl Draw {
     fn empty() -> Self { Draw { red: 0, green: 0, blue: 0 } }
-    fn power(&self) -> usize { self.red * self.green * self.blue }
+    fn power(&self) -> u64 { self.red * self.green * self.blue }
+    fn red(count: u64) -> Self { Draw { red: count, green: 0, blue: 0 } }
+    fn green(count: u64) -> Self { Draw { red: 0, green: count, blue: 0 } }
+    fn blue(count: u64) -> Self { Draw { red: 0, green: 0, blue: count } }
 }
 
-impl Parse<'_> for Draw {
-    fn from_str(s: &str) -> Result<Self, ParseError> {
-        let mut draw = Draw::empty();
-
-        for color_count in s.split(", ") {
-            let (count, color): (usize, String) = parse!(color_count, "{} {}");
-
-            match color.as_str() {
-                "red" => draw.red += count,
-                "green" => draw.green += count,
-                "blue" => draw.blue += count,
-                _ => return Err(ParseError::new(format!("Could not parse color {}", color))),
-            }
-        }
-
-        Ok(draw)
+impl Parsable for Draw {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_list1(
+                tag(b", "),
+                alt((
+                    map(terminated(complete::u64, tag(b" red")), |count| {
+                        Draw::red(count)
+                    }),
+                    map(terminated(complete::u64, tag(b" green")), |count| {
+                        Draw::green(count)
+                    }),
+                    map(terminated(complete::u64, tag(b" blue")), |count| {
+                        Draw::blue(count)
+                    }),
+                )),
+            ),
+            |draws| {
+                draws.iter().fold(Draw::empty(), |curr, next| Draw {
+                    red: curr.red + next.red,
+                    green: curr.green + next.green,
+                    blue: curr.blue + next.blue,
+                })
+            },
+        )
     }
 }
 
 impl ExecutableDay for Day {
-    type Output = usize;
+    type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { games: lines.map(|line| parse!(line, "{}")).collect() }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(multi_line_parser(), |games| Day { games })
     }
 
     fn calculate_part1(&self) -> Self::Output {

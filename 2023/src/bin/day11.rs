@@ -1,13 +1,15 @@
 #![feature(test)]
 
-use std::ops::{Add, Sub};
-
+use nom::error::Error;
+use nom::Parser;
 use rayon::prelude::*;
+use std::ops::{Add, Sub};
 
 use advent_lib::day::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_lib::parsing::map_parser;
 use advent_macros::FromRepr;
 
 use crate::Space::*;
@@ -77,15 +79,16 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let grid = Grid::from(lines);
-        let galaxy_locations = grid
-            .entries()
-            .filter(|(_, space)| **space == Galaxy)
-            .map(|(ix, _)| ix)
-            .collect();
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map_parser(|grid: Grid<Space>| {
+            let galaxy_locations = grid
+                .entries()
+                .filter(|(_, space)| **space == Galaxy)
+                .map(|(ix, _)| ix)
+                .collect();
 
-        Day { grid, galaxy_locations }
+            Day { grid, galaxy_locations }
+        })
     }
 
     fn calculate_part1(&self) -> Self::Output {

@@ -1,13 +1,18 @@
 #![feature(test)]
 #![feature(iter_array_chunks)]
 
-use std::ops::Range;
-use std::str::FromStr;
-
-use prse_derive::parse;
-use rayon::prelude::*;
-
 use advent_lib::day::*;
+use advent_lib::parsing::{double_line_ending, multi_line_parser, Parsable};
+use nom::bytes::complete::{tag, take_while};
+use nom::character::complete;
+use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
+use nom::error::Error;
+use nom::multi::separated_list1;
+use nom::sequence::{preceded, separated_pair, tuple};
+use nom::Parser;
+use rayon::prelude::*;
+use std::ops::Range;
 
 struct Day {
     seeds: Vec<i64>,
@@ -56,6 +61,14 @@ impl ChangeDefinition {
     }
 }
 
+impl Parsable for ChangeDefinition {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(separated_list1(space1, complete::i64), |nrs| {
+            ChangeDefinition { in_range: nrs[1]..nrs[1] + nrs[2], change: nrs[0] - nrs[1] }
+        })
+    }
+}
+
 struct Mapping {
     changes: Vec<ChangeDefinition>,
 }
@@ -96,41 +109,27 @@ impl Mapping {
     }
 }
 
-impl FromStr for ChangeDefinition {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let nrs = s.split(' ').filter_map(|nr| nr.parse::<i64>().ok()).collect::<Vec<_>>();
-        Ok(ChangeDefinition { in_range: nrs[1]..nrs[1] + nrs[2], change: nrs[0] - nrs[1] })
-    }
-}
-
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let seeds = parse!(lines.next().unwrap(), "seeds: {: :}");
-        parse!(lines.next().unwrap(), "");
-
-        let mut mappings = Vec::new();
-        while lines.next().is_some() {
-            let mut mapping = Mapping { changes: Vec::new() };
-            loop {
-                match lines.next() {
-                    None => break,
-                    Some(line) => {
-                        if line.is_empty() {
-                            break;
-                        } else {
-                            mapping.changes.push(line.parse().unwrap())
-                        }
-                    }
-                }
-            }
-            mappings.push(mapping);
-        }
-
-        Day { seeds, mappings }
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_pair(
+                preceded(tag(b"seeds: "), separated_list1(space1, complete::i64)),
+                double_line_ending,
+                separated_list1(
+                    double_line_ending,
+                    map(
+                        preceded(
+                            tuple((take_while(|b| b != b' '), tag(b" map:"), line_ending)),
+                            multi_line_parser(),
+                        ),
+                        |changes| Mapping { changes },
+                    ),
+                ),
+            ),
+            |(seeds, mappings)| Day { seeds, mappings },
+        )
     }
 
     fn calculate_part1(&self) -> Self::Output {
