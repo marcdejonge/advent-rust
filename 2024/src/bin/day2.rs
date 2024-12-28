@@ -41,7 +41,7 @@ fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(
             separated_list1(
                 complete::line_ending::<&[u8], _>,

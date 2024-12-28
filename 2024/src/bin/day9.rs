@@ -91,7 +91,7 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u128;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(is_a("0123456789"), |input: &[u8]| {
             let mut files = Vec::new();
             let mut free_space = Vec::new();

@@ -2,18 +2,33 @@
 
 extern crate core;
 
-use prse_derive::parse;
-
 use advent_lib::day::*;
-use advent_lib::direction::Direction;
+use advent_lib::direction::*;
+use advent_lib::rgb::*;
+use advent_macros::parsable;
 use Direction::*;
 
-#[cfg(feature = "big")]
-type Number = i128;
-
-#[cfg(not(feature = "big"))]
-type Number = i64;
-
+#[parsable(
+    map(
+        separated_list1(
+            line_ending,
+            map(
+                tuple((
+                    direction_parser,
+                    space1,
+                    i64,
+                    space1,
+                    delimited(tag(b"("), RGB::parser(),tag(b")")),                    
+                )),
+                |(direction, _, steps, _, color)| (
+                    DigCommand { direction, steps },
+                    DigCommand { direction: Direction::from(color.blue & 3), steps: (u32::from(color) >> 4) as i64 },
+                )
+            )
+        ),
+        |list| list.into_iter().unzip()
+    )
+)]
 struct Day {
     dig_plan1: Vec<DigCommand>,
     dig_plan2: Vec<DigCommand>,
@@ -22,7 +37,7 @@ struct Day {
 #[derive(Debug)]
 struct DigCommand {
     direction: Direction,
-    steps: Number,
+    steps: i64,
 }
 
 // Simplified from https://www.mathsisfun.com/geometry/area-irregular-polygons.html
@@ -45,22 +60,6 @@ fn calculate_area(lines: &[DigCommand]) -> i64 {
 
 impl ExecutableDay for Day {
     type Output = i64;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let (dig_plan1, dig_plan2): (Vec<_>, Vec<_>) = lines
-            .map(|line| {
-                let (direction, steps, color): (_, _, String) = parse!(line, "{} {} (#{})");
-                let big_steps = Number::from_str_radix(&color[0..5], 16)
-                    .expect("Expect a valid hexadecimal value {color}");
-                let big_direction = Direction::from(color.chars().last().unwrap() as u8);
-                (
-                    DigCommand { direction, steps },
-                    DigCommand { direction: big_direction, steps: big_steps },
-                )
-            })
-            .unzip();
-        Day { dig_plan1, dig_plan2 }
-    }
 
     fn calculate_part1(&self) -> Self::Output { calculate_area(&self.dig_plan1) }
 

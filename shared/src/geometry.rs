@@ -1,24 +1,19 @@
+use crate::parsing::{separated_array, Parsable};
+use nom::bytes::complete::tag;
+use nom::character::complete::space0;
+use nom::combinator::map;
+use nom::error::Error;
+use nom::sequence::tuple;
+use nom::Parser;
 use num_traits::{abs, One, Signed};
-use prse::*;
 use std::cmp::min;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::iter::Sum;
 use std::ops::{Add, Div, Index, Mul, Neg, Rem, Sub};
-use std::str::FromStr;
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
     pub coords: [T; D],
-}
-
-impl<const D: usize, T> FromStr for Point<D, T>
-where
-    T: FromStr + Default + Copy,
-    <T as FromStr>::Err: Display,
-{
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Ok(Point { coords: parse_coords(s)? }) }
 }
 
 impl<const D: usize, T> Debug for Point<D, T>
@@ -33,6 +28,18 @@ where
     T: Default + Copy,
 {
     fn default() -> Self { Point { coords: [T::default(); D] } }
+}
+
+impl<const D: usize, T> Parsable for Point<D, T>
+where
+    T: Default + Copy + Parsable,
+{
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_array(tuple((space0, tag(b","), space0))),
+            |coords| Point { coords },
+        )
+    }
 }
 
 impl<T> Point<2, T>
@@ -84,21 +91,23 @@ pub struct Vector<const D: usize, T> {
     pub coords: [T; D],
 }
 
+impl<const D: usize, T> Parsable for Vector<D, T>
+where
+    T: Default + Copy + Parsable,
+{
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(
+            separated_array(tuple((space0, tag(b","), space0))),
+            |coords| Vector { coords },
+        )
+    }
+}
+
 impl<const D: usize, T, R> From<[T; D]> for Vector<D, R>
 where
     T: Into<R>,
 {
     fn from(value: [T; D]) -> Self { Vector { coords: value.map(T::into) } }
-}
-
-impl<const D: usize, T> FromStr for Vector<D, T>
-where
-    T: FromStr + Default + Copy,
-    <T as FromStr>::Err: Display,
-{
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Ok(Vector { coords: parse_coords(s)? }) }
 }
 
 impl<const D: usize, T> Debug for Vector<D, T>
@@ -204,27 +213,6 @@ impl<T> From<(T, T, T, T)> for Point<4, T> {
 
 pub fn unit_vector<const D: usize, T: Copy + One>() -> Vector<D, T> {
     Vector { coords: [T::one(); D] }
-}
-
-fn parse_coords<const D: usize, T>(s: &str) -> Result<[T; D], String>
-where
-    T: Default + Copy + FromStr,
-    <T as FromStr>::Err: Display,
-{
-    let mut coords: [T; D] = [Default::default(); D];
-    for (ix, r) in s.split(',').map(|p| p.trim().parse::<T>()).enumerate() {
-        match r {
-            Ok(c) => {
-                if let Some(coord) = coords.get_mut(ix) {
-                    *coord = c;
-                } else {
-                    return Err(format!("Invalid index {ix}, matching for {D}"));
-                }
-            }
-            Err(e) => return Err(format!("Could not parse component {ix}: {e}")),
-        }
-    }
-    Ok(coords)
 }
 
 fn debug<const D: usize, T: Debug>(
@@ -477,32 +465,6 @@ where
         }
 
         Some(BoundingBox { min, max })
-    }
-}
-
-impl<'a, const D: usize, T> Parse<'a> for Point<D, T>
-where
-    T: Default + Copy + FromStr,
-    <T as FromStr>::Err: Display,
-{
-    fn from_str(s: &'a str) -> Result<Self, ParseError>
-    where
-        Self: Sized,
-    {
-        Ok(Point { coords: parse_coords(s).map_err(ParseError::new)? })
-    }
-}
-
-impl<'a, const D: usize, T> Parse<'a> for Vector<D, T>
-where
-    T: Default + Copy + FromStr,
-    <T as FromStr>::Err: Display,
-{
-    fn from_str(s: &'a str) -> Result<Self, ParseError>
-    where
-        Self: Sized,
-    {
-        Ok(Vector { coords: parse_coords(s).map_err(ParseError::new)? })
     }
 }
 

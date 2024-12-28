@@ -23,7 +23,7 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map_parser(|plot: Grid<u8>| {
             let regions = plot.detect_regions();
             Day { plot, regions }

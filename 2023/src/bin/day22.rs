@@ -2,23 +2,31 @@
 
 use std::collections::VecDeque;
 
-use fxhash::{FxHashMap, FxHashSet};
-use prse_derive::parse;
-
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::key::Key;
 use advent_lib::lines::LineSegment;
+use advent_macros::parsable;
+use fxhash::{FxHashMap, FxHashSet};
 
-type Brick = LineSegment<3, i64>;
+#[parsable(map(parsable_pair(tag(b"~")), |(start, end)| LineSegment{ start, end }))]
+struct Brick(LineSegment<3, i64>);
 type BrickSet = bit_set::BitSet<usize>;
 
-fn all_xy(brick: &Brick) -> impl Iterator<Item = Point<2, i64>> {
-    let x_range = brick.start.x()..=brick.end.x();
-    let y_range = brick.start.y()..=brick.end.y();
-    x_range.flat_map(move |x| y_range.clone().map(move |y| point2(x, y)))
+impl Brick {
+    fn all_xy(&self) -> impl Iterator<Item = Point<2, i64>> {
+        let x_range = self.0.start.x()..=self.0.end.x();
+        let y_range = self.0.start.y()..=self.0.end.y();
+        x_range.flat_map(move |x| y_range.clone().map(move |y| point2(x, y)))
+    }
+
+    fn height(&self) -> i64 { self.0.end.z() - self.0.start.z() + 1 }
 }
 
+#[parsable(map(separated_lines1(), |mut bricks: Vec<Brick>| {
+    bricks.sort_by_key(|brick| brick.0.start.z());
+    bricks
+}))]
 struct Day {
     starting_bricks: Vec<Brick>,
 }
@@ -32,18 +40,18 @@ impl Day {
         let mut height_grid: FxHashMap<Point<2, i64>, (i64, Key)> = Default::default();
 
         for (index, brick) in self.starting_bricks.iter().enumerate() {
-            let brick_height = brick.end.z() - brick.start.z() + 1;
+            let brick_height = brick.height();
             let high_points: Vec<_> =
-                all_xy(brick).filter_map(|p| height_grid.get(&p).cloned()).collect();
+                brick.all_xy().filter_map(|p| height_grid.get(&p).cloned()).collect();
 
             if high_points.is_empty() {
                 // No current points found, so put it on the ground
-                all_xy(brick).for_each(|loc| {
+                brick.all_xy().for_each(|loc| {
                     height_grid.insert(loc, (brick_height, index.into()));
                 });
             } else {
                 let (max_height, _) = *high_points.iter().max_by_key(|(h, _)| *h).unwrap();
-                all_xy(brick).for_each(|loc| {
+                brick.all_xy().for_each(|loc| {
                     height_grid.insert(loc, (max_height + brick_height, index.into()));
                 });
 
@@ -115,7 +123,7 @@ impl BrickDropped {
         let mut stack = VecDeque::<Key>::with_capacity(256);
         if let Some(supports) = support.supports.get(key) {
             supports.iter().for_each(|support| {
-                stack.push_back((*support).into());
+                stack.push_back(*support);
                 supporting_bricks.insert((*support).into());
             });
         }
@@ -148,12 +156,6 @@ impl BrickDropped {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut bricks: Vec<Brick> = lines.map(|line| parse!(line, "{}~{}").into()).collect();
-        bricks.sort_by_key(|b| b.start.z());
-        Day { starting_bricks: bricks }
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut single_support = BrickSet::default();

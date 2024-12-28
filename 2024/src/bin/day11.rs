@@ -45,7 +45,7 @@ impl Memoized {
 impl ExecutableDay for Day {
     type Output = Count;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(
             separated_list1(complete::space1, complete::u64),
             |starting_numbers| Day { starting_numbers },

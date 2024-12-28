@@ -48,7 +48,7 @@ struct Day {
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(find_many_skipping_unknown(command_parser()), |commands| {
             Day { commands }
         })

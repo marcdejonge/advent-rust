@@ -2,19 +2,19 @@
 
 use std::fmt::{Debug, Formatter};
 
-use num::Integer;
-use prse::*;
-
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
 use advent_lib::iter_utils::IteratorUtils;
+use advent_macros::parsable;
+use num::Integer;
 
+#[parsable(separated_lines1())]
 struct Day {
     hail: Vec<Line<3>>,
 }
 
-#[derive(Parse, Copy, Clone)]
-#[prse = "{p} @ {v}"]
+#[parsable(parsable_pair(tuple((space0, tag(b"@"), space0))))]
+#[derive(Copy, Clone)]
 struct Line<const D: usize> {
     p: Point<D, i128>,
     v: Vector<D, i128>,
@@ -65,10 +65,6 @@ impl Line<2> {
 
 impl ExecutableDay for Day {
     type Output = i128;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { hail: lines.map(|line| parse!(line, "{}")).collect() }
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let hail2d = self.hail.iter().map(Line::flatten).collect::<Vec<_>>();

@@ -1,10 +1,5 @@
-use crate::parsing::handle_parser_error;
+use crate::parsing::{handle_parser_error, Parsable};
 use memmap2::Mmap;
-use nom::bytes::complete::take_while;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::multi::separated_list1;
-use nom::{AsBytes, Parser};
 use num_format::{Locale, ToFormattedString};
 use std::env;
 use std::fmt::Display;
@@ -16,27 +11,13 @@ where
 {
     type Output;
     type AltOutput = Self::Output;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
-        map(
-            separated_list1(line_ending, take_while(|b: u8| b != b'\n' && b != b'\r')),
-            |lines: Vec<&[u8]>| {
-                Self::from_lines(
-                    lines.into_iter().map(|line| {
-                        String::from_utf8(line.to_vec()).expect("Could not parse line")
-                    }),
-                )
-            },
-        )
-    }
-    fn from_lines<LINES: Iterator<Item = String>>(_lines: LINES) -> Self { todo!() }
-
     fn calculate_part1(&self) -> Self::Output;
     fn calculate_part2(&self) -> Self::AltOutput;
 }
 
-pub fn execute_day<Day: ExecutableDay>()
+pub fn execute_day<Day>()
 where
+    Day: ExecutableDay + Parsable,
     Day::Output: Display,
     Day::AltOutput: Display,
 {
@@ -54,7 +35,7 @@ where
     println!("Executing");
 
     let parse_file_start_time = Instant::now();
-    let day = handle_parser_error(contents.as_bytes(), Day::parser());
+    let day = handle_parser_error(&contents, Day::parser());
 
     println!(
         " ├── Input parsed \x1b[3min {}µs\x1b[0m",

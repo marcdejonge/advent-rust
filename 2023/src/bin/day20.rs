@@ -1,8 +1,9 @@
 #![feature(test)]
 
-use std::collections::VecDeque;
-use std::fmt::{Display, Formatter};
-
+use advent_lib::day::*;
+use advent_lib::key::Key;
+use advent_lib::parsing::Parsable;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -12,16 +13,15 @@ use nom::multi::separated_list1;
 use nom::sequence::{preceded, separated_pair};
 use nom::Parser;
 use num::integer::lcm;
-
-use advent_lib::day::*;
-use advent_lib::key::Key;
-use advent_lib::parsing::{multi_line_parser, Parsable};
+use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 use Module::*;
 
 const BUTTON: Key = Key::fixed(b"button");
 const BROADCASTER: Key = Key::fixed(b"broadcaster");
 const RX: Key = Key::fixed(b"rx");
 
+#[parsable(map(separated_lines1(), parse_modules))]
 struct Day {
     initial_state: State,
     reverse_mapping: FxHashMap<Key, Vec<Key>>,
@@ -163,37 +163,33 @@ impl Parsable for Module {
     }
 }
 
+fn parse_modules(mut modules: Vec<Module>) -> (State, FxHashMap<Key, Vec<Key>>) {
+    let reverse_mapping: FxHashMap<Key, Vec<Key>> = modules
+        .iter()
+        .flat_map(|module| {
+            module.connections().iter().map(move |connection| (*connection, module.name()))
+        })
+        .fold(FxHashMap::default(), |mut map, (connection, name)| {
+            map.entry(connection).or_default().push(name);
+            map
+        });
+
+    for module in &mut modules {
+        if let Conjunction { name, incoming_state, .. } = module {
+            reverse_mapping.get(name).unwrap().iter().for_each(|from| {
+                incoming_state.insert(*from, false);
+            })
+        }
+    }
+
+    let initial_state =
+        State { modules: modules.into_iter().map(|module| (module.name(), module)).collect() };
+
+    (initial_state, reverse_mapping)
+}
+
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(multi_line_parser(), |mut modules: Vec<Module>| {
-            let reverse_mapping: FxHashMap<Key, Vec<Key>> = modules
-                .iter()
-                .flat_map(|module| {
-                    module.connections().iter().map(move |connection| (*connection, module.name()))
-                })
-                .fold(FxHashMap::default(), |mut map, (connection, name)| {
-                    map.entry(connection).or_insert_with(Vec::new).push(name);
-                    map
-                });
-
-            for module in &mut modules {
-                if let Conjunction { name, incoming_state, .. } = module {
-                    reverse_mapping.get(name).unwrap().iter().for_each(|from| {
-                        incoming_state.insert(*from, false);
-                    })
-                }
-            }
-
-            Day {
-                initial_state: State {
-                    modules: modules.into_iter().map(|module| (module.name(), module)).collect(),
-                },
-                reverse_mapping,
-            }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut state = self.initial_state.clone();

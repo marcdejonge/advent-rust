@@ -78,33 +78,8 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
             })
             .collect();
 
-        let mut extra_parsers = Vec::<TokenStream>::new();
-
-        extra_parsers.push(quote! {
-            impl<'a> prse::Parse<'a> for #name {
-                fn from_str(value: &str) -> Result<Self, prse::ParseError> {
-                    value.bytes().next().map(|b| b.into())
-                        .ok_or(prse::ParseError::new("Unexpected empty string"))
-                }
-            }
-        });
-
         let parse_lines = variants.iter().map(|(ident, expr, _, _)| {
             quote! { #expr => Ok((&input[1..], #name::#ident)), }
-        });
-        extra_parsers.push(quote! {
-            impl #name {
-                fn parse(input: &[u8]) -> nom::IResult<&[u8], Self> {
-                    if input.len() == 0 {
-                        return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
-                    }
-
-                    match input[0] {
-                        #(#parse_lines)*
-                        _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
-                    }
-                }
-            }
         });
 
         Ok(quote! {
@@ -133,7 +108,20 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
                 }
             }
 
-            #(#extra_parsers)*
+            impl advent_lib::parsing::Parsable for #name {
+                fn parser<'a>() -> impl nom::Parser<&'a[u8], Self, nom::error::Error<&'a[u8]>> {
+                    |input: &'a [u8]| {
+                        if input.len() == 0 {
+                            return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
+                        }
+
+                        match input[0] {
+                            #(#parse_lines)*
+                            _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
+                        }
+                    }
+                }
+            }
         })
     } else {
         Err(Error::new(

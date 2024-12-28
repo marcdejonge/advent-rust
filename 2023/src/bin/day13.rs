@@ -1,15 +1,15 @@
 #![feature(test)]
 
+use rayon::prelude::*;
 use std::cmp::min;
 use std::ops::Add;
-
-use rayon::prelude::*;
 
 use advent_lib::day::*;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 
+#[parsable(separated_list1(double_line_ending, Grid::parser()))]
 struct Day {
     grids: Vec<Grid<Item>>,
 }
@@ -70,15 +70,6 @@ fn find_reflection(grid: &Grid<Item>, smudges: u32) -> i32 {
 impl ExecutableDay for Day {
     type Output = i32;
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut lines = lines.peekable();
-        let mut grids = Vec::<Grid<_>>::new();
-        while lines.peek().is_some() {
-            grids.push(Grid::from(lines.by_ref().take_while(|s| !s.is_empty())));
-        }
-        Day { grids }
-    }
-
     fn calculate_part1(&self) -> Self::Output {
         self.grids.par_iter().map(|g| find_reflection(g, 0)).reduce(|| 0, i32::add)
     }
@@ -98,14 +89,15 @@ mod tests {
     day_test!( 13 => 37025, 32854 );
 
     mod find_reflection_tests {
-        use advent_lib::grid::Grid;
-
         use crate::find_reflection;
+        use advent_lib::grid::Grid;
+        use advent_lib::parsing::Parsable;
+        use nom::Parser;
 
         #[test]
         fn single() {
-            let text = "#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
-            let grid = Grid::from(text.lines().map(str::to_owned));
+            let text = b"#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
+            let grid = Grid::parser().parse(text).unwrap().1;
             assert_eq!(6, find_reflection(&grid, 0));
             assert_eq!(12, find_reflection(&grid, 1));
         }
@@ -113,8 +105,8 @@ mod tests {
         #[test]
         fn test2() {
             let text =
-                ".##.##.##..\n#.######.##\n.#..##..#..\n#.#.##.#.##\n#.#....#.##\n.#..##..###\n##..##..###\n##..##..###\n.#.####.#..\n#..####..##\n.#.#..#.#..\n.##.##.##..\n.##....##..";
-            let grid = Grid::from(text.lines().map(str::to_owned));
+                b".##.##.##..\n#.######.##\n.#..##..#..\n#.#.##.#.##\n#.#....#.##\n.#..##..###\n##..##..###\n##..##..###\n.#.####.#..\n#..####..##\n.#.#..#.#..\n.##.##.##..\n.##....##..";
+            let grid = Grid::parser().parse(text).unwrap().1;
             assert_eq!(10, find_reflection(&grid, 0));
             assert_eq!(5, find_reflection(&grid, 1));
         }

@@ -80,7 +80,7 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(
             separated_list1(
                 line_ending,

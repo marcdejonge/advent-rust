@@ -1,22 +1,35 @@
 #![feature(test)]
 
-use fxhash::FxHashMap;
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::{many1, separated_list1};
-use nom::sequence::{delimited, separated_pair};
-use nom::Parser;
-use num::integer::lcm;
-use rayon::prelude::*;
-
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
-use advent_lib::parsing::{double_line_ending, Parsable};
+use advent_macros::parsable;
+use fxhash::FxHashMap;
+use num::integer::lcm;
+use rayon::prelude::*;
 
+#[parsable(
+    separated_pair(
+        many1(alt((
+            map(tag(b"L"), |_| Turn::Left),
+            map(tag(b"R"), |_| Turn::Right),
+        ))),
+        double_line_ending,
+        map(
+            separated_list1(
+                line_ending,
+                separated_pair(
+                    Key::parser(),
+                    tag(b" = "),
+                    delimited(tag(b"("),
+                        separated_pair(Key::parser(), tag(b", "), Key::parser()),
+                    tag(b")")),
+                ),
+            ),
+            |list| list.into_iter().collect()
+        )
+    )
+)]
 struct Day {
     instructions: Vec<Turn>,
     steps: FxHashMap<Key, (Key, Key)>,
@@ -59,31 +72,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(
-                many1(alt((
-                    map(tag(b"L"), |_| Turn::Left),
-                    map(tag(b"R"), |_| Turn::Right),
-                ))),
-                double_line_ending,
-                separated_list1(
-                    line_ending,
-                    separated_pair(
-                        Key::parser(),
-                        tag(b" = "),
-                        delimited(
-                            tag(b"("),
-                            separated_pair(Key::parser(), tag(b", "), Key::parser()),
-                            tag(b")"),
-                        ),
-                    ),
-                ),
-            ),
-            |(instructions, steps)| Day { instructions, steps: steps.into_iter().collect() },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         const TARGET: Key = Key::fixed(b"zzz");

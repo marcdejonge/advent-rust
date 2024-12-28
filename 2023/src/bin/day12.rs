@@ -2,21 +2,22 @@
 
 use std::ops::Add;
 
-use fxhash::FxHashMap;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::character::complete::{line_ending, space1};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::{many1, separated_list1};
-use nom::sequence::separated_pair;
-use nom::Parser;
-use rayon::prelude::*;
-
 use crate::Spring::{Broken, Operational, Unknown};
 use advent_lib::day::*;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
+use fxhash::FxHashMap;
+use rayon::prelude::*;
 
+#[parsable(
+    separated_list1(
+        line_ending,
+        separated_pair(
+            many1(Spring::parser()),
+            space1,
+            separated_list1(tag(b","), map(u64, |nr| nr as usize)),
+        ),
+    )
+)]
 struct Day {
     lines: Vec<(Vec<Spring>, Vec<usize>)>,
 }
@@ -74,20 +75,6 @@ fn find_options(
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                separated_pair(
-                    many1(Spring::parse),
-                    space1,
-                    separated_list1(tag(b","), map(complete::u64, |nr| nr as usize)),
-                ),
-            ),
-            |lines| Day { lines },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.lines

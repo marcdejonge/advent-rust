@@ -7,14 +7,24 @@ use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
-use advent_lib::parsing::map_parser;
-use advent_macros::FromRepr;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::{parsable, FromRepr};
 use std::ops::{Add, Neg};
 
 use crate::PipeCell::*;
 
+#[parsable(
+    map_parsable(|mut raw_grid: Grid<PipeCell>| {
+        let start = raw_grid.find(|item| item == &Start).unwrap();
+        let start_pipe = PipeCell::detect_pipe(&raw_grid, start).unwrap();
+        if let Some(cell) = raw_grid.get_mut(start) {
+            *cell = start_pipe
+        }
+
+        let mut grid = Grid::new_empty(raw_grid.width(), raw_grid.height());
+        GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
+        grid
+    })
+)]
 struct Day {
     grid: Grid<PipeCell>,
 }
@@ -113,7 +123,7 @@ impl<'a> GridWalker<'a> {
     }
 }
 
-impl<'a> Iterator for GridWalker<'a> {
+impl Iterator for GridWalker<'_> {
     type Item = (Point<2, i32>, Direction, PipeCell);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -136,20 +146,6 @@ impl<'a> Iterator for GridWalker<'a> {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|mut raw_grid: Grid<PipeCell>| {
-            let start = raw_grid.find(|item| item == &Start).unwrap();
-            let start_pipe = PipeCell::detect_pipe(&raw_grid, start).unwrap();
-            if let Some(cell) = raw_grid.get_mut(start) {
-                *cell = start_pipe
-            }
-
-            let mut grid = Grid::new_empty(raw_grid.width(), raw_grid.height());
-            GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
-            Day { grid }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.grid.values().filter(|p| **p != Ground).count() / 2

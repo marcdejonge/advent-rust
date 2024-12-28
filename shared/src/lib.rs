@@ -1,5 +1,6 @@
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]
+#![feature(trait_alias)]
 
 pub mod builder;
 pub mod day;

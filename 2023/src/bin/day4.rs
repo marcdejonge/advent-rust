@@ -1,41 +1,28 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::{multi_line_parser, Parsable};
+use advent_macros::parsable;
 use fxhash::FxHashSet;
-use nom::bytes::streaming::tag;
-use nom::character::complete;
-use nom::character::complete::space1;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::{preceded, separated_pair, tuple};
-use nom::Parser;
 use std::ops::Shl;
 
+#[parsable(separated_lines1())]
 struct Day {
     cards: Vec<Card>,
 }
 
+#[parsable(
+    preceded(
+        tuple((tag(b"Card"), space1, u64, tag(b":"), space1)),
+        separated_pair(
+            map(separated_list1(space1, u8), |winning| winning.into_iter().collect()),
+            tuple((tag(b" |"), space1)),
+            separated_list1(space1, u8),
+        ),
+    )
+)]
 struct Card {
     winning: FxHashSet<u8>,
     drawn: Vec<u8>,
-}
-
-impl Parsable for Card {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            preceded(
-                tuple((tag(b"Card"), space1, complete::u64, tag(b":"), space1)),
-                separated_pair(
-                    separated_list1(space1, complete::u8),
-                    tuple((tag(b" |"), space1)),
-                    separated_list1(space1, complete::u8),
-                ),
-            ),
-            |(winning, drawn)| Card { winning: winning.into_iter().collect(), drawn },
-        )
-    }
 }
 
 impl Card {
@@ -46,10 +33,6 @@ impl Card {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(multi_line_parser(), |cards| Day { cards })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.cards

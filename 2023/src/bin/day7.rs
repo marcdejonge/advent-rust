@@ -3,19 +3,13 @@
 use std::fmt::{Debug, Formatter, Write};
 
 use enum_map::{Enum, EnumMap};
-use nom::character::complete;
-use nom::character::complete::{line_ending, space1};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::{many_m_n, separated_list1};
-use nom::sequence::separated_pair;
-use nom::{IResult, Parser};
 use rayon::prelude::*;
 
 use crate::Score::*;
 use advent_lib::day::*;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 
+#[parsable(separated_list1(line_ending, separated_pair(parse_hand, space1, u64)))]
 struct Day {
     bets: Vec<([Card; 5], u64)>,
 }
@@ -136,8 +130,12 @@ impl Score {
     }
 }
 
-fn parse_hand(input: &[u8]) -> IResult<&[u8], [Card; 5]> {
-    map(many_m_n(5, 5, Card::parse), |list| list.try_into().unwrap())(input)
+fn parse_hand(input: &[u8]) -> nom::IResult<&[u8], [Card; 5]> {
+    use advent_lib::parsing::Parsable;
+
+    nom::combinator::map(nom::multi::many_m_n(5, 5, Card::parser()), |list| {
+        list.try_into().unwrap()
+    })(input)
 }
 
 fn jokers(cards: [Card; 5]) -> [Card; 5] {
@@ -151,16 +149,6 @@ fn end_score(mut bets: Vec<(Hand, u64)>) -> u64 {
 
 impl ExecutableDay for Day {
     type Output = u64;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                separated_pair(parse_hand, space1, complete::u64),
-            ),
-            |bets| Day { bets },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         end_score(self.bets.par_iter().map(|&(c, bet)| (Hand::new(c), bet)).collect())

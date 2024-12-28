@@ -20,6 +20,7 @@ macro_rules! day_test {
     ( $day: tt, $name: tt => $part1_result: expr ) => {
         mod $name {
             use super::super::*;
+            use advent_lib::parsing::Parsable;
 
             const input: &[u8] = include_bytes!(concat!(
                 "../../input/day",
@@ -39,6 +40,7 @@ macro_rules! day_test {
     ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr ) => {
         mod $name {
             use super::super::*;
+            use advent_lib::parsing::Parsable;
 
             const input: &[u8] = include_bytes!(concat!(
                 "../../input/day",
@@ -65,6 +67,7 @@ macro_rules! day_test {
         mod full {
             extern crate test;
             use super::super::*;
+            use advent_lib::parsing::Parsable;
             use test::Bencher;
 
             const input: &[u8] =
@@ -83,6 +86,7 @@ macro_rules! day_test {
         mod full {
             extern crate test;
             use super::super::*;
+            use advent_lib::parsing::Parsable;
             use test::Bencher;
 
             const input: &[u8] =

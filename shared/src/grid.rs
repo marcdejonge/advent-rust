@@ -54,26 +54,6 @@ where
     }
 }
 
-impl<I, T> From<I> for Grid<T>
-where
-    T: From<u8> + Clone,
-    I: Iterator<Item = String>,
-{
-    fn from(lines: I) -> Self {
-        let items: Vec<Vec<T>> = lines.map(|line| line.bytes().map(T::from).collect()).collect();
-
-        let height = items.len();
-        let width = items[0].len();
-        if items.iter().any(|line| line.len() != width) {
-            panic!("Not all input lines have the same length");
-        }
-        Grid {
-            items: items.iter().flatten().cloned().collect(),
-            size: vector2(width as i32, height as i32),
-        }
-    }
-}
-
 impl<T> Grid<T> {
     pub fn new_empty(width: i32, height: i32) -> Grid<T>
     where
@@ -567,12 +547,13 @@ impl<'a, T> Iterator for LinesIterator<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::geometry::point2;
-
     use super::Grid;
+    use crate::geometry::point2;
+    use crate::parsing::Parsable;
+    use nom::Parser;
 
     fn generate_test_grid() -> Grid<u8> {
-        Grid::from("123\n456\n789".lines().map(str::to_owned)).map(|b| b - b'0')
+        Grid::parser().parse(b"123\n456\n789").unwrap().1.map(|b| b - b'0')
     }
 
     #[test]

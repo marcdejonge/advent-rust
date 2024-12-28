@@ -74,7 +74,7 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map_parser(|grid: Grid<Block>| {
             let start = grid.find(|&b| b == Start).unwrap();
             let walk = walk_grid(&grid, start).enumerate().collect();

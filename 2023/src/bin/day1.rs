@@ -1,14 +1,11 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use nom::character::complete::{alphanumeric1, line_ending};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::Parser;
+use advent_macros::parsable;
 
+#[parsable(separated_list1(line_ending, map(alphanumeric1, |bs: &[u8]| bs.to_vec())))]
 struct Day {
-    digits: Vec<String>,
+    digits: Vec<Vec<u8>>,
 }
 
 const DIGITS: &[(&[u8], u32)] = &[
@@ -26,22 +23,11 @@ const DIGITS: &[(&[u8], u32)] = &[
 impl ExecutableDay for Day {
     type Output = u32;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(line_ending, alphanumeric1),
-            |digits: Vec<&[u8]>| Day {
-                digits: digits.iter().map(|bs| String::from_utf8_lossy(bs).to_string()).collect(),
-            },
-        )
+    fn calculate_part1(&self) -> u32 {
+        self.digits.iter().map(|line| parse_line(line, false)).sum()
     }
 
-    fn calculate_part1(&self) -> Self::Output {
-        self.digits.iter().map(|line| parse_line(line.as_bytes(), false)).sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.digits.iter().map(|line| parse_line(line.as_bytes(), true)).sum()
-    }
+    fn calculate_part2(&self) -> u32 { self.digits.iter().map(|line| parse_line(line, true)).sum() }
 }
 
 fn parse_line(line: &[u8], check_text: bool) -> u32 {

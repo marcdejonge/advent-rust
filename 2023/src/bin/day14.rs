@@ -10,8 +10,9 @@ use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 
+#[parsable]
 struct Day {
     grid: Grid<Stone>,
 }
@@ -89,10 +90,6 @@ fn weight(grid: &Grid<Stone>) -> i32 {
 
 impl ExecutableDay for Day {
     type Output = i32;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { grid: Grid::from(lines) }
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut grid = self.grid.clone();

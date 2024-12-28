@@ -1,57 +1,42 @@
 #![feature(test)]
 
-use fxhash::FxHashMap;
-use nom::bytes::complete::tag;
-use nom::character::complete::{line_ending, space1};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::separated_pair;
-use nom::Parser;
-use num::integer::sqrt;
-use petgraph::algo::dijkstra;
-use petgraph::prelude::*;
-
 use advent_lib::day::*;
 use advent_lib::graph_utils::dijkstra_explore;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
-use advent_lib::parsing::Parsable;
+use advent_macros::parsable;
+use fxhash::FxHashMap;
+use num::integer::sqrt;
+use petgraph::algo::dijkstra;
+use petgraph::prelude::*;
 
+#[parsable(
+    map(
+        separated_list1(
+            line_ending,
+            separated_pair(Key::parser(), tag(": "), separated_list1(space1, Key::parser())),
+        ),
+        |lines| {
+            let mut graph = UnGraph::<Key, ()>::new_undirected();
+            let mut indices = FxHashMap::<Key, NodeIndex>::default();
+            for (source, targets) in lines {
+                let source_ix = *indices.entry(source).or_insert_with(|| graph.add_node(source));
+                for target in targets {
+                    let target_ix =
+                        *indices.entry(target).or_insert_with(|| graph.add_node(target));
+                    graph.add_edge(source_ix, target_ix, ());
+                }
+            }
+            graph
+        }
+    )
+)]
 struct Day {
     graph: UnGraph<Key, ()>,
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                separated_pair(
-                    Key::parser(),
-                    tag(": "),
-                    separated_list1(space1, Key::parser()),
-                ),
-            ),
-            |lines| {
-                let mut graph = UnGraph::<Key, ()>::new_undirected();
-                let mut indices = FxHashMap::<Key, NodeIndex>::default();
-                for (source, targets) in lines {
-                    let source_ix =
-                        *indices.entry(source).or_insert_with(|| graph.add_node(source));
-                    for target in targets {
-                        let target_ix =
-                            *indices.entry(target).or_insert_with(|| graph.add_node(target));
-                        graph.add_edge(source_ix, target_ix, ());
-                    }
-                }
-
-                Day { graph }
-            },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut edge_count: FxHashMap<EdgeIndex, usize> =

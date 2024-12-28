@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::{double_line_ending, multi_line_parser, Parsable};
+use advent_lib::parsing::{double_line_ending, separated_lines1, Parsable};
 use fxhash::FxHashMap;
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
@@ -248,12 +248,12 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(
             separated_pair(
-                multi_line_parser::<StartingValue>(),
+                separated_lines1::<StartingValue>(),
                 double_line_ending,
-                multi_line_parser::<Expression>(),
+                separated_lines1::<Expression>(),
             ),
             |(starting_values, expressions)| Day {
                 starting_values: starting_values

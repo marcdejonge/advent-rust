@@ -10,10 +10,23 @@ use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 
 use crate::Cell::*;
 
+#[parsable(map(Grid::parser(), |grid| {
+    let start = grid
+        .east_line(0)
+        .find(|&(_, c)| c == &Ground)
+        .expect("Could not find starting location")
+        .0;
+    let end = grid
+        .east_line(grid.height() - 1)
+        .find(|&(_, c)| c == &Ground)
+        .expect("Could not find ending location")
+        .0;
+    (grid, start, end)
+}))]
 struct Day {
     grid: Grid<Cell>,
     start: Point<2, i32>,
@@ -127,22 +140,6 @@ fn determine_weight<NW>(graph: &DiGraph<NW, usize>, path: Vec<NodeIndex>) -> usi
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let grid = Grid::from(lines);
-        let start = grid
-            .east_line(0)
-            .find(|&(_, c)| c == &Ground)
-            .expect("Could not find starting location")
-            .0;
-        let end = grid
-            .east_line(grid.height() - 1)
-            .find(|&(_, c)| c == &Ground)
-            .expect("Could not find ending location")
-            .0;
-
-        Day { grid, start, end }
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let (start, end, graph) = self.get_reachability_graph(|from, to, dir| {

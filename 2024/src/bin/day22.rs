@@ -54,7 +54,7 @@ fn find_possible_price_changes(secret: i32) -> Prices {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map(separated_list1(line_ending, complete::i32), |secrets| Day {
             secrets,
         })

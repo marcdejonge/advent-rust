@@ -1,22 +1,17 @@
 #![feature(test)]
 #![feature(iter_collect_into)]
 
-use nom::character::complete;
-use nom::character::complete::{line_ending, space1};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::Parser;
-use rayon::prelude::*;
-
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_macros::parsable;
+use rayon::prelude::*;
 
+#[parsable(separated_list1(line_ending, separated_list1(space1, i64)))]
 struct Day {
     input: Vec<Vec<i64>>,
 }
 
-fn calc_next(nrs: &Vec<i64>) -> i64 {
+fn calc_next(nrs: &[i64]) -> i64 {
     if let Some(&last) = nrs.last() {
         if nrs.iter().all(|&nr| nr == last) {
             last
@@ -33,7 +28,7 @@ fn calc_next(nrs: &Vec<i64>) -> i64 {
     }
 }
 
-fn calc_prev(nrs: &Vec<i64>) -> i64 {
+fn calc_prev(nrs: &[i64]) -> i64 {
     if let Some(&first) = nrs.first() {
         if nrs.iter().all(|&nr| nr == first) {
             first
@@ -54,16 +49,9 @@ fn calc_prev(nrs: &Vec<i64>) -> i64 {
 impl ExecutableDay for Day {
     type Output = i64;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(line_ending, separated_list1(space1, complete::i64)),
-            |input| Day { input },
-        )
-    }
+    fn calculate_part1(&self) -> Self::Output { self.input.par_iter().map(|v| calc_next(v)).sum() }
 
-    fn calculate_part1(&self) -> Self::Output { self.input.par_iter().map(calc_next).sum() }
-
-    fn calculate_part2(&self) -> Self::Output { self.input.par_iter().map(calc_prev).sum() }
+    fn calculate_part2(&self) -> Self::Output { self.input.par_iter().map(|v| calc_prev(v)).sum() }
 }
 
 fn main() { execute_day::<Day>() }

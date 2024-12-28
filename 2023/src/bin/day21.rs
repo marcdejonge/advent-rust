@@ -8,8 +8,13 @@ use advent_lib::day::*;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 
+#[parsable(map(Grid::parser(), |mut grid| {
+    let start = grid.find(|&space| space == Space::Start).expect("Could not find starting location");
+    grid[start] = Space::Ground;
+    (grid, start)
+}))]
 struct Day {
     grid: Grid<Space>,
     start: Point<2, i32>,
@@ -75,14 +80,14 @@ struct ExploreIterator<'a> {
     within_bounds: bool,
 }
 
-impl<'a> ExploreIterator<'a> {
+impl ExploreIterator<'_> {
     fn within_bounds(mut self) -> Self {
         self.within_bounds = true;
         self
     }
 }
 
-impl<'a> Iterator for ExploreIterator<'a> {
+impl Iterator for ExploreIterator<'_> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -120,16 +125,6 @@ impl<'a> Iterator for ExploreIterator<'a> {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut grid = Grid::from(lines);
-        let start = grid
-            .find(|&space| space == Space::Start)
-            .expect("Could not find starting location");
-        grid[start] = Space::Ground;
-
-        Day { grid, start }
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.into_iter().within_bounds().nth(64).unwrap() }
 

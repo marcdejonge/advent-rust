@@ -1,38 +1,23 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::{multi_line_parser, Parsable};
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::{preceded, separated_pair, terminated};
-use nom::Parser;
+use advent_macros::parsable;
 use std::cmp::max;
 
+#[parsable(separated_lines1())]
 struct Day {
     games: Vec<Game>,
 }
 
+#[parsable(separated_pair(
+    preceded(tag(b"Game "), u64),
+    tag(b": "),
+    separated_list1(tag(b"; "), Draw::parser())
+))]
 #[derive(Debug)]
 struct Game {
     index: u64,
     draws: Vec<Draw>,
-}
-
-impl Parsable for Game {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(
-                preceded(tag(b"Game "), complete::u64),
-                tag(b": "),
-                separated_list1(tag(b"; "), Draw::parser()),
-            ),
-            |(index, draws)| Game { index, draws },
-        )
-    }
 }
 
 #[derive(Debug)]
@@ -50,21 +35,22 @@ impl Draw {
     fn blue(count: u64) -> Self { Draw { red: 0, green: 0, blue: count } }
 }
 
-impl Parsable for Draw {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+impl advent_lib::parsing::Parsable for Draw {
+    fn parser<'a>() -> impl nom::Parser<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
+        use nom::branch::alt;
+        use nom::bytes::complete::tag;
+        use nom::character::complete::u64;
+        use nom::combinator::map;
+        use nom::multi::separated_list1;
+        use nom::sequence::terminated;
+
         map(
             separated_list1(
                 tag(b", "),
                 alt((
-                    map(terminated(complete::u64, tag(b" red")), |count| {
-                        Draw::red(count)
-                    }),
-                    map(terminated(complete::u64, tag(b" green")), |count| {
-                        Draw::green(count)
-                    }),
-                    map(terminated(complete::u64, tag(b" blue")), |count| {
-                        Draw::blue(count)
-                    }),
+                    map(terminated(u64, tag(b" red")), Draw::red),
+                    map(terminated(u64, tag(b" green")), Draw::green),
+                    map(terminated(u64, tag(b" blue")), Draw::blue),
                 )),
             ),
             |draws| {
@@ -80,10 +66,6 @@ impl Parsable for Draw {
 
 impl ExecutableDay for Day {
     type Output = u64;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(multi_line_parser(), |games| Day { games })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.games

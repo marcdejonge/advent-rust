@@ -6,7 +6,14 @@ use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use advent_macros::parsable;
 
+#[parsable(
+    map(Grid::parser(), |mut grid| {
+        grid.entries_mut().for_each(|(_, cell)| *cell -= b'0');
+        grid
+    })
+)]
 struct Day {
     grid: Grid<u8>,
 }
@@ -17,7 +24,7 @@ struct Target<'a> {
     max_steps: i32,
 }
 
-impl<'a> Target<'a> {
+impl Target<'_> {
     fn goal(&self) -> Point<2, i32> { point2(self.grid.width() - 1, self.grid.height() - 1) }
 
     fn calc_path_cost(&self, path: &[(Point<2, i32>, Direction, i32)]) -> usize {
@@ -30,7 +37,7 @@ impl<'a> Target<'a> {
     }
 }
 
-impl<'a> SearchGraph for Target<'a> {
+impl SearchGraph for Target<'_> {
     // Location plus number of straight steps we took
     type Node = (Point<2, i32>, Direction, i32);
     type Score = i32;
@@ -67,7 +74,7 @@ impl<'a> SearchGraph for Target<'a> {
     }
 }
 
-impl<'a> SearchGraphWithGoal for Target<'a> {
+impl SearchGraphWithGoal for Target<'_> {
     fn is_goal(&self, node: Self::Node) -> bool {
         self.goal() == node.0 && node.2 >= self.min_steps
     }
@@ -77,12 +84,6 @@ impl<'a> SearchGraphWithGoal for Target<'a> {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut grid = Grid::from(lines);
-        grid.entries_mut().for_each(|(_, cell)| *cell -= b'0');
-        Day { grid }
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let target = &Target { grid: &self.grid, min_steps: 1, max_steps: 3 };

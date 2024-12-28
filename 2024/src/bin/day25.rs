@@ -2,7 +2,7 @@
 
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
-use advent_lib::parsing::double_line_parser;
+use advent_lib::parsing::separated_double_lines1;
 use nom::combinator::map;
 use nom::error::Error;
 use nom::Parser;
@@ -16,8 +16,8 @@ struct Day {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(double_line_parser(), |grids: Vec<Grid<u8>>| {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(separated_double_lines1(), |grids: Vec<Grid<u8>>| {
             let mut locks = Vec::new();
             let mut keys = Vec::new();
 

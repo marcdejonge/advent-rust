@@ -1,19 +1,26 @@
 #![feature(test)]
 
-use nom::error::Error;
-use nom::Parser;
-use rayon::prelude::*;
-use std::ops::{Add, Sub};
-
 use advent_lib::day::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
-use advent_lib::parsing::map_parser;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
+use rayon::prelude::*;
+use std::ops::{Add, Sub};
 
 use crate::Space::*;
 
+#[parsable(
+    map_parsable(|grid: Grid<Space>| {
+        let galaxy_locations = grid
+            .entries()
+            .filter(|(_, space)| **space == Galaxy)
+            .map(|(ix, _)| ix)
+            .collect();
+
+        ( grid, galaxy_locations )
+    })
+)]
 struct Day {
     grid: Grid<Space>,
     galaxy_locations: Vec<Point<2, i32>>,
@@ -78,18 +85,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = u64;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<Space>| {
-            let galaxy_locations = grid
-                .entries()
-                .filter(|(_, space)| **space == Galaxy)
-                .map(|(ix, _)| ix)
-                .collect();
-
-            Day { grid, galaxy_locations }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.determine_galaxy_distance_sum(self.create_distance_grid(2))

@@ -2,14 +2,35 @@
 
 extern crate core;
 
-use nom::error::Error;
-use nom::Parser;
+use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::grid::{Grid, Location};
+use advent_macros::parsable;
 use rayon::prelude::*;
 
-use advent_lib::day::*;
-use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
+#[parsable(
+    map_parsable(|grid: Grid<_>| {
+        let mut numbers = Vec::<GridNumber>::new();
+        let mut saved_number = GridNumber::default();
+        let mut symbols = Vec::<Symbol>::new();
 
+        grid.east_lines().for_each(|line| {
+            line.for_each(|(index, &b)| match b {
+                b'.' => saved_number.save(&mut numbers),
+                b'0'..=b'9' => saved_number.add_digit(index, b),
+                b'*' => {
+                    saved_number.save(&mut numbers);
+                    symbols.push(Symbol { index, is_gear: true });
+                }
+                _ => {
+                    saved_number.save(&mut numbers);
+                    symbols.push(Symbol { index, is_gear: false });
+                }
+            });
+            saved_number.save(&mut numbers);
+        });
+        (symbols, numbers)
+    })
+)]
 struct Day {
     symbols: Vec<Symbol>,
     numbers: Vec<GridNumber>,
@@ -53,32 +74,6 @@ impl GridNumber {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<u8>| {
-            let mut numbers = Vec::<GridNumber>::new();
-            let mut saved_number = GridNumber::default();
-            let mut symbols = Vec::<Symbol>::new();
-
-            grid.east_lines().for_each(|line| {
-                line.for_each(|(index, &b)| match b {
-                    b'.' => saved_number.save(&mut numbers),
-                    b'0'..=b'9' => saved_number.add_digit(index, b),
-                    b'*' => {
-                        saved_number.save(&mut numbers);
-                        symbols.push(Symbol { index, is_gear: true });
-                    }
-                    _ => {
-                        saved_number.save(&mut numbers);
-                        symbols.push(Symbol { index, is_gear: false });
-                    }
-                });
-                saved_number.save(&mut numbers);
-            });
-
-            Day { symbols, numbers }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.numbers

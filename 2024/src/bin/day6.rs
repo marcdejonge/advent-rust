@@ -65,7 +65,7 @@ fn guard_walk(grid: &mut Grid<Field>, start: &Location) -> bool {
 impl ExecutableDay for Day {
     type Output = u32;
 
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
         map_parser(|grid: Grid<Field>| {
             let start = grid.find(|f| f == &Field::Visited(North)).unwrap();
             Day { grid, start }
