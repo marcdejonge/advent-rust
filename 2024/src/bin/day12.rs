@@ -5,12 +5,12 @@ use advent_lib::direction::CardinalDirections::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};
-use advent_lib::parsing::map_parser;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::parsable;
 
+#[parsable]
 struct Day {
     plot: Grid<u8>,
+    #[defer(plot.detect_regions())]
     regions: Vec<Vec<Location>>,
 }
 
@@ -22,13 +22,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|plot: Grid<u8>| {
-            let regions = plot.detect_regions();
-            Day { plot, regions }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let fences_grid = self.plot.map_entries(|location, current| {

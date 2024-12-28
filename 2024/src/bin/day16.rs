@@ -5,19 +5,19 @@ use advent_lib::day::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
-use advent_macros::FromRepr;
+use advent_macros::{parsable, FromRepr};
 use fxhash::FxHashMap;
-use nom::error::Error;
-use nom::Parser;
 use priority_queue::PriorityQueue;
 use std::cmp::{min, Reverse};
 use std::collections::hash_map::Entry::Vacant;
 use std::ops::Neg;
 
+#[parsable]
 struct Day {
     grid: Grid<Block>,
+    #[defer(grid.find(|&b| b == Start).expect("Start not found"))]
     start: Location,
+    #[defer(grid.find(|&b| b == End).expect("End not found"))]
     end: Location,
 }
 
@@ -98,14 +98,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = u32;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<Block>| {
-            let start = grid.find(|&b| b == Start).expect("Start not found");
-            let end = grid.find(|&b| b == End).expect("End not found");
-            Day { grid, start, end }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.find_all_paths().0 }
 

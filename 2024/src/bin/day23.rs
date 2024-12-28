@@ -2,41 +2,36 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::key::Key;
+use advent_macros::parsable;
 use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
-use nom::bytes::complete::{tag, take_while_m_n};
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::separated_pair;
-use nom::Parser;
-use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct Name([u8; 2]);
+type Nodes = FxHashSet<Key>;
+type Graph = FxHashMap<Key, Nodes>;
 
-type Nodes = FxHashSet<Name>;
-type Graph = FxHashMap<Name, Nodes>;
-
-impl Name {
-    fn is_chief(&self) -> bool { self.0[0] == b't' }
+fn is_chief(key: Key) -> bool {
+    let raw: usize = key.into();
+    ((raw / 36) % 36) == 20 // Second from last character is a 't'
 }
 
-impl Display for Name {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", self.0[0] as char, self.0[1] as char)
-    }
-}
-
+#[parsable(map(separated_list1(line_ending, parsable_pair(tag(b"-"))), generate_graph))]
 struct Day {
     graph: Graph,
 }
 
-fn bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes, collector: &mut Vec<Nodes>) {
+fn generate_graph(pairs: Vec<(Key, Key)>) -> Graph {
+    let mut graph = Graph::default();
+    for (from, to) in pairs {
+        graph.entry(from).or_insert_with(FxHashSet::default).insert(to);
+        graph.entry(to).or_insert_with(FxHashSet::default).insert(from);
+    }
+    graph
+}
+
+fn max_bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes) -> Option<Nodes> {
     if p.is_empty() && x.is_empty() {
-        collector.push(r.clone());
-        return;
+        return Some(r.clone());
     }
 
     // Find pivot node that has many neighbours
@@ -44,56 +39,40 @@ fn bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes, collector: 
 
     let vs = p.difference(&graph[u]).copied().collect::<Vec<_>>();
 
+    let mut max = None;
     for v in vs {
         let mut next_r = r.clone();
         next_r.insert(v);
 
-        bron_kerbosh(
+        let next = max_bron_kerbosh(
             graph,
             next_r,
             p.intersection(&graph[&v]).copied().collect(),
             x.intersection(&graph[&v]).copied().collect(),
-            collector,
         );
+        if let Some(next) = next {
+            if next.len() > max.as_ref().map(|n: &Nodes| n.len()).unwrap_or_default() {
+                max = Some(next);
+            }
+        }
         p.remove(&v);
         x.insert(v);
     }
+
+    max
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                separated_pair(
-                    take_while_m_n(2, 2, |b: u8| b.is_ascii_alphabetic()),
-                    tag(b"-"),
-                    take_while_m_n(2, 2, |b: u8| b.is_ascii_alphabetic()),
-                ),
-            ),
-            |pairs: Vec<(&[u8], &[u8])>| {
-                let mut graph = Graph::default();
-                for (from, to) in pairs {
-                    let from = Name(from.try_into().unwrap());
-                    let to = Name(to.try_into().unwrap());
-                    graph.entry(from).or_insert_with(FxHashSet::default).insert(to);
-                    graph.entry(to).or_insert_with(FxHashSet::default).insert(from);
-                }
-                Day { graph }
-            },
-        )
-    }
     fn calculate_part1(&self) -> Self::Output {
         self.graph
             .iter()
-            .filter(|(name, _)| name.is_chief())
+            .filter(|(name, _)| is_chief(**name))
             .map(|(name, computer_connections)| {
                 IteratorUtils::combinations(computer_connections.iter())
                     .filter(|[snd, third]| {
-                        (!snd.is_chief() || snd > &name)
-                            && (!third.is_chief() || third > &name)
+                        (!is_chief(**snd) || snd > &name)
+                            && (!is_chief(**third) || third > &name)
                             && self.graph.get(snd).unwrap().contains(third)
                     })
                     .count()
@@ -101,17 +80,13 @@ impl ExecutableDay for Day {
             .sum()
     }
     fn calculate_part2(&self) -> Self::Output {
-        let mut collector = Vec::new();
-        bron_kerbosh(
+        let max_set = max_bron_kerbosh(
             &self.graph,
             Nodes::default(),
             self.graph.keys().copied().collect(),
             Nodes::default(),
-            &mut collector,
-        );
-
-        collector.sort_by_key(|a| a.len());
-        let max_set = collector.last().unwrap();
+        )
+        .unwrap();
         println!(
             " ├── Part 2 full answer: {}",
             max_set.iter().sorted().join(",")

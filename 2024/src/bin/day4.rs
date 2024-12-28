@@ -3,10 +3,9 @@
 use advent_lib::day::*;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::parsable;
 
+#[parsable]
 struct Day {
     grid: Grid<u8>,
 }
@@ -25,10 +24,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid| Day { grid })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         const DIRECTIONS: [Step; 8] = [

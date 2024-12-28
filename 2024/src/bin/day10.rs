@@ -3,12 +3,11 @@
 use advent_lib::day::*;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
+use advent_macros::parsable;
 use fxhash::FxHashSet;
-use nom::error::Error;
-use nom::Parser;
 use rayon::prelude::*;
 
+#[parsable]
 struct Day {
     grid: Grid<u8>,
 }
@@ -52,10 +51,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = u32;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid| Day { grid })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.start_nodes()

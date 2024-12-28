@@ -4,14 +4,14 @@ use advent_lib::day::*;
 use advent_lib::grid::{Grid, Location, Size};
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::numbers::PositiveNumbersFrom;
-use advent_lib::parsing::map_parser;
+use advent_macros::parsable;
 use itertools::Itertools;
-use nom::error::Error;
-use nom::Parser;
 use std::collections::HashMap;
 
+#[parsable]
 struct Day {
     grid: Grid<char>,
+    #[defer(grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map())]
     antenna_locations: HashMap<char, Vec<Location>>,
 }
 
@@ -51,14 +51,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<char>| {
-            let antenna_locations =
-                grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map();
-            Day { grid, antenna_locations }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.count_dips([1]) }
     fn calculate_part2(&self) -> Self::Output { self.count_dips(PositiveNumbersFrom(0)) }

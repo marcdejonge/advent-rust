@@ -1,16 +1,10 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::separated_pair;
-use nom::Parser;
+use advent_macros::parsable;
 use rayon::prelude::*;
 
+#[parsable]
 struct Day {
     puzzles: Vec<Puzzle>,
 }
@@ -25,6 +19,7 @@ impl Day {
     }
 }
 
+#[parsable(separated_pair(u64, tag(b": "), separated_list1(tag(b" "), u64)))]
 struct Puzzle {
     target: u64,
     input: Vec<u64>,
@@ -66,23 +61,6 @@ fn can_make_target_multiply(target: u64, nr: u64, input: &[u64], allow_concat: b
 
 impl ExecutableDay for Day {
     type Output = u64;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                map(
-                    separated_pair(
-                        complete::u64,
-                        tag(b": "),
-                        separated_list1(tag(b" "), complete::u64),
-                    ),
-                    |(target, input)| Puzzle { target, input },
-                ),
-            ),
-            |puzzles| Day { puzzles },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.sum_of_targets(false) }
     fn calculate_part2(&self) -> Self::Output { self.sum_of_targets(true) }

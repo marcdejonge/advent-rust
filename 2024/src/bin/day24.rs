@@ -1,97 +1,65 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::{double_line_ending, separated_lines1, Parsable};
+use advent_lib::key::Key;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::{complete, is_alphanumeric};
-use nom::combinator::map;
-use nom::error::{Error, ErrorKind};
-use nom::sequence::{separated_pair, tuple};
-use nom::{IResult, InputTake, Parser};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::mem::swap;
+use Operation::*;
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct Name([u8; 3]);
-
-fn parse_name(input: &[u8]) -> IResult<&[u8], Name> {
-    if input.len() < 3 {
-        return Err(nom::Err::Error(Error::new(input, ErrorKind::Eof)));
-    }
-
-    let (rest, name) = input.take_split(3);
-    if !name.iter().all(|&b| is_alphanumeric(b)) {
-        return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
-    }
-
-    Ok((rest, Name([name[0], name[1], name[2]])))
-}
-
-struct StartingValue(Name, bool);
-
-impl Parsable for StartingValue {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(parse_name, tag(b": "), complete::u8),
-            |(name, value)| StartingValue(name, value != 0),
-        )
-    }
-}
-
-impl Name {
-    fn from(prefix: u8, id: u16) -> Name {
-        Name([prefix, (id / 10) as u8 + b'0', (id % 10) as u8 + b'0'])
-    }
-
-    fn wired_from(&self, left: Name, operation: Operation, right: Name) -> Expression {
-        Expression { left, operation, right, target: *self }
-    }
-}
-
-impl Display for Name {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", String::from_utf8_lossy(&self.0))
-    }
-}
-
+#[parsable]
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 enum Operation {
+    #[format=tag(b"AND")]
     And,
+    #[format=tag(b"XOR")]
     Xor,
+    #[format=tag(b"OR")]
     Or,
 }
 
-impl Display for Operation {
+impl Debug for Operation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Operation::And => write!(f, "AND"),
-            Operation::Xor => write!(f, "XOR"),
-            Operation::Or => write!(f, "OR"),
+            And => write!(f, "AND"),
+            Xor => write!(f, "XOR"),
+            Or => write!(f, "OR"),
         }
     }
 }
 
 #[derive(Clone)]
+#[parsable(tuple((
+        Key::parser(),
+        delimited(space0, Operation::parser(), space0),
+        Key::parser(),
+        preceded(tag(b" -> "), Key::parser()),
+)))]
 struct Expression {
-    left: Name,
+    left: Key,
     operation: Operation,
-    right: Name,
-    target: Name,
+    right: Key,
+    target: Key,
 }
 
 impl Expression {
-    fn get_other_input(&self, name: &Name) -> Option<&Name> {
-        if &self.left == name {
-            Some(&self.right)
-        } else if &self.right == name {
-            Some(&self.left)
+    fn get_other_input(&self, name: Key) -> Option<Key> {
+        if self.left == name {
+            Some(self.right)
+        } else if self.right == name {
+            Some(self.left)
         } else {
             None
         }
+    }
+}
+
+impl Expression {
+    fn new(left: Key, operation: Operation, right: Key, target: Key) -> Self {
+        Self { left, operation, right, target }
     }
 }
 
@@ -103,52 +71,48 @@ impl PartialEq for Expression {
     }
 }
 
-impl Display for Expression {
+impl Debug for Expression {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {} {} -> {}",
+            "{} {:?} {} -> {}",
             self.left, self.operation, self.right, self.target
         )
     }
 }
 
-impl Parsable for Expression {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(
-                tuple((
-                    parse_name,
-                    alt((
-                        map(tag(b" AND "), |_| Operation::And),
-                        map(tag(b" XOR "), |_| Operation::Xor),
-                        map(tag(b" OR "), |_| Operation::Or),
-                    )),
-                    parse_name,
-                )),
-                tag(b" -> "),
-                parse_name,
-            ),
-            |((left, operation, right), target)| Expression { left, operation, right, target },
-        )
-    }
+#[parsable(separated_pair(
+    separated_map1(
+        line_ending,
+        separated_pair(Key::parser(), tag(b": "), map(u8, |v| v != 0))
+    ),
+    double_line_ending,
+    separated_map1(
+        line_ending,
+        map(Expression::parser(), |expr| (expr.target, expr))
+    ),
+))]
+struct Day {
+    starting_values: FxHashMap<Key, bool>,
+    expressions: FxHashMap<Key, Expression>,
 }
 
-struct Day {
-    starting_values: FxHashMap<Name, bool>,
-    expressions: FxHashMap<Name, Expression>,
-}
+const X: Key = Key::fixed(b"x00");
+const Y: Key = Key::fixed(b"y00");
+const Z: Key = Key::fixed(b"z00");
+
+fn create_key(from: Key, id: usize) -> Key { from + (id / 10) * 36 + (id % 10) }
 
 impl Day {
-    fn find_target_of_expression(&self, expected: &Expression) -> Option<Name> {
+    fn find_target_of_expression(&self, expected: &Expression) -> Option<Key> {
         let result = self.expressions.iter().find(|(_, expr)| expr == &expected).map(|(n, _)| *n);
         if result.is_none() {
-            println!("Could not find expression: {}", expected);
+            println!("Could not find expression: {:?}", expected);
         }
         result
     }
 
-    fn find_expression(&self, target: Name) -> Option<&Expression> {
+    fn find_expression(&self, target: Key) -> Option<&Expression> {
         let result = self.expressions.get(&target);
         if result.is_none() {
             println!("Could not find expression for target: {}", target);
@@ -156,29 +120,29 @@ impl Day {
         result
     }
 
-    fn evaluate(&self, name: &Name) -> Option<bool> {
-        if let Some(&value) = self.starting_values.get(name) {
+    fn evaluate(&self, name: Key) -> Option<bool> {
+        if let Some(&value) = self.starting_values.get(&name) {
             return Some(value);
         }
 
-        let expression = self.expressions.get(name)?;
-        let left = self.evaluate(&expression.left)?;
-        let right = self.evaluate(&expression.right)?;
+        let expression = self.expressions.get(&name)?;
+        let left = self.evaluate(expression.left)?;
+        let right = self.evaluate(expression.right)?;
         match expression.operation {
-            Operation::And => Some(left & right),
-            Operation::Xor => Some(left ^ right),
-            Operation::Or => Some(left | right),
+            And => Some(left & right),
+            Xor => Some(left ^ right),
+            Or => Some(left | right),
         }
     }
 
-    fn detect_half_adder(&self, id: u16) -> Option<Name> {
-        let target = Name::from(b'z', id);
-        let from_x = Name::from(b'x', id);
-        let from_y = Name::from(b'y', id);
+    fn detect_half_adder(&self, id: usize) -> Option<Key> {
+        let from_x = create_key(X, id);
+        let from_y = create_key(Y, id);
+        let target = create_key(Z, id);
 
         if let Some(expr) = self.expressions.get(&target) {
-            if expr == &target.wired_from(from_x, Operation::Xor, from_y) {
-                self.find_target_of_expression(&target.wired_from(from_x, Operation::And, from_y))
+            if expr == &Expression::new(from_x, Xor, from_y, target) {
+                self.find_target_of_expression(&Expression::new(from_x, And, from_y, target))
             } else {
                 None
             }
@@ -187,36 +151,35 @@ impl Day {
         }
     }
 
-    fn detect_full_adder(&self, id: u16, carry_in: Name) -> Either<Name, (Name, Name)> {
-        let target = Name::from(b'z', id);
-        let from_x = Name::from(b'x', id);
-        let from_y = Name::from(b'y', id);
+    fn detect_full_adder(&self, id: usize, carry_in: Key) -> Either<Key, (Key, Key)> {
+        let from_x = create_key(X, id);
+        let from_y = create_key(Y, id);
+        let target = create_key(Z, id);
 
         let carry_in_expr = self.find_expression(target).unwrap();
-        let source_target = carry_in_expr.get_other_input(&carry_in);
-        if source_target.is_none() || carry_in_expr.operation != Operation::Xor {
+        let source_target = carry_in_expr.get_other_input(carry_in);
+        if source_target.is_none() || carry_in_expr.operation != Xor {
             let other_target = self
                 .expressions
                 .values()
                 .find(|expr| {
-                    expr.operation == Operation::Xor
-                        && (expr.left == carry_in || expr.right == carry_in)
+                    expr.operation == Xor && (expr.left == carry_in || expr.right == carry_in)
                 })
                 .unwrap()
                 .target;
 
             return Right((target, other_target));
         }
-        let source_target = *source_target.unwrap();
+        let source_target = source_target.unwrap();
 
         let from_expr = self.find_expression(source_target).unwrap();
-        let expected_expr = target.wired_from(from_x, Operation::Xor, from_y);
+        let expected_expr = Expression::new(from_x, Xor, from_y, target);
         if from_expr != &expected_expr {
             let other_target = self
                 .expressions
                 .values()
                 .find(|expr| {
-                    expr.operation == Operation::Xor
+                    expr.operation == Xor
                         && (expr.left == from_x || expr.right == from_x)
                         && (expr.left == from_y || expr.right == from_y)
                 })
@@ -226,21 +189,17 @@ impl Day {
             return Right((source_target, other_target));
         }
 
-        let carry_out_left = self
-            .find_target_of_expression(&target.wired_from(source_target, Operation::And, carry_in))
+        let carry_left = self
+            .find_target_of_expression(&Expression::new(source_target, And, carry_in, target))
             .unwrap();
 
-        let carry_out_right = self
-            .find_target_of_expression(&target.wired_from(from_x, Operation::And, from_y))
+        let carry_right = self
+            .find_target_of_expression(&Expression::new(from_x, And, from_y, target))
             .unwrap();
 
         Left(
-            self.find_target_of_expression(&target.wired_from(
-                carry_out_left,
-                Operation::Or,
-                carry_out_right,
-            ))
-            .unwrap(),
+            self.find_target_of_expression(&Expression::new(carry_left, Or, carry_right, target))
+                .unwrap(),
         )
     }
 }
@@ -248,32 +207,15 @@ impl Day {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(
-                separated_lines1::<StartingValue>(),
-                double_line_ending,
-                separated_lines1::<Expression>(),
-            ),
-            |(starting_values, expressions)| Day {
-                starting_values: starting_values
-                    .into_iter()
-                    .map(|starting_value| (starting_value.0, starting_value.1))
-                    .collect(),
-                expressions: expressions.into_iter().map(|expr| (expr.target, expr)).collect(),
-            },
-        )
-    }
-
     fn calculate_part1(&self) -> Self::Output {
         let mut result = 0;
         for ix in 0..64 {
-            let name = Name(format!("z{:02}", ix).as_bytes().try_into().unwrap());
+            let name = create_key(Z, ix);
             if !self.expressions.contains_key(&name) {
                 break;
             }
 
-            if let Some(value) = self.evaluate(&name) {
+            if let Some(value) = self.evaluate(name) {
                 if value {
                     result |= 1 << ix;
                 }

@@ -4,9 +4,7 @@ use advent_lib::day::*;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::parsable;
 use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,8 +38,10 @@ impl From<u8> for Field {
     }
 }
 
+#[parsable]
 struct Day {
     grid: Grid<Field>,
+    #[defer(grid.find(|f| f == &Field::Visited(North)).unwrap())]
     start: Location,
 }
 
@@ -64,13 +64,6 @@ fn guard_walk(grid: &mut Grid<Field>, start: &Location) -> bool {
 
 impl ExecutableDay for Day {
     type Output = u32;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<Field>| {
-            let start = grid.find(|f| f == &Field::Visited(North)).unwrap();
-            Day { grid, start }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut grid = self.grid.clone();

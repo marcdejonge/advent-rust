@@ -4,16 +4,18 @@ use advent_lib::day::*;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::map_parser;
-use advent_macros::FromRepr;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::{parsable, FromRepr};
 use rayon::prelude::*;
 use std::iter::successors;
 use Block::*;
 
+#[parsable]
 struct Day {
     grid: Grid<Block>,
+    #[defer({
+        let start = grid.find(|&b| b == Start).unwrap();
+        walk_grid(&grid, start).enumerate().collect()
+    })]
     walk: Vec<(usize, Location)>,
 }
 
@@ -73,14 +75,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_parser(|grid: Grid<Block>| {
-            let start = grid.find(|&b| b == Start).unwrap();
-            let walk = walk_grid(&grid, start).enumerate().collect();
-            Day { walk, grid }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.find_cheats(&generate_steps(2), 100) }
     fn calculate_part2(&self) -> Self::Output { self.find_cheats(&generate_steps(20), 100) }

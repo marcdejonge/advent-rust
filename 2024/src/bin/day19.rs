@@ -2,19 +2,19 @@
 extern crate core;
 
 use advent_lib::day::*;
-use advent_lib::parsing::{double_line_ending, many_1_n};
-use advent_macros::FromRepr;
-use nom::bytes::complete::tag;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::{many1, separated_list1};
-use nom::sequence::separated_pair;
-use nom::Parser;
+use advent_macros::{parsable, FromRepr};
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
 #[derive(Debug)]
+#[parsable(separated_pair(
+    map(
+        separated_list1(tag(b", "), many_1_n(Color::parser())),
+        Node::generate_nodes
+    ),
+    double_line_ending,
+    separated_list1(line_ending, many1(Color::parser())),
+))]
 struct Day {
     nodes: Vec<Node>,
     towels: Vec<Vec<Color>>,
@@ -110,20 +110,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_pair(
-                separated_list1(tag(", "), many_1_n(Color::parse)),
-                double_line_ending,
-                separated_list1(line_ending, many1(Color::parse)),
-            ),
-            |(available_patterns, towels)| Day {
-                nodes: Node::generate_nodes(available_patterns),
-                towels,
-            },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.towels.par_iter().filter(|&towel| self.can_be_made(towel) > 0).count()

@@ -1,58 +1,27 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use advent_lib::parsing::find_many_skipping_unknown;
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while_m_n};
-use nom::combinator::{map, map_res};
-use nom::error::{Error, FromExternalError, ParseError};
-use nom::sequence::{delimited, separated_pair};
-use nom::Parser;
-use std::num::ParseIntError;
+use advent_macros::parsable;
 
 #[derive(Debug, PartialEq, Eq)]
+#[parsable]
 enum Command {
+    #[format=delimited(tag(b"mul("), separated_pair(i64, tag(b","), i64), tag(b")"))]
     Mul(i64, i64),
+    #[format=tag(b"do()")]
     Do,
+    #[format=tag(b"don't()")]
     Dont,
 }
 
-fn number_parser<'a, E: FromExternalError<&'a [u8], ParseIntError> + ParseError<&'a [u8]>>(
-) -> impl Parser<&'a [u8], i64, E> {
-    map_res(take_while_m_n(1, 3, |b: u8| b.is_ascii_digit()), |bs| {
-        std::str::from_utf8(bs).unwrap().parse::<i64>()
-    })
-}
-
-fn command_parser<'a, E: FromExternalError<&'a [u8], ParseIntError> + ParseError<&'a [u8]>>(
-) -> impl Parser<&'a [u8], Command, E> {
-    alt((
-        map(
-            delimited(
-                tag(b"mul("),
-                separated_pair(number_parser(), tag(b","), number_parser()),
-                tag(b")"),
-            ),
-            |(a, b)| Command::Mul(a, b),
-        ),
-        map(tag(b"do()"), |_| Command::Do),
-        map(tag(b"don't()"), |_| Command::Dont),
-    ))
-}
-
 #[derive(Debug)]
+#[parsable(find_many_skipping_unknown())]
 struct Day {
     commands: Vec<Command>,
 }
 
 impl ExecutableDay for Day {
     type Output = i64;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(find_many_skipping_unknown(command_parser()), |commands| {
-            Day { commands }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.commands

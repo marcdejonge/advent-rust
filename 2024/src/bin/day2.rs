@@ -2,14 +2,11 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
-use nom::character::complete;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::Parser;
+use advent_macros::parsable;
 use rayon::prelude::*;
 use std::ops::RangeInclusive;
 
+#[parsable(separated_list1(line_ending, separated_list1(space1, i32)))]
 struct Day {
     reports: Vec<Vec<i32>>,
 }
@@ -23,8 +20,8 @@ fn find_unsafe_index(report: &&Vec<i32>) -> Option<usize> {
     }
     let mut diffs = report.iter().zip_with_next().map(|(a, b)| b - a).enumerate();
     match diffs.next().unwrap() {
-        (_, s) if UP.contains(&s) => diffs.find(|(_, d)| !UP.contains(&d)).map(|(ix, _)| ix),
-        (_, s) if DOWN.contains(&s) => diffs.find(|(_, d)| !DOWN.contains(&d)).map(|(ix, _)| ix),
+        (_, s) if UP.contains(&s) => diffs.find(|(_, d)| !UP.contains(d)).map(|(ix, _)| ix),
+        (_, s) if DOWN.contains(&s) => diffs.find(|(_, d)| !DOWN.contains(d)).map(|(ix, _)| ix),
         _ => Some(0),
     }
 }
@@ -41,16 +38,6 @@ fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
 impl ExecutableDay for Day {
     type Output = usize;
 
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                complete::line_ending::<&[u8], _>,
-                separated_list1(complete::space1, complete::i32),
-            ),
-            |reports| Day { reports },
-        )
-    }
-
     fn calculate_part1(&self) -> Self::Output {
         self.reports
             .par_iter()
@@ -65,10 +52,10 @@ impl ExecutableDay for Day {
                 None => true,
                 Some(remove_ix) => {
                     // Either the first or second number can be removed
-                    find_unsafe_index(&&remove_index(report, remove_ix)) == None
-                        || find_unsafe_index(&&remove_index(report, remove_ix + 1)) == None
+                    find_unsafe_index(&&remove_index(report, remove_ix)).is_none()
+                        || find_unsafe_index(&&remove_index(report, remove_ix + 1)).is_none()
                         // Or if it finds it at the beginning, the start might be wrong
-                        || (remove_ix == 1 && find_unsafe_index(&&remove_index(report, 0)) == None)
+                        || (remove_ix == 1 && find_unsafe_index(&&remove_index(report, 0)).is_none())
                 }
             })
             .count()

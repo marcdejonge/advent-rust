@@ -1,15 +1,12 @@
 #![feature(test)]
 
 use advent_lib::day::*;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
-use nom::character::complete;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::Parser;
 
 type Count = u64;
 
+#[parsable(separated_list1(space1, u64))]
 struct Day {
     starting_numbers: Vec<u64>,
 }
@@ -44,13 +41,6 @@ impl Memoized {
 
 impl ExecutableDay for Day {
     type Output = Count;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(complete::space1, complete::u64),
-            |starting_numbers| Day { starting_numbers },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut memoized = Memoized::new();

@@ -5,15 +5,14 @@ use advent_lib::builder::with_default;
 use advent_lib::day::*;
 use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::grid::{Grid, Location};
+use advent_lib::parsing::Parsable;
 use advent_lib::small_string::SmallString;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
-use nom::character::complete::{alphanumeric1, line_ending};
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
 use nom::Parser;
 use smallvec::{smallvec, SmallVec};
 
+#[parsable(separated_list1(line_ending, map(alphanumeric1, SmallString::from)))]
 struct Day {
     lines: Vec<SmallString<8>>,
 }
@@ -28,18 +27,16 @@ struct Moves {
 }
 
 impl Moves {
-    fn register_locations<const D: usize>(&mut self, grid: [&str; D], offset: Vector<2, i32>) {
-        Grid::from(grid.iter().map(|s| s.to_string()))
-            .entries()
-            .for_each(|(point, &c)| {
-                self.positions.insert(c, point + offset);
-            });
+    fn register_locations(&mut self, grid: &[u8], offset: Vector<2, i32>) {
+        Grid::parser().parse(grid).unwrap().1.entries().for_each(|(point, &c)| {
+            self.positions.insert(c, point + offset);
+        });
     }
 
     fn new() -> Self {
         with_default(|moves: &mut Self| {
-            moves.register_locations(["789", "456", "123", " 0A"], vector2(0, 0));
-            moves.register_locations([" ^A", "<v>"], vector2(0, 3));
+            moves.register_locations(b"789\n456\n123\n 0A", vector2(0, 0));
+            moves.register_locations(b" ^A\n<v>", vector2(0, 3));
         })
     }
 
@@ -111,13 +108,6 @@ impl Moves {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(line_ending, alphanumeric1),
-            |lines: Vec<&[u8]>| Day { lines: lines.into_iter().map(SmallString::from).collect() },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut moves = Moves::new();

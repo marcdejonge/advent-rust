@@ -1,20 +1,18 @@
 #![feature(test)]
 
 use advent_lib::day::*;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::{delimited, preceded, tuple};
-use nom::Parser;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+#[parsable(preceded(tag(b"Program: "), map(separated_list1(tag(b","), u8), SmallVec::from)))]
 struct Program(SmallVec<[u8; 16]>);
+
+#[parsable(preceded(delimited(tag(b"Register "), alpha1, tag(b": ")), u64))]
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
+struct Register(u64);
 
 impl From<Program> for u64 {
     fn from(value: Program) -> Self { value.0.iter().fold(0, |acc, &x| acc * 10 + x as u64) }
@@ -22,18 +20,19 @@ impl From<Program> for u64 {
 
 impl From<&Program> for Machine {
     fn from(program: &Program) -> Self {
-        Machine { registers: [0; 3], ip: 0, program: program.clone() }
+        Machine { registers: Default::default(), ip: 0, program: program.clone() }
     }
 }
 
+#[parsable(separated_pair(separated_array(line_ending), double_line_ending, Program::parser()))]
 struct Day {
-    registers: [u64; 3],
+    registers: [Register; 3],
     program: Program,
 }
 
 #[derive(Clone, Debug)]
 struct Machine {
-    registers: [u64; 3],
+    registers: [Register; 3],
     ip: usize,
     program: Program,
 }
@@ -47,9 +46,9 @@ impl Machine {
         let combo = self.literal();
         match combo {
             0..=3 => combo,
-            4 => self.registers[0],
-            5 => self.registers[1],
-            6 => self.registers[2],
+            4 => self.registers[0].0,
+            5 => self.registers[1].0,
+            6 => self.registers[2].0,
             _ => panic!("Invalid combo number: {}", combo),
         }
     }
@@ -58,9 +57,9 @@ impl Machine {
 
     fn operand(&self) -> Option<&u8> { self.program.0.get(self.ip) }
 
-    fn a(&mut self) -> &mut u64 { &mut self.registers[0] }
-    fn b(&mut self) -> &mut u64 { &mut self.registers[1] }
-    fn c(&mut self) -> &mut u64 { &mut self.registers[2] }
+    fn a(&mut self) -> &mut u64 { &mut self.registers[0].0 }
+    fn b(&mut self) -> &mut u64 { &mut self.registers[1].0 }
+    fn c(&mut self) -> &mut u64 { &mut self.registers[2].0 }
 
     fn execute_single_output(&mut self) -> Option<u8> {
         while let Some(&opcode) = self.operand() {
@@ -102,22 +101,6 @@ impl Machine {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            tuple((
-                delimited(tag(b"Register A: "), complete::u64, line_ending),
-                delimited(tag(b"Register B: "), complete::u64, line_ending),
-                delimited(tag(b"Register C: "), complete::u64, line_ending),
-                line_ending,
-                preceded(tag(b"Program: "), separated_list1(tag(b","), complete::u8)),
-            )),
-            |(a, b, c, _, program)| Day {
-                registers: [a, b, c],
-                program: Program(program.as_slice().into()),
-            },
-        )
-    }
-
     fn calculate_part1(&self) -> Self::Output { Machine::new(self).execute_program().into() }
 
     /*
@@ -142,9 +125,9 @@ impl ExecutableDay for Day {
         // Execute with any 10-bit value for A, max 7 before the 3-bit shift might have an impact
         for start in 0..1024 {
             let mut machine = Machine::from(&self.program);
-            machine.registers[0] = start;
+            machine.registers[0].0 = start;
             if let Some(result) = machine.execute_single_output() {
-                result_map.entry((result, machine.registers[0])).or_default().push(start);
+                result_map.entry((result, machine.registers[0].0)).or_default().push(start);
             }
         }
 
@@ -167,7 +150,7 @@ impl ExecutableDay for Day {
 
         // Verify that the found solution really works
         let mut machine = Machine::new(self);
-        machine.registers[0] = a;
+        machine.registers[0].0 = a;
         assert_eq!(machine.execute_program(), self.program);
 
         a

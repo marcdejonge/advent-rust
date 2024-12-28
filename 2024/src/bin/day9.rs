@@ -1,16 +1,37 @@
 #![feature(test)]
 
 use advent_lib::day::*;
-use nom::bytes::complete::is_a;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::parsable;
 use std::cmp::max;
 
 #[derive(Clone)]
+#[parsable(map(is_a("0123456789"), parse_numbers))]
 struct Day {
     files: Vec<File>,
     free_space: Vec<Space>,
+}
+
+fn parse_numbers(input: &[u8]) -> (Vec<File>, Vec<Space>) {
+    let mut files = Vec::new();
+    let mut free_space = Vec::new();
+    let mut file_ix = 0;
+    let mut location = 0;
+    let mut empty = false;
+
+    for size in input.iter().map(|c| c - b'0') {
+        if empty {
+            free_space.push(Space { size, location });
+            location += size as u32;
+            empty = false;
+        } else {
+            files.push(File { file_ix, size, location });
+            location += size as u32;
+            file_ix += 1;
+            empty = true;
+        }
+    }
+
+    (files, free_space)
 }
 
 #[derive(Clone, Debug)]
@@ -90,31 +111,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = u128;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(is_a("0123456789"), |input: &[u8]| {
-            let mut files = Vec::new();
-            let mut free_space = Vec::new();
-            let mut file_ix = 0;
-            let mut location = 0;
-            let mut empty = false;
-
-            for size in input.iter().map(|c| c - b'0') {
-                if empty {
-                    free_space.push(Space { size, location });
-                    location += size as u32;
-                    empty = false;
-                } else {
-                    files.push(File { file_ix, size, location });
-                    location += size as u32;
-                    file_ix += 1;
-                    empty = true;
-                }
-            }
-
-            Day { files, free_space }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         let mut memory = self.clone();

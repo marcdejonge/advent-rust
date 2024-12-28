@@ -2,15 +2,11 @@
 
 use advent_lib::day::*;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_macros::parsable;
 use fxhash::FxHashMap;
-use nom::character::complete;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::Parser;
 use rayon::prelude::*;
 
+#[parsable]
 struct Day {
     secrets: Vec<i32>,
 }
@@ -54,11 +50,6 @@ fn find_possible_price_changes(secret: i32) -> Prices {
 impl ExecutableDay for Day {
     type Output = u64;
 
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(separated_list1(line_ending, complete::i32), |secrets| Day {
-            secrets,
-        })
-    }
     fn calculate_part1(&self) -> Self::Output {
         self.secrets.iter().map(|&s| secrets(s).take(2001).last().unwrap() as u64).sum()
     }

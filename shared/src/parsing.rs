@@ -1,11 +1,11 @@
-use fxhash::FxHashMap;
+use fxhash::{FxHashMap, FxHashSet};
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming, map};
 use nom::error::{Error, ErrorKind, ParseError};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, separated_pair, tuple};
-use nom::{Compare, Err, Finish, IResult, InputIter, InputLength, InputTake, Parser, Slice};
+use nom::{Compare, Err, Finish, IResult, InputIter, InputLength, Parser, Slice};
 use smallvec::SmallVec;
 use std::hash::Hash;
 use std::ops::{Range, RangeFrom, RangeTo};
@@ -31,23 +31,20 @@ pub fn handle_parser_error<'a, T>(
 }
 
 #[inline]
-pub fn find_many_skipping_unknown<Input, Output, Error, ParseFunction>(
-    mut f: ParseFunction,
-) -> impl Parser<Input, Vec<Output>, Error>
+pub fn find_many_skipping_unknown<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
 where
-    Input: Clone + InputLength + InputTake,
-    ParseFunction: Parser<Input, Output, Error>,
+    T: Parsable,
 {
-    move |mut input: Input| {
+    move |mut input: &'a [u8]| {
         let mut res = Vec::new();
         while input.input_len() > 0 {
-            let value = f.parse(input.clone());
+            let value = T::parser().parse(input);
             match value {
                 Ok((left, o)) => {
                     res.push(o);
                     input = left;
                 }
-                Err(_) => input = input.take_split(1).0,
+                Err(_) => input = &input[1..],
             }
         }
         Ok((input, res))
@@ -228,6 +225,18 @@ where
     })
 }
 
+pub fn separated_set1<'a, T, S>(
+    separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
+    parser: impl Parser<&'a [u8], T, Error<&'a [u8]>>,
+) -> impl Parser<&'a [u8], FxHashSet<T>, Error<&'a [u8]>>
+where
+    T: Eq + Hash,
+{
+    map(separated_list1(separator, parser), |list| {
+        list.into_iter().collect::<FxHashSet<T>>()
+    })
+}
+
 pub fn map_to_vec<'a, 'b, T: Clone + 'b, ParserIn>(
     parser: ParserIn,
 ) -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>> + use<'a, 'b, T, ParserIn>
@@ -235,27 +244,4 @@ where
     ParserIn: Parser<&'a [u8], &'b [T], Error<&'a [u8]>>,
 {
     map(parser, |slice: &[T]| slice.to_vec())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use nom::character::complete::char;
-    use nom::sequence::pair;
-
-    #[test]
-    fn test_find0() {
-        let input = "a1b2c3";
-        let res =
-            find_many_skipping_unknown::<_, _, (), _>(pair(char('a'), char('1'))).parse(input);
-        assert_eq!(res, Ok(("", vec![('a', '1')])));
-    }
-
-    #[test]
-    fn test_find0_many() {
-        let input = "a1b2a1b2a1";
-        let res =
-            find_many_skipping_unknown::<_, _, (), _>(pair(char('a'), char('1'))).parse(input);
-        assert_eq!(res, Ok(("", vec![('a', '1'); 3])));
-    }
 }

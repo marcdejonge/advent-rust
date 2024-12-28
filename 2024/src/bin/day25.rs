@@ -2,46 +2,32 @@
 
 use advent_lib::day::*;
 use advent_lib::grid::Grid;
-use advent_lib::parsing::separated_double_lines1;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::Parser;
+use advent_macros::parsable;
 
 #[derive(Debug)]
+#[parsable(separated_double_lines1::<Grid<_>>())]
 struct Day {
+    grids: Vec<Grid<u8>>,
+    #[defer(grids.iter()
+        .filter(|grid| grid.east_line(0).all(|(_, &b)| b == b'#'))
+        .map(|grid| grid.x_range()
+            .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count())
+            .collect())
+        .collect()
+    )]
     locks: Vec<Vec<usize>>,
+    #[defer(grids.iter()
+        .filter(|grid| grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#'))
+        .map(|grid| grid.x_range()
+            .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count())
+            .collect())
+        .collect()
+    )]
     keys: Vec<Vec<usize>>,
 }
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(separated_double_lines1(), |grids: Vec<Grid<u8>>| {
-            let mut locks = Vec::new();
-            let mut keys = Vec::new();
-
-            for grid in grids {
-                if grid.east_line(0).all(|(_, &b)| b == b'#') {
-                    locks.push(
-                        grid.x_range()
-                            .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count())
-                            .collect(),
-                    )
-                } else if grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#') {
-                    keys.push(
-                        grid.x_range()
-                            .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count())
-                            .collect(),
-                    )
-                } else {
-                    println!("WARN unexpected grid: \n{:?}", grid);
-                }
-            }
-
-            Day { locks, keys }
-        })
-    }
 
     fn calculate_part1(&self) -> Self::Output {
         self.keys

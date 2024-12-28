@@ -5,20 +5,16 @@ use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Location;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use advent_macros::parsable;
 use fxhash::FxHashSet;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::separated_pair;
-use nom::Parser;
 use std::ops::Range;
 
+#[parsable]
 struct Day {
     locations: Vec<Location>,
+    #[defer(if locations.len() >= 1024 { 71 } else { 7 })]
     size: i32,
+    #[defer(if locations.len() >= 1024 { 1024 } else { 12 })]
     start_take: usize,
 }
 
@@ -79,23 +75,6 @@ impl Day {
 
 impl ExecutableDay for Day {
     type Output = usize;
-
-    fn day_parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(
-            separated_list1(
-                line_ending,
-                map(
-                    separated_pair(complete::i32, tag(b","), complete::i32),
-                    Location::from,
-                ),
-            ),
-            |locations| {
-                let size = if locations.len() >= 1024 { 71 } else { 7 };
-                let start_take = if locations.len() >= 1024 { 1024 } else { 12 };
-                Day { locations, size, start_take }
-            },
-        )
-    }
 
     fn calculate_part1(&self) -> Self::Output { self.find_path(self.start_take).unwrap() }
 

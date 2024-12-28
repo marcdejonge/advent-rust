@@ -3,102 +3,125 @@ use syn::spanned::Spanned;
 use syn::{Error, Expr, Field, Fields, ItemStruct, Meta, PathArguments, Type};
 
 pub fn generate_struct_parser(
-    parse_expression: Expr,
+    parse_expression: Option<Expr>,
     item: &ItemStruct,
 ) -> Result<TokenStream, Error> {
+    let mut filtered = item.clone();
+    filtered.fields.iter_mut().for_each(|field| {
+        field.attrs.retain(|attr| !attr.path().is_ident("defer"));
+    });
+
     let name = &item.ident;
     let (generic_impl, generic_type, generic_where) = item.generics.split_for_impl();
 
-    let fields: Vec<_> = item.fields.iter().filter_map(|f| f.ident.clone()).collect();
-    let field_types: Vec<_> = item.fields.iter().map(|f| f.ty.clone()).collect();
+    let field_info = parse_field_info(item)?;
+    let expression = generate_expression(parse_expression, &field_info.types)?;
 
-    let map_line = if fields.is_empty() {
-        let fields: Vec<_> = field_types
-            .iter()
-            .enumerate()
-            .map(|(nr, _)| Ident::new(&format!("var_{}", nr), Span::call_site()))
-            .collect();
+    let map_line = if field_info.names.is_empty() {
+        let field_names = field_info.generate_anonymous_names();
+        let field_types = field_info.types;
 
-        quote! { nom::combinator::map(parse_function, |(#(#fields),*) : (#(#field_types),*)| #name (#(#fields),*)) }
+        quote! { nom::combinator::map(parse_function, |(#(#field_names),*) : (#(#field_types),*)|
+            #name (#(#field_names),*))
+        }
     } else {
-        quote! { nom::combinator::map(parse_function, |(#(#fields),*) : (#(#field_types),*)| #name { #(#fields),* }) }
+        let mut field_expressions = field_info.deferred;
+        field_expressions.extend(field_info.names.iter().map(|n| quote! { #n }));
+        let field_names = &field_info.names;
+        let field_types = &field_info.types;
+
+        quote! { nom::combinator::map(parse_function, |(#(#field_names),*) : (#(#field_types),*)|
+            #name { #(#field_expressions),* })
+        }
     };
 
+    let imports = generate_imports();
+
     Ok(quote! {
-        #item
+        #filtered
 
         impl #generic_impl advent_lib::parsing::Parsable for #name #generic_type #generic_where {
             fn parser<'a>() -> impl nom::Parser<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
-                let parse_function = {
-                    use advent_lib::parsing::*;
-                    use nom::branch::*;
-                    use nom::bytes::complete::*;
-                    use nom::character::complete::*;
-                    use nom::combinator::*;
-                    use nom::multi::*;
-                    use nom::sequence::*;
-                    use nom::*;
-
-                    #parse_expression
-                };
-
+                let parse_function = { #imports #expression };
                 #map_line
             }
         }
     })
 }
 
-pub fn generate_std_struct_parser(item: &ItemStruct) -> Result<TokenStream, Error> {
-    let name = &item.ident;
+#[derive(Default)]
+struct FieldInfo {
+    names: Vec<Ident>,
+    types: Vec<Type>,
+    deferred: Vec<TokenStream>,
+}
 
-    if item.fields.is_empty() {
-        Ok(quote! {
-            #item
-
-            impl advent_lib::parsing::Parsable for #name {
-                fn parser<'a>() -> impl nom::Parser<&'a [u8], Self, nom::error::Error<&'a [u8]> {
-                    #name
-                }
-            }
-        })
-    } else if item.fields.len() == 1 {
-        let field = single_field(&item.fields)?;
-        let field_name = get_field_name(&field)?;
-        let field_type = strip_type(&field.ty)?;
-
-        Ok(quote! {
-            #item
-
-            impl advent_lib::parsing::Parsable for #name {
-                fn parser<'a>() -> impl nom::Parser<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
-                    nom::combinator::map(#field_type::parser(), |#field_name| #name { #field_name })
-                }
-            }
-        })
-    } else {
-        Err(Error::new(
-            item.span(),
-            "Only structs with zero or one field are supported",
-        ))
+impl FieldInfo {
+    fn generate_anonymous_names(&self) -> Vec<Ident> {
+        self.types
+            .iter()
+            .enumerate()
+            .map(|(nr, _)| Ident::new(&format!("var_{}", nr), Span::call_site()))
+            .collect()
     }
 }
 
-fn strip_type(ty: &Type) -> Result<Type, Error> {
-    Ok(if let Type::Path(mut path) = ty.clone() {
+fn parse_field_info(item: &ItemStruct) -> Result<FieldInfo, Error> {
+    let mut field_info = FieldInfo::default();
+
+    for field in &item.fields {
+        if let Some(attr) = field.attrs.iter().find(|attr| attr.path().is_ident("defer")) {
+            let expression: Expr = attr.parse_args()?;
+            let mut name = field.ident.clone().unwrap();
+            name.set_span(attr.path().span());
+            field_info.deferred.push(quote! { #name: #expression });
+        } else {
+            if let Some(ident) = &field.ident {
+                field_info.names.push(ident.clone());
+            }
+            field_info.types.push(field.ty.clone());
+        }
+    }
+
+    Ok(field_info)
+}
+
+fn generate_expression(
+    expression: Option<Expr>,
+    field_types: &[Type],
+) -> Result<TokenStream, Error> {
+    if let Some(expr) = expression {
+        Ok(quote! { #expr })
+    } else if field_types.len() == 1 {
+        Ok(generate_parser(&field_types[0]))
+    } else {
+        let field_parsers: Vec<_> = field_types.iter().map(generate_parser).collect();
+        Ok(quote! { tuple((#(#field_parsers),*)) })
+    }
+}
+
+fn generate_parser(field_type: &Type) -> TokenStream {
+    if let Type::Path(path) = field_type {
+        if let Some(segment) = path.path.segments.first() {
+            if segment.ident == "Vec" {
+                return quote! { separated_lines1() };
+            }
+        }
+    }
+
+    let stripped = strip_type(field_type);
+    quote! { #stripped::parser() }
+}
+
+fn strip_type(ty: &Type) -> Type {
+    if let Type::Path(mut path) = ty.clone() {
         path.path.segments.iter_mut().for_each(|s| {
             s.arguments = PathArguments::None;
         });
         Type::Path(path)
     } else {
-        return Err(Error::new(ty.span(), "Expected a normal type"));
-    })
-}
-
-fn get_field_name(field: &Field) -> Result<Ident, Error> {
-    field
-        .ident
-        .clone()
-        .ok_or(Error::new(field.span(), "Single field should have a name"))
+        ty.clone()
+    }
 }
 
 fn single_field(item: &Fields) -> Result<Field, Error> {
@@ -109,7 +132,8 @@ fn single_field(item: &Fields) -> Result<Field, Error> {
 }
 
 pub fn generate_enum_parser(item: &syn::ItemEnum) -> Result<TokenStream, Error> {
-    let name = &item.ident;
+    let mut name = item.ident.clone();
+    name.set_span(Span::call_site());
 
     let mut filtered = item.clone();
     filtered.variants.iter_mut().for_each(|v| {
@@ -135,7 +159,7 @@ pub fn generate_enum_parser(item: &syn::ItemEnum) -> Result<TokenStream, Error> 
                 let var_name = &variant.ident;
                 let field = single_field(&variant.fields)?;
                 let full_type = field.ty.clone();
-                let field_type = strip_type(&field.ty)?;
+                let field_type = strip_type(&field.ty);
 
                 mappings.push(quote! {
                     use advent_lib::parsing::*;
@@ -156,19 +180,8 @@ pub fn generate_enum_parser(item: &syn::ItemEnum) -> Result<TokenStream, Error> 
                 let expression = nv.value.clone();
 
                 let function_name = Ident::new(&format!("map_{}", var_name), Span::call_site());
-                map_functions.push(quote! { let #function_name = {
-                    use advent_lib::parsing::*;
-                    use nom::branch::*;
-                    use nom::bytes::complete::*;
-                    use nom::character::complete::*;
-                    use nom::combinator::*;
-                    use nom::multi::*;
-                    use nom::sequence::*;
-                    use nom::*;
-
-                    #expression
-                };
-                });
+                let imports = generate_imports();
+                map_functions.push(quote! { let #function_name = { #imports #expression }; });
 
                 let value_types: Vec<_> = variant.fields.iter().map(|f| f.ty.clone()).collect();
                 let value_names: Vec<_> = value_types
@@ -177,7 +190,14 @@ pub fn generate_enum_parser(item: &syn::ItemEnum) -> Result<TokenStream, Error> 
                     .map(|(nr, ty)| Ident::new(&format!("var_{}", nr), ty.span()))
                     .collect();
 
-                if value_names.len() == 1 {
+                if value_names.is_empty() {
+                    mappings.push(quote! {
+                        nom::combinator::map(
+                            #function_name,
+                            |_| #name::#var_name
+                        )
+                    });
+                } else if value_names.len() == 1 {
                     let value_expressions: Vec<_> = value_names
                         .iter()
                         .zip(value_types.iter())
@@ -216,4 +236,17 @@ pub fn generate_enum_parser(item: &syn::ItemEnum) -> Result<TokenStream, Error> 
             }
         }
     })
+}
+
+fn generate_imports() -> TokenStream {
+    quote! {
+        use advent_lib::parsing::*;
+        use nom::branch::*;
+        use nom::bytes::complete::*;
+        use nom::character::complete::*;
+        use nom::combinator::*;
+        use nom::multi::*;
+        use nom::sequence::*;
+        use nom::*;
+    }
 }

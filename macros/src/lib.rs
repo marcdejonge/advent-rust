@@ -23,10 +23,10 @@ pub fn parsable(attr: TokenStream, input: TokenStream) -> TokenStream {
     (match &item {
         Item::Struct(item) => {
             if attr.is_empty() {
-                parser::generate_std_struct_parser(item)
+                parser::generate_struct_parser(None, item)
             } else {
                 let expr = syn::parse_macro_input!(attr as syn::Expr);
-                parser::generate_struct_parser(expr, item)
+                parser::generate_struct_parser(Some(expr), item)
             }
         }
         Item::Enum(item) => parser::generate_enum_parser(item),
