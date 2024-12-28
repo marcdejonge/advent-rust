@@ -1,5 +1,5 @@
 [workspace]
-members = ["shared", "macros", "2022", "2023", "2024"]
+members = ["shared", "macros", "2023", "2024"]
 resolver = "2"
 
 [profile.release]

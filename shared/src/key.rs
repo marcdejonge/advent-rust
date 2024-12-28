@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn parse_maximum_of_12_characters() {
         assert_eq!(
-            Ok((&b"klmno"[..], Key::fixed(b"abcdefghij"))),
+            Ok((&b"mno"[..], Key::fixed(b"abcdefghijkl"))),
             Key::parser().parse(b"abcdefghijklmno")
         );
     }
