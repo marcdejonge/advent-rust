@@ -17,7 +17,13 @@ pub fn generate_struct_parser(
     let field_info = parse_field_info(item)?;
     let expression = generate_expression(parse_expression, &field_info.types)?;
 
-    let map_line = if field_info.names.is_empty() {
+    let map_line = if field_info.types.is_empty() && !field_info.deferred.is_empty() {
+        // This means every field is deferred, so we need to generate a temporary named parsed value "it"
+        let field_expressions = field_info.deferred;
+
+        quote! { nom::combinator::map(parse_function, |it| #name { #(#field_expressions),* }) }
+    } else if field_info.names.is_empty() && !field_info.types.is_empty() {
+        // This means we got a struct with anonymous fields, so we need to generate temporary variable names
         let field_names = field_info.generate_anonymous_names();
         let field_types = field_info.types;
 
@@ -25,6 +31,7 @@ pub fn generate_struct_parser(
             #name (#(#field_names),*))
         }
     } else {
+        // In all other cases we generate the standard version
         let mut field_expressions = field_info.deferred;
         field_expressions.extend(field_info.names.iter().map(|n| quote! { #n }));
         let field_names = &field_info.names;

@@ -5,19 +5,18 @@ use advent_lib::grid::Grid;
 use advent_macros::parsable;
 
 #[derive(Debug)]
-#[parsable(separated_double_lines1::<Grid<_>>())]
+#[parsable(separated_double_lines1())]
 struct Day {
-    grids: Vec<Grid<u8>>,
-    #[defer(grids.iter()
-        .filter(|grid| grid.east_line(0).all(|(_, &b)| b == b'#'))
+    #[defer(it.iter()
+        .filter(|grid: &&Grid<u8>| grid.east_line(0).all(|(_, &b)| b == b'#'))
         .map(|grid| grid.x_range()
             .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count())
             .collect())
         .collect()
     )]
     locks: Vec<Vec<usize>>,
-    #[defer(grids.iter()
-        .filter(|grid| grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#'))
+    #[defer(it.iter()
+        .filter(|grid: &&Grid<u8>| grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#'))
         .map(|grid| grid.x_range()
             .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count())
             .collect())
