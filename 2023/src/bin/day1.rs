@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 
 #[parsable(separated_list1(line_ending, map(alphanumeric1, |bs: &[u8]| bs.to_vec())))]
-struct Day {
+struct Input {
     digits: Vec<Vec<u8>>,
 }
 
@@ -20,14 +20,12 @@ const DIGITS: &[(&[u8], u32)] = &[
     (b"nine", 9),
 ];
 
-impl ExecutableDay for Day {
-    type Output = u32;
+fn calculate_part1(input: &Input) -> u32 {
+    input.digits.iter().map(|line| parse_line(line, false)).sum()
+}
 
-    fn calculate_part1(&self) -> u32 {
-        self.digits.iter().map(|line| parse_line(line, false)).sum()
-    }
-
-    fn calculate_part2(&self) -> u32 { self.digits.iter().map(|line| parse_line(line, true)).sum() }
+fn calculate_part2(input: &Input) -> u32 {
+    input.digits.iter().map(|line| parse_line(line, true)).sum()
 }
 
 fn parse_line(line: &[u8], check_text: bool) -> u32 {
@@ -66,7 +64,7 @@ fn parse_prefix(line: &[u8], check_text: bool) -> Option<u32> {
     None
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

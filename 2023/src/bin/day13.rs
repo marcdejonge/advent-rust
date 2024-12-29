@@ -4,15 +4,13 @@ use rayon::prelude::*;
 use std::cmp::min;
 use std::ops::Add;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
 use advent_macros::{parsable, FromRepr};
 
 #[parsable(separated_list1(double_line_ending, Grid::parser()))]
-struct Day {
-    grids: Vec<Grid<Item>>,
-}
+struct Grids(Vec<Grid<Item>>);
 
 #[repr(u8)]
 #[derive(FromRepr, PartialEq, Copy, Clone)]
@@ -67,19 +65,15 @@ fn find_reflection(grid: &Grid<Item>, smudges: u32) -> i32 {
     panic!("No solution found for:\n{grid:?}")
 }
 
-impl ExecutableDay for Day {
-    type Output = i32;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.grids.par_iter().map(|g| find_reflection(g, 0)).reduce(|| 0, i32::add)
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.grids.par_iter().map(|g| find_reflection(g, 1)).reduce(|| 0, i32::add)
-    }
+fn calculate_part1(grids: &Grids) -> i32 {
+    grids.0.par_iter().map(|g| find_reflection(g, 0)).reduce(|| 0, i32::add)
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(grids: &Grids) -> i32 {
+    grids.0.par_iter().map(|g| find_reflection(g, 1)).reduce(|| 0, i32::add)
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

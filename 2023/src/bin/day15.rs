@@ -2,11 +2,11 @@
 
 use std::hash::Hasher;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 
 #[parsable(separated_list1(tag(b","), Operation::parser()))]
-struct Day {
+struct Input {
     words: Vec<Operation>,
 }
 
@@ -58,50 +58,46 @@ impl ShortHasher {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
+fn calculate_part1(input: &Input) -> u64 { input.words.iter().map(ShortHasher::hash_op).sum() }
 
-    fn calculate_part1(&self) -> Self::Output { self.words.iter().map(ShortHasher::hash_op).sum() }
+fn calculate_part2(input: &Input) -> u64 {
+    const VEC: Vec<(&[u8], u64)> = Vec::new();
+    let mut boxes = [VEC; 256];
 
-    fn calculate_part2(&self) -> Self::Output {
-        const VEC: Vec<(&[u8], u64)> = Vec::new();
-        let mut boxes = [VEC; 256];
+    input.words.iter().for_each(|w| match w {
+        Operation::Remove(search_key) => {
+            let hash = ShortHasher::hash64(search_key) as usize;
+            boxes[hash].retain(|(key, _)| key != search_key);
+        }
+        Operation::Set(key, value) => {
+            let hash = ShortHasher::hash64(key) as usize;
 
-        self.words.iter().for_each(|w| match w {
-            Operation::Remove(search_key) => {
-                let hash = ShortHasher::hash64(search_key) as usize;
-                boxes[hash].retain(|(key, _)| key != search_key);
-            }
-            Operation::Set(key, value) => {
-                let hash = ShortHasher::hash64(key) as usize;
-
-                let mut found = false;
-                for (stored_key, stored_value) in &mut boxes[hash] {
-                    if *stored_key == key {
-                        *stored_value = *value;
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    boxes[hash].push((key, *value));
+            let mut found = false;
+            for (stored_key, stored_value) in &mut boxes[hash] {
+                if *stored_key == key {
+                    *stored_value = *value;
+                    found = true;
+                    break;
                 }
             }
-        });
+            if !found {
+                boxes[hash].push((key, *value));
+            }
+        }
+    });
 
-        boxes
-            .iter()
-            .enumerate()
-            .flat_map(|(box_ix, list)| {
-                list.iter()
-                    .enumerate()
-                    .map(move |(ix, (_, value))| (box_ix as u64 + 1) * (ix as u64 + 1) * (*value))
-            })
-            .sum()
-    }
+    boxes
+        .iter()
+        .enumerate()
+        .flat_map(|(box_ix, list)| {
+            list.iter()
+                .enumerate()
+                .map(move |(ix, (_, value))| (box_ix as u64 + 1) * (ix as u64 + 1) * (*value))
+        })
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

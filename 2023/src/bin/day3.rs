@@ -1,8 +1,6 @@
 #![feature(test)]
 
-extern crate core;
-
-use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location};
 use advent_macros::parsable;
 use rayon::prelude::*;
@@ -31,7 +29,7 @@ use rayon::prelude::*;
         (symbols, numbers)
     })
 )]
-struct Day {
+struct Input {
     symbols: Vec<Symbol>,
     numbers: Vec<GridNumber>,
 }
@@ -72,30 +70,28 @@ impl GridNumber {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.numbers
-            .par_iter()
-            .filter(|n| self.symbols.iter().any(|s| n.is_next_to(s)))
-            .map(|n| n.value)
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.symbols
-            .par_iter()
-            .filter(|s| s.is_gear)
-            .filter_map(|s| {
-                let mut nrs = self.numbers.iter().filter(|n| n.is_next_to(s));
-                Some(nrs.next()?.value * nrs.next()?.value)
-            })
-            .sum()
-    }
+fn calculate_part1(input: &Input) -> usize {
+    input
+        .numbers
+        .par_iter()
+        .filter(|n| input.symbols.iter().any(|s| n.is_next_to(s)))
+        .map(|n| n.value)
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    input
+        .symbols
+        .par_iter()
+        .filter(|s| s.is_gear)
+        .filter_map(|s| {
+            let mut nrs = input.numbers.iter().filter(|n| n.is_next_to(s));
+            Some(nrs.next()?.value * nrs.next()?.value)
+        })
+        .sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

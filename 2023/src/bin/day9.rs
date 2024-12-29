@@ -1,13 +1,13 @@
 #![feature(test)]
 #![feature(iter_collect_into)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::parsable;
 use rayon::prelude::*;
 
 #[parsable(separated_list1(line_ending, separated_list1(space1, i64)))]
-struct Day {
+struct Input {
     input: Vec<Vec<i64>>,
 }
 
@@ -46,15 +46,11 @@ fn calc_prev(nrs: &[i64]) -> i64 {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
+fn calculate_part1(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_next(v)).sum() }
 
-    fn calculate_part1(&self) -> Self::Output { self.input.par_iter().map(|v| calc_next(v)).sum() }
+fn calculate_part2(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_prev(v)).sum() }
 
-    fn calculate_part2(&self) -> Self::Output { self.input.par_iter().map(|v| calc_prev(v)).sum() }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

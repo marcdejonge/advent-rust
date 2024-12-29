@@ -2,32 +2,14 @@
 
 extern crate core;
 
-use advent_lib::day::*;
+use crate::PipeCell::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
 use std::ops::{Add, Neg};
-
-use crate::PipeCell::*;
-
-#[parsable(
-    map_parsable(|mut raw_grid: Grid<PipeCell>| {
-        let start = raw_grid.find(|item| item == &Start).unwrap();
-        let start_pipe = PipeCell::detect_pipe(&raw_grid, start).unwrap();
-        if let Some(cell) = raw_grid.get_mut(start) {
-            *cell = start_pipe
-        }
-
-        let mut grid = Grid::new_empty(raw_grid.width(), raw_grid.height());
-        GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
-        grid
-    })
-)]
-struct Day {
-    grid: Grid<PipeCell>,
-}
 
 #[repr(u8)]
 #[derive(FromRepr, Copy, Clone, Eq, PartialEq, Debug, Default)]
@@ -144,56 +126,65 @@ impl Iterator for GridWalker<'_> {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.grid.values().filter(|p| **p != Ground).count() / 2
+fn prepare(input: &Grid<PipeCell>) -> Grid<PipeCell> {
+    let mut raw_grid = input.clone();
+    let start = raw_grid.find(|item| item == &Start).unwrap();
+    let start_pipe = PipeCell::detect_pipe(&raw_grid, start).unwrap();
+    if let Some(cell) = raw_grid.get_mut(start) {
+        *cell = start_pipe
     }
 
-    fn calculate_part2(&self) -> Self::Output {
-        #[derive(Copy, Clone, Eq, PartialEq, Default)]
-        enum LocationType {
-            #[default]
-            Background,
-            Inside,
-            VerticalPipe,
-            HorizontalPipe,
-        }
-
-        let mut pipe_grid = self.grid.map(|pipe| {
-            if pipe == &Ground {
-                LocationType::Background
-            } else if pipe.points_to(North) {
-                LocationType::VerticalPipe
-            } else {
-                LocationType::HorizontalPipe
-            }
-        });
-
-        for y in pipe_grid.y_range() {
-            let mut outside = true;
-            for x in pipe_grid.x_range() {
-                let cell = pipe_grid.get_mut(point2(x, y)).unwrap();
-                match *cell {
-                    LocationType::Background => {
-                        if !outside {
-                            *cell = LocationType::Inside;
-                        }
-                    }
-                    LocationType::VerticalPipe => {
-                        outside = !outside;
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        pipe_grid.values().filter(|t| **t == LocationType::Inside).count()
-    }
+    let mut grid = Grid::new_empty(raw_grid.width(), raw_grid.height());
+    GridWalker::new(&raw_grid, start).for_each(|(loc, _, pipe)| grid[loc] = pipe);
+    grid
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part1(grid: &Grid<PipeCell>) -> usize {
+    prepare(grid).values().filter(|p| **p != Ground).count() / 2
+}
+
+fn calculate_part2(grid: &Grid<PipeCell>) -> usize {
+    #[derive(Copy, Clone, Eq, PartialEq, Default)]
+    enum LocationType {
+        #[default]
+        Background,
+        Inside,
+        VerticalPipe,
+        HorizontalPipe,
+    }
+
+    let mut pipe_grid = prepare(grid).map(|pipe| {
+        if pipe == &Ground {
+            LocationType::Background
+        } else if pipe.points_to(North) {
+            LocationType::VerticalPipe
+        } else {
+            LocationType::HorizontalPipe
+        }
+    });
+
+    for y in pipe_grid.y_range() {
+        let mut outside = true;
+        for x in pipe_grid.x_range() {
+            let cell = pipe_grid.get_mut(point2(x, y)).unwrap();
+            match *cell {
+                LocationType::Background => {
+                    if !outside {
+                        *cell = LocationType::Inside;
+                    }
+                }
+                LocationType::VerticalPipe => {
+                    outside = !outside;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pipe_grid.values().filter(|t| **t == LocationType::Inside).count()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

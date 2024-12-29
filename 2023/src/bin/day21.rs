@@ -4,7 +4,7 @@
 
 use fxhash::FxHashSet;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
@@ -15,12 +15,12 @@ use advent_macros::{parsable, FromRepr};
     grid[start] = Space::Ground;
     (grid, start)
 }))]
-struct Day {
+struct Input {
     grid: Grid<Space>,
     start: Point<2, i32>,
 }
 
-impl Day {
+impl Input {
     fn calculate_far(&self, steps: usize) -> usize {
         let repeat = self.grid.width() as usize; // Assume that the pattern repeats for the size of the grid
         let first = steps % repeat; // The steps are out of sync, so we skip the offset
@@ -47,7 +47,7 @@ impl Day {
     }
 }
 
-impl<'a> IntoIterator for &'a Day {
+impl<'a> IntoIterator for &'a Input {
     type Item = usize;
     type IntoIter = ExploreIterator<'a>;
 
@@ -72,7 +72,7 @@ enum Space {
 }
 
 struct ExploreIterator<'a> {
-    day: &'a Day,
+    day: &'a Input,
     visited_even: FxHashSet<Point<2, i32>>,
     visited_odd: FxHashSet<Point<2, i32>>,
     visited_last_round: Vec<Point<2, i32>>,
@@ -123,15 +123,11 @@ impl Iterator for ExploreIterator<'_> {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(input: &Input) -> usize { input.into_iter().within_bounds().nth(64).unwrap() }
 
-    fn calculate_part1(&self) -> Self::Output { self.into_iter().within_bounds().nth(64).unwrap() }
+fn calculate_part2(input: &Input) -> usize { input.calculate_far(26_501_365) }
 
-    fn calculate_part2(&self) -> Self::Output { self.calculate_far(26_501_365) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

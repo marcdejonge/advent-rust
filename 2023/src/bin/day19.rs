@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_macros::parsable;
 use fxhash::FxHashMap;
@@ -34,7 +34,7 @@ type PartsRange = [RangeInclusive<i64>; 4];
         separated_lines1(),
     )
 )]
-struct Day {
+struct Input {
     checks: FxHashMap<Key, (Vec<Check>, Key)>,
     parts: Vec<Parts>,
 }
@@ -43,7 +43,7 @@ const R: Key = Key::fixed(b"R");
 const A: Key = Key::fixed(b"A");
 const IN: Key = Key::fixed(b"in");
 
-impl Day {
+impl Input {
     fn calculate(&self, key: Key, parts: &Parts) -> i64 {
         if key == R {
             return 0;
@@ -139,19 +139,15 @@ enum CheckType {
     GreaterThan,
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.parts.iter().map(|parts| self.calculate(IN, parts)).sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.calculate_range(IN, [1..=4000, 1..=4000, 1..=4000, 1..=4000])
-    }
+fn calculate_part1(input: &Input) -> i64 {
+    input.parts.iter().map(|parts| input.calculate(IN, parts)).sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> i64 {
+    input.calculate_range(IN, [1..=4000, 1..=4000, 1..=4000, 1..=4000])
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

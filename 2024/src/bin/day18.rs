@@ -78,7 +78,7 @@ fn calculate_part1(input: &Input) -> usize { input.find_path(input.start_take).u
 fn calculate_part2(input: &Input) -> i32 {
     let found = input.find_first_blocking_memory(input.start_take..input.locations.len());
     println!("Found: {:?}", found);
-    (found.x() * 100 + found.y())
+    found.x() * 100 + found.y()
 }
 
 day_main!();

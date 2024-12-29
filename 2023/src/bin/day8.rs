@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
 use advent_macros::parsable;
@@ -30,7 +30,7 @@ use rayon::prelude::*;
         )
     )
 )]
-struct Day {
+struct Input {
     instructions: Vec<Turn>,
     steps: FxHashMap<Key, (Key, Key)>,
 }
@@ -40,7 +40,7 @@ enum Turn {
     Right,
 }
 
-impl Day {
+impl Input {
     fn next_step(&self, curr: Key, turn: &Turn) -> Option<Key> {
         let next_steps = self.steps.get(&curr);
         let next = if let Some((left, right)) = next_steps {
@@ -70,34 +70,30 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        const TARGET: Key = Key::fixed(b"zzz");
-        self.walk(Key::fixed(b"aaa")).take_while(|&c| c != TARGET).count() + 1
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let end_steps: Vec<_> = self
-            .steps
-            .par_iter()
-            .filter(|(p, _)| p.last_char() == b'a')
-            .map(|(start, _)| {
-                for (step, place) in self.walk(*start).enumerate() {
-                    if place.last_char() == b'z' {
-                        return step + 1;
-                    }
-                }
-                0
-            })
-            .collect();
-
-        end_steps.iter().fold(1, |curr, next| lcm(curr, *next))
-    }
+fn calculate_part1(input: &Input) -> usize {
+    const TARGET: Key = Key::fixed(b"zzz");
+    input.walk(Key::fixed(b"aaa")).take_while(|&c| c != TARGET).count() + 1
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    let end_steps: Vec<_> = input
+        .steps
+        .par_iter()
+        .filter(|(p, _)| p.last_char() == b'a')
+        .map(|(start, _)| {
+            for (step, place) in input.walk(*start).enumerate() {
+                if place.last_char() == b'z' {
+                    return step + 1;
+                }
+            }
+            0
+        })
+        .collect();
+
+    end_steps.iter().fold(1, |curr, next| lcm(curr, *next))
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

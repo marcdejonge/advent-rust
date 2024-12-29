@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 
 #[parsable(
@@ -18,7 +18,7 @@ use advent_macros::parsable;
                     .collect()
     )
 )]
-struct Day {
+struct Input {
     races: Vec<Race>,
 }
 
@@ -48,17 +48,13 @@ impl Race {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
+fn calculate_part1(input: &Input) -> u64 { input.races.iter().map(Race::solve).product() }
 
-    fn calculate_part1(&self) -> Self::Output { self.races.iter().map(Race::solve).product() }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.races.iter().fold(Default::default(), Race::combine).solve()
-    }
+fn calculate_part2(input: &Input) -> u64 {
+    input.races.iter().fold(Default::default(), Race::combine).solve()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

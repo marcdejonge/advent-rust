@@ -4,18 +4,13 @@ use std::ops::Neg;
 
 use fxhash::hash64;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::{parsable, FromRepr};
-
-#[parsable]
-struct Day {
-    grid: Grid<Stone>,
-}
+use advent_macros::FromRepr;
 
 #[repr(u8)]
 #[derive(FromRepr, PartialEq, Clone, Hash)]
@@ -88,34 +83,30 @@ fn weight(grid: &Grid<Stone>) -> i32 {
         .sum()
 }
 
-impl ExecutableDay for Day {
-    type Output = i32;
+fn calculate_part1(grid: &Grid<Stone>) -> i32 {
+    let mut grid = grid.clone();
 
-    fn calculate_part1(&self) -> Self::Output {
-        let mut grid = self.grid.clone();
-
-        drop(&mut grid, North);
-        weight(&grid)
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let mut grid = self.grid.clone();
-
-        (0..)
-            .map(|_| {
-                drop(&mut grid, North);
-                drop(&mut grid, West);
-                drop(&mut grid, South);
-                drop(&mut grid, East);
-
-                (hash64(&grid), weight(&grid))
-            })
-            .find_cyclic_result_at(1000000000)
-            .unwrap()
-    }
+    drop(&mut grid, North);
+    weight(&grid)
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(grid: &Grid<Stone>) -> i32 {
+    let mut grid = grid.clone();
+
+    (0..)
+        .map(|_| {
+            drop(&mut grid, North);
+            drop(&mut grid, West);
+            drop(&mut grid, South);
+            drop(&mut grid, East);
+
+            (hash64(&grid), weight(&grid))
+        })
+        .find_cyclic_result_at(1000000000)
+        .unwrap()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

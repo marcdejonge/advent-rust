@@ -1,11 +1,11 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use std::cmp::max;
 
 #[parsable(separated_lines1())]
-struct Day {
+struct Input {
     games: Vec<Game>,
 }
 
@@ -64,39 +64,37 @@ impl advent_lib::parsing::Parsable for Draw {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.games
-            .iter()
-            .filter(|game| {
-                game.draws
-                    .iter()
-                    .all(|draw| draw.red <= 12 && draw.green <= 13 && draw.blue <= 14)
-            })
-            .map(|game| game.index)
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.games
-            .iter()
-            .map(|game| {
-                game.draws
-                    .iter()
-                    .fold(Draw::empty(), |curr, next| Draw {
-                        red: max(curr.red, next.red),
-                        green: max(curr.green, next.green),
-                        blue: max(curr.blue, next.blue),
-                    })
-                    .power()
-            })
-            .sum()
-    }
+fn calculate_part1(input: &Input) -> u64 {
+    input
+        .games
+        .iter()
+        .filter(|game| {
+            game.draws
+                .iter()
+                .all(|draw| draw.red <= 12 && draw.green <= 13 && draw.blue <= 14)
+        })
+        .map(|game| game.index)
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> u64 {
+    input
+        .games
+        .iter()
+        .map(|game| {
+            game.draws
+                .iter()
+                .fold(Draw::empty(), |curr, next| Draw {
+                    red: max(curr.red, next.red),
+                    green: max(curr.green, next.green),
+                    blue: max(curr.blue, next.blue),
+                })
+                .power()
+        })
+        .sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

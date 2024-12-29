@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
@@ -14,7 +14,7 @@ use advent_macros::parsable;
         grid
     })
 )]
-struct Day {
+struct Input {
     grid: Grid<u8>,
 }
 
@@ -82,23 +82,19 @@ impl SearchGraphWithGoal for Target<'_> {
     fn heuristic(&self, node: Self::Node) -> Self::Score { (self.goal() - node.0).euler() }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let target = &Target { grid: &self.grid, min_steps: 1, max_steps: 3 };
-        let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
-        target.calc_path_cost(&path)
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let target = &Target { grid: &self.grid, min_steps: 4, max_steps: 10 };
-        let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
-        target.calc_path_cost(&path)
-    }
+fn calculate_part1(input: &Input) -> usize {
+    let target = &Target { grid: &input.grid, min_steps: 1, max_steps: 3 };
+    let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
+    target.calc_path_cost(&path)
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    let target = &Target { grid: &input.grid, min_steps: 4, max_steps: 10 };
+    let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
+    target.calc_path_cost(&path)
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

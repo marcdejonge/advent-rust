@@ -4,7 +4,7 @@ use fxhash::{FxHashMap, FxHashSet};
 use petgraph::algo::all_simple_paths;
 use petgraph::prelude::*;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
@@ -14,26 +14,16 @@ use advent_macros::{parsable, FromRepr};
 
 use crate::Cell::*;
 
-#[parsable(map(Grid::parser(), |grid| {
-    let start = grid
-        .east_line(0)
-        .find(|&(_, c)| c == &Ground)
-        .expect("Could not find starting location")
-        .0;
-    let end = grid
-        .east_line(grid.height() - 1)
-        .find(|&(_, c)| c == &Ground)
-        .expect("Could not find ending location")
-        .0;
-    (grid, start, end)
-}))]
-struct Day {
+#[parsable]
+struct Input {
     grid: Grid<Cell>,
+    #[defer(grid.east_line(0).find(|&(_, c)| c == &Ground).expect("Could not find starting location").0)]
     start: Point<2, i32>,
+    #[defer(grid.east_line(grid.height() - 1).find(|&(_, c)| c == &Ground).expect("Could not find ending location").0)]
     end: Point<2, i32>,
 }
 
-impl Day {
+impl Input {
     fn get_reachability_graph(
         &self,
         can_move: impl Fn(Point<2, i32>, Point<2, i32>, Direction) -> bool,
@@ -138,44 +128,40 @@ fn determine_weight<NW>(graph: &DiGraph<NW, usize>, path: Vec<NodeIndex>) -> usi
         .sum()
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let (start, end, graph) = self.get_reachability_graph(|from, to, dir| {
-            if let Some(from_cell) = self.grid.get(from) {
-                if from_cell.allow_movement(dir) {
-                    if let Some(to_cell) = self.grid.get(to) {
-                        return to_cell != &Wall;
-                    }
+fn calculate_part1(input: &Input) -> usize {
+    let (start, end, graph) = input.get_reachability_graph(|from, to, dir| {
+        if let Some(from_cell) = input.grid.get(from) {
+            if from_cell.allow_movement(dir) {
+                if let Some(to_cell) = input.grid.get(to) {
+                    return to_cell != &Wall;
                 }
             }
-            false
-        });
+        }
+        false
+    });
 
-        all_simple_paths(&graph, start, end, 0, None)
-            .map(|path| determine_weight(&graph, path))
-            .max()
-            .unwrap()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let (start, end, graph) = self.get_reachability_graph(|_, to, _| {
-            if let Some(cell) = self.grid.get(to) {
-                cell != &Wall
-            } else {
-                false
-            }
-        });
-
-        all_simple_paths(&graph, start, end, 0, None)
-            .map(|path| determine_weight(&graph, path))
-            .max()
-            .unwrap()
-    }
+    all_simple_paths(&graph, start, end, 0, None)
+        .map(|path| determine_weight(&graph, path))
+        .max()
+        .unwrap()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    let (start, end, graph) = input.get_reachability_graph(|_, to, _| {
+        if let Some(cell) = input.grid.get(to) {
+            cell != &Wall
+        } else {
+            false
+        }
+    });
+
+    all_simple_paths(&graph, start, end, 0, None)
+        .map(|path| determine_weight(&graph, path))
+        .max()
+        .unwrap()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

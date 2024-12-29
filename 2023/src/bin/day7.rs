@@ -6,11 +6,11 @@ use enum_map::{Enum, EnumMap};
 use rayon::prelude::*;
 
 use crate::Score::*;
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::{parsable, FromRepr};
 
 #[parsable(separated_list1(line_ending, separated_pair(parse_hand, space1, u64)))]
-struct Day {
+struct Input {
     bets: Vec<([Card; 5], u64)>,
 }
 
@@ -147,19 +147,15 @@ fn end_score(mut bets: Vec<(Hand, u64)>) -> u64 {
     bets.iter().enumerate().map(|(ix, (_, bet))| (ix as u64 + 1) * bet).sum()
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        end_score(self.bets.par_iter().map(|&(c, bet)| (Hand::new(c), bet)).collect())
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        end_score(self.bets.par_iter().map(|&(c, bet)| (Hand::new(jokers(c)), bet)).collect())
-    }
+fn calculate_part1(input: &Input) -> u64 {
+    end_score(input.bets.par_iter().map(|&(c, bet)| (Hand::new(c), bet)).collect())
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> u64 {
+    end_score(input.bets.par_iter().map(|&(c, bet)| (Hand::new(jokers(c)), bet)).collect())
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

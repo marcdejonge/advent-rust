@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_lib::parsing::Parsable;
 use advent_macros::parsable;
@@ -22,7 +22,7 @@ const BROADCASTER: Key = Key::fixed(b"broadcaster");
 const RX: Key = Key::fixed(b"rx");
 
 #[parsable(map(separated_lines1(), parse_modules))]
-struct Day {
+struct Input {
     initial_state: State,
     reverse_mapping: FxHashMap<Key, Vec<Key>>,
 }
@@ -188,52 +188,47 @@ fn parse_modules(mut modules: Vec<Module>) -> (State, FxHashMap<Key, Vec<Key>>) 
     (initial_state, reverse_mapping)
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(input: &Input) -> usize {
+    let mut state = input.initial_state.clone();
+    let mut low_count = 0;
+    let mut high_count = 0;
 
-    fn calculate_part1(&self) -> Self::Output {
-        let mut state = self.initial_state.clone();
-        let mut low_count = 0;
-        let mut high_count = 0;
-
-        for _ in 0..1000 {
-            state.button_press(|_| low_count += 1, |_| high_count += 1);
-        }
-
-        low_count * high_count
+    for _ in 0..1000 {
+        state.button_press(|_| low_count += 1, |_| high_count += 1);
     }
 
-    fn calculate_part2(&self) -> Self::Output {
-        let inv = match self.reverse_mapping.get(&RX) {
-            Some(slice) => slice.first().unwrap(),
-            _ => return 0, // If there is no RX target, then this has no solution
-        };
-        let triggers = self.reverse_mapping.get(inv).expect("Expected triggers before the inverse");
+    low_count * high_count
+}
 
-        let mut state = self.initial_state.clone();
-        let mut button_pressed = 0;
-        let mut found_numbers = FxHashMap::default();
-        loop {
-            button_pressed += 1;
-            state.button_press(
-                |_| {},
-                |signal| {
-                    if triggers.contains(&signal.source)
-                        && !found_numbers.contains_key(&signal.source)
-                    {
-                        found_numbers.insert(signal.source, button_pressed);
-                    }
-                },
-            );
+fn calculate_part2(input: &Input) -> usize {
+    let inv = match input.reverse_mapping.get(&RX) {
+        Some(slice) => slice.first().unwrap(),
+        _ => return 0, // If there is no RX target, then this has no solution
+    };
+    let triggers = input.reverse_mapping.get(inv).expect("Expected triggers before the inverse");
 
-            if found_numbers.len() == triggers.len() {
-                return found_numbers.values().fold(1, |curr, next| lcm(curr, *next));
-            }
+    let mut state = input.initial_state.clone();
+    let mut button_pressed = 0;
+    let mut found_numbers = FxHashMap::default();
+    loop {
+        button_pressed += 1;
+        state.button_press(
+            |_| {},
+            |signal| {
+                if triggers.contains(&signal.source) && !found_numbers.contains_key(&signal.source)
+                {
+                    found_numbers.insert(signal.source, button_pressed);
+                }
+            },
+        );
+
+        if found_numbers.len() == triggers.len() {
+            return found_numbers.values().fold(1, |curr, next| lcm(curr, *next));
         }
     }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

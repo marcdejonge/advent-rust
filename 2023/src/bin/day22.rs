@@ -2,7 +2,7 @@
 
 use std::collections::VecDeque;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::key::Key;
 use advent_lib::lines::LineSegment;
@@ -27,11 +27,11 @@ impl Brick {
     bricks.sort_by_key(|brick| brick.0.start.z());
     bricks
 }))]
-struct Day {
+struct Input {
     starting_bricks: Vec<Brick>,
 }
 
-impl Day {
+impl Input {
     fn drop_bricks<F>(&self, mut handle_supported_by: F)
     where
         F: FnMut(Key, FxHashSet<Key>),
@@ -154,35 +154,31 @@ impl BrickDropped {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let mut single_support = BrickSet::default();
-        self.drop_bricks(|_, supported_by| {
-            if supported_by.len() == 1 {
-                single_support.insert((*supported_by.iter().next().unwrap()).into());
-            }
-        });
-        self.starting_bricks.len() - single_support.len()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let mut brick_support = BrickSupport::new(self.starting_bricks.len());
-        let mut bricks_dropped = BrickDropped::default();
-        self.drop_bricks(|key, supported_by| brick_support.register_support(key, supported_by));
-
-        (0..self.starting_bricks.len())
-            .rev()
-            .map(|index| {
-                let index_key = Key::from(index);
-                bricks_dropped.calc_dropped_bricks(&brick_support, &index_key)
-            })
-            .sum()
-    }
+fn calculate_part1(input: &Input) -> usize {
+    let mut single_support = BrickSet::default();
+    input.drop_bricks(|_, supported_by| {
+        if supported_by.len() == 1 {
+            single_support.insert((*supported_by.iter().next().unwrap()).into());
+        }
+    });
+    input.starting_bricks.len() - single_support.len()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    let mut brick_support = BrickSupport::new(input.starting_bricks.len());
+    let mut bricks_dropped = BrickDropped::default();
+    input.drop_bricks(|key, supported_by| brick_support.register_support(key, supported_by));
+
+    (0..input.starting_bricks.len())
+        .rev()
+        .map(|index| {
+            let index_key = Key::from(index);
+            bricks_dropped.calc_dropped_bricks(&brick_support, &index_key)
+        })
+        .sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

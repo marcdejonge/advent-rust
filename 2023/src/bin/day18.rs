@@ -2,42 +2,49 @@
 
 extern crate core;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::*;
 use advent_lib::rgb::*;
 use advent_macros::parsable;
 use Direction::*;
 
 #[parsable(
-    map(
-        separated_list1(
-            line_ending,
-            map(
-                tuple((
-                    direction_parser,
-                    space1,
-                    i64,
-                    space1,
-                    delimited(tag(b"("), RGB::parser(),tag(b")")),                    
-                )),
-                |(direction, _, steps, _, color)| (
-                    DigCommand { direction, steps },
-                    DigCommand { direction: Direction::from(color.blue & 3), steps: (u32::from(color) >> 4) as i64 },
-                )
-            )
-        ),
-        |list| list.into_iter().unzip()
+    separated_list1(
+        line_ending,
+        tuple((
+            terminated(direction_parser, space1),
+            terminated(i64, space1),
+            delimited(tag(b"("), RGB::parser(),tag(b")")),
+        ))
     )
 )]
-struct Day {
-    dig_plan1: Vec<DigCommand>,
-    dig_plan2: Vec<DigCommand>,
+struct Input {
+    lines: Vec<(Direction, i64, RGB)>,
 }
 
 #[derive(Debug)]
 struct DigCommand {
     direction: Direction,
     steps: i64,
+}
+
+fn dig_command_1(input: &Input) -> Vec<DigCommand> {
+    input
+        .lines
+        .iter()
+        .map(|&(direction, steps, _)| DigCommand { direction, steps })
+        .collect()
+}
+
+fn dig_command_2(input: &Input) -> Vec<DigCommand> {
+    input
+        .lines
+        .iter()
+        .map(|&(_, _, color)| DigCommand {
+            direction: Direction::from(color.blue & 3),
+            steps: (u32::from(color) >> 4) as i64,
+        })
+        .collect()
 }
 
 // Simplified from https://www.mathsisfun.com/geometry/area-irregular-polygons.html
@@ -58,15 +65,11 @@ fn calculate_area(lines: &[DigCommand]) -> i64 {
     area.abs()
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
+fn calculate_part1(input: &Input) -> i64 { calculate_area(&dig_command_1(input)) }
 
-    fn calculate_part1(&self) -> Self::Output { calculate_area(&self.dig_plan1) }
+fn calculate_part2(input: &Input) -> i64 { calculate_area(&dig_command_2(input)) }
 
-    fn calculate_part2(&self) -> Self::Output { calculate_area(&self.dig_plan2) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

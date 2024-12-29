@@ -1,12 +1,12 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use fxhash::FxHashSet;
 use std::ops::Shl;
 
 #[parsable(separated_lines1())]
-struct Day {
+struct Input {
     cards: Vec<Card>,
 }
 
@@ -31,40 +31,37 @@ impl Card {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.cards
-            .iter()
-            .map(|c| {
-                let count = c.winning_count();
-                if count == 0 {
-                    0
-                } else {
-                    1usize.shl(count - 1)
-                }
-            })
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let mut counts = Vec::with_capacity(self.cards.len());
-        for _ in 0..self.cards.len() {
-            counts.push(1usize)
-        }
-
-        self.cards.iter().enumerate().for_each(|(ix, c)| {
-            let curr_count = counts[ix];
-            for next_ix in ix + 1..=ix + c.winning_count() {
-                counts[next_ix] += curr_count;
+fn calculate_part1(input: &Input) -> usize {
+    input
+        .cards
+        .iter()
+        .map(|c| {
+            let count = c.winning_count();
+            if count == 0 {
+                0
+            } else {
+                1usize.shl(count - 1)
             }
-        });
-        counts.iter().sum()
-    }
+        })
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> usize {
+    let mut counts = Vec::with_capacity(input.cards.len());
+    for _ in 0..input.cards.len() {
+        counts.push(1usize)
+    }
+
+    input.cards.iter().enumerate().for_each(|(ix, c)| {
+        let curr_count = counts[ix];
+        for next_ix in ix + 1..=ix + c.winning_count() {
+            counts[next_ix] += curr_count;
+        }
+    });
+    counts.iter().sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

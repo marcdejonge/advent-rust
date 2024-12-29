@@ -1,6 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use crate::Space::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
@@ -8,21 +9,10 @@ use advent_macros::{parsable, FromRepr};
 use rayon::prelude::*;
 use std::ops::{Add, Sub};
 
-use crate::Space::*;
-
-#[parsable(
-    map_parsable(|grid: Grid<Space>| {
-        let galaxy_locations = grid
-            .entries()
-            .filter(|(_, space)| **space == Galaxy)
-            .map(|(ix, _)| ix)
-            .collect();
-
-        ( grid, galaxy_locations )
-    })
-)]
-struct Day {
+#[parsable]
+struct Input {
     grid: Grid<Space>,
+    #[defer(grid.entries().filter(|(_, space)| **space == Galaxy).map(|(ix, _)| ix).collect())]
     galaxy_locations: Vec<Point<2, i32>>,
 }
 
@@ -33,7 +23,7 @@ enum Space {
     Galaxy = b'#',
 }
 
-impl Day {
+impl Input {
     fn create_distance_grid(&self, distance: u64) -> Grid<u64> {
         let mut grid = Grid::new_default(1, self.grid.width(), self.grid.height());
 
@@ -83,19 +73,15 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.determine_galaxy_distance_sum(self.create_distance_grid(2))
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.determine_galaxy_distance_sum(self.create_distance_grid(1000000))
-    }
+fn calculate_part1(input: &Input) -> u64 {
+    input.determine_galaxy_distance_sum(input.create_distance_grid(2))
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> u64 {
+    input.determine_galaxy_distance_sum(input.create_distance_grid(1000000))
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

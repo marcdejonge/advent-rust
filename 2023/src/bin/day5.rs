@@ -1,7 +1,7 @@
 #![feature(test)]
 #![feature(iter_array_chunks)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use rayon::prelude::*;
 use std::ops::Range;
@@ -11,7 +11,7 @@ use std::ops::Range;
     double_line_ending,
     separated_list1(double_line_ending, Mapping::parser()),
 ))]
-struct Day {
+struct Input {
     seeds: Vec<i64>,
     mappings: Vec<Mapping>,
 }
@@ -104,37 +104,36 @@ impl Mapping {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.seeds
-            .iter()
-            .map(|seed| self.mappings.iter().fold(*seed, |curr, mapping| mapping.map_single(curr)))
-            .min()
-            .unwrap()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.seeds
-            .iter()
-            .array_chunks::<2>()
-            .par_bridge()
-            .map(|[&start, &count]| start..start + count)
-            .flat_map(|seed_range| {
-                self.mappings
-                    .iter()
-                    .fold(vec![seed_range], |curr, mapping| mapping.map_range(curr))
-                    .iter()
-                    .map(|v| v.start)
-                    .collect::<Vec<_>>()
-            })
-            .min()
-            .unwrap()
-    }
+fn calculate_part1(input: &Input) -> i64 {
+    input
+        .seeds
+        .iter()
+        .map(|seed| input.mappings.iter().fold(*seed, |curr, mapping| mapping.map_single(curr)))
+        .min()
+        .unwrap()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> i64 {
+    input
+        .seeds
+        .iter()
+        .array_chunks::<2>()
+        .par_bridge()
+        .map(|[&start, &count]| start..start + count)
+        .flat_map(|seed_range| {
+            input
+                .mappings
+                .iter()
+                .fold(vec![seed_range], |curr, mapping| mapping.map_range(curr))
+                .iter()
+                .map(|v| v.start)
+                .collect::<Vec<_>>()
+        })
+        .min()
+        .unwrap()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

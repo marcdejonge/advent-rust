@@ -2,14 +2,14 @@
 
 use std::fmt::{Debug, Formatter};
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
 use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::parsable;
 use num::Integer;
 
 #[parsable(separated_lines1())]
-struct Day {
+struct Weather {
     hail: Vec<Line<3>>,
 }
 
@@ -63,41 +63,38 @@ impl Line<2> {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = i128;
+fn calculate_part1(weather: &Weather) -> i128 {
+    let hail2d = weather.hail.iter().map(Line::flatten).collect::<Vec<_>>();
+    let (min, max) = if weather.hail.len() < 10 {
+        (point2(7, 7), point2(27, 27))
+    } else {
+        (
+            point2(200000000000000, 200000000000000),
+            point2(400000000000000, 400000000000000),
+        )
+    };
 
-    fn calculate_part1(&self) -> Self::Output {
-        let hail2d = self.hail.iter().map(Line::flatten).collect::<Vec<_>>();
-        let (min, max) = if self.hail.len() < 10 {
-            (point2(7, 7), point2(27, 27))
-        } else {
-            (
-                point2(200000000000000, 200000000000000),
-                point2(400000000000000, 400000000000000),
-            )
-        };
-
-        let mut count = 0;
-        for ix in 0..hail2d.len() {
-            for jx in (ix + 1)..hail2d.len() {
-                if hail2d[ix].intersects_in(&hail2d[jx], min, max) {
-                    count += 1;
-                }
+    let mut count = 0;
+    for ix in 0..hail2d.len() {
+        for jx in (ix + 1)..hail2d.len() {
+            if hail2d[ix].intersects_in(&hail2d[jx], min, max) {
+                count += 1;
             }
         }
-
-        count
     }
 
-    fn calculate_part2(&self) -> Self::Output {
-        let v: Vector<3, i128> = [0, 1, 2]
-            .map(|dim| {
-                (1..)
-                    // Just try a bunch of speeds, both positive and negative
-                    .flat_map(|x| [x, -x].into_iter())
-                    .find(|test_speed| {
-                        *test_speed != -1 // Hack for the example, it find this erroneously
-                        && self
+    count
+}
+
+fn calculate_part2(weather: &Weather) -> i128 {
+    let v: Vector<3, i128> = [0, 1, 2]
+        .map(|dim| {
+            (1..)
+                // Just try a bunch of speeds, both positive and negative
+                .flat_map(|x| [x, -x].into_iter())
+                .find(|test_speed| {
+                    *test_speed != -1 // Hack for the example, it find this erroneously
+                        && weather
                             .hail
                             .iter()
                             .combinations()
@@ -114,32 +111,34 @@ impl ExecutableDay for Day {
                                 // p1 - p2 = dt * (v2 - test_speed)
                                 (p1 - p2).is_multiple_of(&(v - *test_speed))
                             })
-                    })
-                    .expect("No speed solution found")
-            })
-            .into();
+                })
+                .expect("No speed solution found")
+        })
+        .into();
 
-        // Pick a hailstone that doesn't match speed in any of the coordinates to test with
-        let test_hail =
-            *self.hail.iter().find(|hail| (0..3).all(|dim| hail.v[dim] != v[dim])).unwrap();
+    // Pick a hailstone that doesn't match speed in any of the coordinates to test with
+    let test_hail = *weather
+        .hail
+        .iter()
+        .find(|hail| (0..3).all(|dim| hail.v[dim] != v[dim]))
+        .unwrap();
 
-        // Find a hail that matches the speed in one of the dimensions, to determine the time for the other hail
-        let t = (0..3)
-            .filter_map(|dim| {
-                let same_hail = self.hail.iter().find(|hail| hail.v[dim] == v[dim])?;
-                Some((same_hail.p[dim] - test_hail.p[dim]) / (test_hail.v[dim] - same_hail.v[dim]))
-            })
-            .next()
-            .expect("Could not find any hail to match speeds with");
+    // Find a hail that matches the speed in one of the dimensions, to determine the time for the other hail
+    let t = (0..3)
+        .filter_map(|dim| {
+            let same_hail = weather.hail.iter().find(|hail| hail.v[dim] == v[dim])?;
+            Some((same_hail.p[dim] - test_hail.p[dim]) / (test_hail.v[dim] - same_hail.v[dim]))
+        })
+        .next()
+        .expect("Could not find any hail to match speeds with");
 
-        // Now use the testing hail to calculate back in time to the starting position
-        let start = test_hail.p + test_hail.v * t - v * t;
+    // Now use the testing hail to calculate back in time to the starting position
+    let start = test_hail.p + test_hail.v * t - v * t;
 
-        start.coords.iter().sum()
-    }
+    start.coords.iter().sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {
