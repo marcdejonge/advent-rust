@@ -1,9 +1,10 @@
-use nom::IResult;
-use num_traits::{One, Zero};
-use std::ops::Neg;
-
 use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
+use crate::parsing::Parsable;
+use nom::error::{Error, ErrorKind};
+use nom::Parser;
+use num_traits::{One, Zero};
+use std::ops::Neg;
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -26,28 +27,24 @@ impl From<u8> for Direction {
     }
 }
 
-pub fn direction_parser(input: &[u8]) -> IResult<&[u8], Direction, nom::error::Error<&[u8]>> {
-    if input.is_empty() {
-        return Err(nom::Err::Error(nom::error::Error::new(
-            input,
-            nom::error::ErrorKind::Eof,
-        )));
-    }
+impl Parsable for Direction {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        |input: &'a [u8]| {
+            if input.is_empty() {
+                return Err(nom::Err::Error(Error::new(input, ErrorKind::Eof)));
+            }
 
-    let direction = match input[0] {
-        b'N' | b'U' | b'^' | b'3' => North,
-        b'E' | b'R' | b'>' | b'0' => East,
-        b'S' | b'D' | b'v' | b'1' => South,
-        b'W' | b'L' | b'<' | b'2' => West,
-        _ => {
-            return Err(nom::Err::Error(nom::error::Error::new(
-                input,
-                nom::error::ErrorKind::OneOf,
-            )))
+            let direction = match input[0] {
+                b'N' | b'U' | b'^' | b'3' => North,
+                b'E' | b'R' | b'>' | b'0' => East,
+                b'S' | b'D' | b'v' | b'1' => South,
+                b'W' | b'L' | b'<' | b'2' => West,
+                _ => return Err(nom::Err::Error(Error::new(input, ErrorKind::OneOf))),
+            };
+
+            Ok((&input[1..], direction))
         }
-    };
-
-    Ok((&input[1..], direction))
+    }
 }
 
 pub const ALL_DIRECTIONS: [Direction; 4] = [North, East, South, West];

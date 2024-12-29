@@ -1,46 +1,47 @@
 #![feature(test)]
-use advent_lib::day::*;
-use prse_derive::parse;
 
-struct Day {
-    stack_lines: Vec<Vec<char>>,
+use advent_lib::day_main;
+use advent_macros::parsable;
+
+#[derive(Debug)]
+#[parsable(separated_pair(
+    map(
+        separated_list1(
+            line_ending,
+            separated_list1(
+                single_space(),
+                alt((
+                    in_brackets(single_match(is_alphabetic)),
+                    map(tag(b"   "), |_| b' '),
+                    delimited(single_space(), single_match(is_digit), opt(single_space())),
+                ))
+            )
+        ),
+        parse_stacks,
+    ),
+    double_line_ending,
+    separated_lines1(),
+))]
+struct Input {
+    stack_lines: Vec<Vec<u8>>,
     command_lines: Vec<Command>,
 }
 
-impl ExecutableDay for Day {
-    type Output = String;
+fn calculate_part1(input: &Input) -> String { input.calculate(true) }
 
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        let mut day = Day {
-            stack_lines: parse_stacks(lines.by_ref().take_while(|line| line != "").collect()),
-            command_lines: lines
-                .map(|line| {
-                    let (count, from, to): (usize, usize, usize) =
-                        parse!(line, "move {} from {} to {}");
-                    Command { count, from_stack_ix: from - 1, to_stack_ix: to - 1 }
-                })
-                .collect(),
-        };
-        day.command_lines.reverse();
-        day
-    }
+fn calculate_part2(input: &Input) -> String { input.calculate(false) }
 
-    fn calculate_part1(&self) -> Self::Output { self.calculate(true) }
+day_main!();
 
-    fn calculate_part2(&self) -> Self::Output { self.calculate(false) }
-}
-
-fn main() { execute_day::<Day>() }
-
-fn parse_stacks(lines: Vec<String>) -> Vec<Vec<char>> {
-    let stack_count = lines.last().expect("Could not find stacks").split("  ").count();
+fn parse_stacks(lines: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    let stack_count = lines.last().expect("Could not find stacks").len();
     let mut stacks = Vec::<_>::new();
     for ix in 0..stack_count {
         stacks.push(
             lines
                 .iter()
-                .filter_map(|line| line.chars().nth(ix * 4 + 1))
-                .filter(|c| ('A'..='Z').contains(c))
+                .filter_map(|line| line.get(ix).copied())
+                .filter(u8::is_ascii_uppercase)
                 .collect(),
         );
     }
@@ -48,6 +49,11 @@ fn parse_stacks(lines: Vec<String>) -> Vec<Vec<char>> {
 }
 
 #[derive(Debug)]
+#[parsable(tuple((
+    preceded(tag(b"move "), usize::parser()),
+    map(preceded(tag(b" from "), usize::parser()), |nr| nr - 1),
+    map(preceded(tag(b" to "), usize::parser()), |nr| nr - 1),
+)))]
 struct Command {
     count: usize,
     from_stack_ix: usize,
@@ -79,17 +85,18 @@ impl Position {
     }
 }
 
-impl Day {
+impl Input {
     fn calculate(&self, reversed: bool) -> String {
         (0..self.stack_lines.len())
             .map(|stack_ix| {
                 let pos = self
                     .command_lines
                     .iter()
+                    .rev()
                     .fold(Position { stack_ix, char_ix: 0 }, |pos, command| {
                         pos.trace_back_command(command, reversed)
                     });
-                self.stack_lines[pos.stack_ix][pos.char_ix]
+                self.stack_lines[pos.stack_ix][pos.char_ix] as char
             })
             .collect()
     }

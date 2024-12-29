@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 
-use crate::parsing::Parsable;
-
 #[inline]
-pub fn assert_day<Input: Parsable, O>(input: &Input, calc: fn(&Input) -> O, expected: O)
+pub fn assert_day<Input, O>(input: &Input, calc: fn(&Input) -> O, expected: O)
 where
     O: PartialEq + Debug,
 {
@@ -17,7 +15,10 @@ where
 
 #[macro_export]
 macro_rules! day_test {
-    ( $day: tt, $name: tt => $part1_result: expr ) => {
+    ( $day: tt, $name: tt => $part1_result: expr) => {
+        day_test!( $day, $name => $part1_result ; std::convert::identity );
+    };
+    ( $day: tt, $name: tt => $part1_result: expr ; $prepare: path ) => {
         mod $name {
             use super::super::*;
             use advent_lib::parsing::Parsable;
@@ -32,12 +33,15 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let day = advent_lib::parsing::handle_parser_error(input);
-                advent_lib::test_utils::assert_day(&day, calculate_part1, $part1_result);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
             }
         }
     };
-    ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr ) => {
+    ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr) => {
+        day_test!( $day, $name => $part1_result, $part2_result ; std::convert::identity );
+    };
+    ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr ; $prepare: path ) => {
         mod $name {
             use super::super::*;
             use advent_lib::parsing::Parsable;
@@ -52,18 +56,21 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let day = advent_lib::parsing::handle_parser_error(input);
-                advent_lib::test_utils::assert_day(&day, calculate_part1, $part1_result);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
             }
 
             #[test]
             fn part2() {
-                let day = advent_lib::parsing::handle_parser_error(input);
-                advent_lib::test_utils::assert_day(&day, calculate_part2, $part2_result);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                advent_lib::test_utils::assert_day(&parsed, calculate_part2, $part2_result);
             }
         }
     };
     ( $day: expr => $part1_result: expr ) => {
+        day_test!( $day => $part1_result ; std::convert::identity );
+    };
+    ( $day: expr => $part1_result: expr ; $prepare: path ) => {
         mod full {
             extern crate test;
             use super::super::*;
@@ -75,14 +82,17 @@ macro_rules! day_test {
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let day = advent_lib::parsing::handle_parser_error(input);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&day, calculate_part1, $part1_result);
+                    advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
                 })
             }
         }
     };
     ( $day: expr => $part1_result: expr, $part2_result: expr ) => {
+        day_test!( $day => $part1_result, $part2_result ; std::convert::identity );
+    };
+    ( $day: expr => $part1_result: expr, $part2_result: expr ; $prepare: path ) => {
         mod full {
             extern crate test;
             use super::super::*;
@@ -94,17 +104,17 @@ macro_rules! day_test {
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let day = advent_lib::parsing::handle_parser_error(input);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&day, calculate_part1, $part1_result);
+                    advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
                 })
             }
 
             #[bench]
             fn part2(b: &mut Bencher) {
-                let day = advent_lib::parsing::handle_parser_error(input);
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&day, calculate_part2, $part2_result);
+                    advent_lib::test_utils::assert_day(&parsed, calculate_part2, $part2_result);
                 })
             }
         }

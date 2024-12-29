@@ -1,14 +1,9 @@
 #![feature(test)]
-use advent_lib::day::*;
-use prse::Parse;
-use prse_derive::parse;
 
-struct Day {
-    range_pairs: Vec<(Range, Range)>,
-}
+use advent_lib::day_main;
+use advent_macros::parsable;
 
-#[derive(Parse)]
-#[prse = "{from}-{to}"]
+#[parsable(parsable_pair(tag(b"-")))]
 struct Range {
     from: u32,
     to: u32,
@@ -19,34 +14,26 @@ impl Range {
     fn wraps(&self, other: &Range) -> bool { self.from <= other.from && self.to >= other.to }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { range_pairs: lines.map(|line: String| parse!(line, "{},{}")).collect() }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.range_pairs
-            .iter()
-            .filter(|(first, second)| first.wraps(second) || second.wraps(first))
-            .count()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.range_pairs
-            .iter()
-            .filter(|(first, second)| {
-                first.contains(second.from)
-                    || first.contains(second.to)
-                    || second.contains(first.from)
-                    || second.contains(first.to)
-            })
-            .count()
-    }
+fn calculate_part1(range_pair: &Vec<(Range, Range)>) -> usize {
+    range_pair
+        .iter()
+        .filter(|(first, second)| first.wraps(second) || second.wraps(first))
+        .count()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(range_pair: &Vec<(Range, Range)>) -> usize {
+    range_pair
+        .iter()
+        .filter(|(first, second)| {
+            first.contains(second.from)
+                || first.contains(second.to)
+                || second.contains(first.from)
+                || second.contains(first.to)
+        })
+        .count()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

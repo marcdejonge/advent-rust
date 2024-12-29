@@ -1,5 +1,4 @@
 use fxhash::{FxHashMap, FxHashSet};
-use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming, map};
 use nom::error::{Error, ErrorKind, ParseError};
@@ -93,6 +92,26 @@ where
     fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>>;
 }
 
+impl<T: Parsable> Parsable for Vec<T> {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> { separated_lines1() }
+}
+
+impl<T: Parsable + Eq + Hash> Parsable for FxHashSet<T> {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        separated_set1(line_ending, T::parser())
+    }
+}
+
+impl<T: Parsable> Parsable for Box<[T]> {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(separated_lines1(), |list| list.into_boxed_slice())
+    }
+}
+
+impl<T: Parsable, U: Parsable> Parsable for (T, U) {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> { parsable_pair(single(b',')) }
+}
+
 pub fn separated_array<'a, const D: usize, T, S>(
     mut separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
 ) -> impl Parser<&'a [u8], [T; D], Error<&'a [u8]>>
@@ -133,6 +152,12 @@ macro_rules! number_parsable {
 
 number_parsable!(u8 => u8, u16 => u16, u32 => u32, u64 => u64, u128 => u128);
 number_parsable!(i8 => i8, i16 => i16, i32 => i32, i64 => i64, i128 => i128);
+
+impl Parsable for usize {
+    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+        map(nom::character::complete::u64, |nr| nr as usize)
+    }
+}
 
 pub fn parsable_pair<'a, O1, O2, S>(
     separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
@@ -195,22 +220,50 @@ where
     map(T::parser(), function)
 }
 
+pub fn single<'a>(b: u8) -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> {
+    move |input: &'a [u8]| {
+        if input.is_empty() {
+            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Eof)))
+        } else if input[0] == b {
+            Ok((&input[1..], b))
+        } else {
+            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Char)))
+        }
+    }
+}
+
+pub fn single_space<'a>() -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> { single(b' ') }
+
+pub fn single_match<'a>(
+    mut matcher: impl FnMut(u8) -> bool,
+) -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> {
+    move |input: &'a [u8]| {
+        if input.is_empty() {
+            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Eof)))
+        } else if matcher(input[0]) {
+            Ok((&input[1..], input[0]))
+        } else {
+            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Char)))
+        }
+    }
+}
+
 pub fn in_parens<'a, O>(
     parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
 ) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
-    delimited(tag(b"("), parser, tag(b")"))
+    delimited(single(b'('), parser, single(b')'))
 }
 
 pub fn in_brackets<'a, O>(
     parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
 ) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
-    delimited(tag(b"["), parser, tag(b"]"))
+    delimited(single(b'['), parser, single(b']'))
 }
 
 pub fn in_braces<'a, O>(
     parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
 ) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
-    delimited(tag(b"{"), parser, tag(b"}"))
+    delimited(single(b'{'), parser, single(b'}'))
 }
 
 pub fn separated_map1<'a, S, K, V>(

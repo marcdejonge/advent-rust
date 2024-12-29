@@ -1,31 +1,28 @@
 #![feature(test)]
-use advent_lib::day::*;
-use advent_lib::iter_utils::*;
+
+use advent_lib::day_main;
+use advent_macros::parsable;
 use std::collections::BinaryHeap;
 
-struct Day {
-    sorted_sums: Vec<i32>,
+#[parsable(separated_list1(double_line_ending, separated_list1(line_ending, i32)))]
+struct Input {
+    sums: Vec<Vec<i32>>,
 }
 
-impl ExecutableDay for Day {
-    type Output = i32;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            sorted_sums: lines
-                .chunk_by("".to_owned())
-                .map(|v| v.iter().map(|line| line.parse::<i32>().unwrap()).sum())
-                .collect::<BinaryHeap<_>>()
-                .into_sorted_vec(),
-        }
-    }
-
-    fn calculate_part1(&self) -> Self::Output { self.sorted_sums.iter().rev().take(1).sum() }
-
-    fn calculate_part2(&self) -> Self::Output { self.sorted_sums.iter().rev().take(3).sum() }
+fn sums(input: &Input) -> Vec<i32> {
+    input
+        .sums
+        .iter()
+        .map(|v| v.iter().sum())
+        .collect::<BinaryHeap<_>>()
+        .into_sorted_vec()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part1(input: &Input) -> i32 { sums(input).iter().rev().take(1).sum() }
+
+fn calculate_part2(input: &Input) -> i32 { sums(input).iter().rev().take(3).sum() }
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

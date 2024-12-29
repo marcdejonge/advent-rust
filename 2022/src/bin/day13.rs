@@ -1,101 +1,65 @@
 #![feature(test)]
-use advent_lib::day::{execute_day, ExecutableDay};
+
+use advent_lib::day_main;
+use advent_lib::parsing::single;
+use advent_macros::parsable;
+use nom::combinator::map;
+use nom::multi::separated_list0;
+use nom::IResult;
+use nom::Parser;
 use std::cmp::Ordering;
-use std::iter::Peekable;
-use std::str::{Bytes, FromStr};
 
-struct Day {
-    packets: Vec<Packet>,
-}
-
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            packets: lines
-                .filter(|line| !line.is_empty())
-                .map(|line| line.parse().unwrap())
-                .collect(),
-        }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.packets
-            .as_slice()
-            .chunks(2)
-            .enumerate()
-            .filter_map(|(ix, packets)| {
-                let first = packets.get(0).unwrap();
-                let second = packets.get(1).unwrap();
-                if first < second {
+fn calculate_part1(input: &Input) -> usize {
+    input
+        .packets
+        .as_slice()
+        .chunks(2)
+        .enumerate()
+        .filter_map(
+            |(ix, packets)| {
+                if packets[0] < packets[1] {
                     Some(ix + 1)
                 } else {
                     None
                 }
-            })
-            .sum()
-    }
+            },
+        )
+        .sum()
+}
 
-    fn calculate_part2(&self) -> Self::Output {
-        let mut packets = self.packets.clone();
-        packets.sort();
-        let start_ix = packets.binary_search(&"[[2]]".parse().unwrap()).unwrap_err() + 1;
-        let end_ix = packets.binary_search(&"[[6]]".parse().unwrap()).unwrap_err() + 2;
-        start_ix * end_ix
-    }
+fn calculate_part2(input: &Input) -> usize {
+    let mut packets = input.packets.clone();
+    packets.sort();
+    let two = Packet::List(vec![Packet::List(vec![Packet::Single(2)])]);
+    let start_ix = packets.binary_search(&two).unwrap_err() + 1;
+    let six = Packet::List(vec![Packet::List(vec![Packet::Single(6)])]);
+    let end_ix = packets.binary_search(&six).unwrap_err() + 2;
+    start_ix * end_ix
+}
+
+#[parsable(separated_list1(many1(line_ending), parse_packet))]
+struct Input {
+    packets: Vec<Packet>,
 }
 
 #[derive(Debug, Clone, Eq)]
 enum Packet {
-    List { items: Vec<Packet> },
-    Single { value: u32 },
+    List(Vec<Packet>),
+    Single(u32),
 }
 
-impl Packet {
-    fn from_str_peekable(line: &mut Peekable<Bytes>) -> Result<Self, String> {
-        if line.peek() == Some(&b'[') {
-            line.next(); // Drop the '['
-            let mut items: Vec<Packet> = Vec::new();
-            loop {
-                if line.peek() != Some(&b']') {
-                    items.push(Packet::from_str_peekable(line)?);
-                }
-                let next = line.next();
-                match next {
-                    Some(b',') => {}
-                    Some(b']') => return Ok(Packet::List { items }),
-                    _ => return Err(format!("Expected ',' or ']', but found {:?}", next)),
-                }
-            }
-        } else {
-            let mut number = 0u32;
-            while let Some(b) = line.peek() {
-                if b.is_ascii_digit() {
-                    number = number * 10 + (b - b'0') as u32;
-                    line.next();
-                } else {
-                    break;
-                }
-            }
-            Ok(Packet::Single { value: number })
-        }
+fn parse_packet(input: &[u8]) -> IResult<&[u8], Packet> {
+    if let Ok((rest, _)) = single(b'[').parse(input) {
+        let (rest, packets) = separated_list0(single(b','), parse_packet).parse(rest)?;
+        let (rest, _) = single(b']').parse(rest)?;
+        Ok((rest, Packet::List(packets)))
+    } else {
+        map(nom::character::complete::u32, Packet::Single).parse(input)
     }
 }
 
 impl From<u32> for Packet {
-    fn from(value: u32) -> Self { Packet::Single { value } }
-}
-
-impl FromStr for Packet {
-    type Err = String;
-
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
-        match Packet::from_str_peekable(&mut line.bytes().peekable()) {
-            Ok(packet) => Ok(packet),
-            Err(msg) => Err(format!("{} for {}", msg, line)),
-        }
-    }
+    fn from(value: u32) -> Self { Packet::Single(value) }
 }
 
 impl PartialEq for Packet {
@@ -109,9 +73,9 @@ impl PartialOrd for Packet {
 impl Ord for Packet {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
-            Packet::Single { value: self_value } => match other {
-                Packet::Single { value: other_value } => self_value.cmp(other_value),
-                Packet::List { items: other_items } => match other_items.first() {
+            Packet::Single(self_value) => match other {
+                Packet::Single(other_value) => self_value.cmp(other_value),
+                Packet::List(other_items) => match other_items.first() {
                     None => Ordering::Greater,
                     Some(other_value) => {
                         let sub_order = self.cmp(other_value);
@@ -125,9 +89,9 @@ impl Ord for Packet {
                     }
                 },
             },
-            Packet::List { items: self_items } => match other {
-                Packet::Single { value: _ } => other.cmp(self).reverse(),
-                Packet::List { items: other_items } => {
+            Packet::List(self_items) => match other {
+                Packet::Single(_) => other.cmp(self).reverse(),
+                Packet::List(other_items) => {
                     let mut self_iter = self_items.iter();
                     let mut other_iter = other_items.iter();
                     loop {
@@ -154,7 +118,7 @@ impl Ord for Packet {
     }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

@@ -1,60 +1,62 @@
 #![feature(test)]
-use advent_lib::day::*;
-use fxhash::FxBuildHasher;
-use std::collections::HashSet;
+#![feature(array_chunks)]
 
-struct Day {
-    grid: Vec<Vec<u32>>,
+use advent_lib::day_main;
+use advent_macros::parsable;
+use fxhash::FxHashSet;
+
+#[parsable]
+struct Input {
+    rucksacks: Vec<Rucksack>,
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
+#[parsable(map(alpha1, |bs: &[u8]| bs.iter().map(|&b| get_priority(b)).collect()))]
+#[derive(Clone)]
+struct Rucksack(Vec<u32>);
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            grid: lines
-                .map(|line| {
-                    line.chars()
-                        .map(|c| match c {
-                            'a'..='z' => c as u32 - 'a' as u32 + 1,
-                            'A'..='Z' => c as u32 - 'A' as u32 + 27,
-                            _ => 0,
-                        })
-                        .collect()
-                })
-                .collect(),
-        }
+impl Rucksack {
+    fn split(&self) -> (FxHashSet<u32>, Vec<u32>) {
+        let (left, right) = self.0.split_at(self.0.len() / 2);
+        (left.iter().copied().collect(), right.to_vec())
     }
 
-    fn calculate_part1(&self) -> Self::Output {
-        self.grid
-            .iter()
-            .map(|line| {
-                let (left, right) = line.split_at(line.len() / 2);
-                let set: HashSet<_, FxBuildHasher> = left.iter().copied().collect();
-                right.iter().filter(|&c| set.contains(c)).last().unwrap()
-            })
-            .sum()
-    }
+    fn as_set(&self) -> FxHashSet<u32> { self.0.iter().copied().collect() }
+}
 
-    fn calculate_part2(&self) -> Self::Output {
-        self.grid
-            .chunks(3)
-            .map(|lines| {
-                let set = lines[0]
-                    .iter()
-                    .copied()
-                    .collect::<HashSet<_>>()
-                    .intersection(&lines[1].iter().copied().collect())
-                    .copied()
-                    .collect::<HashSet<_, FxBuildHasher>>();
-                lines[2].iter().filter(|&c| set.contains(c)).last().unwrap()
-            })
-            .sum()
+fn get_priority(b: u8) -> u32 {
+    match b {
+        b'a'..=b'z' => b as u32 - b'a' as u32 + 1,
+        b'A'..=b'Z' => b as u32 - b'A' as u32 + 27,
+        _ => unreachable!("Invalid character"),
     }
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part1(input: &Input) -> u32 {
+    input
+        .rucksacks
+        .iter()
+        .map(|line| {
+            let (left, right) = line.split();
+            right.iter().filter(|&c| left.contains(c)).copied().last().unwrap()
+        })
+        .sum()
+}
+
+fn calculate_part2(input: &Input) -> u32 {
+    input
+        .rucksacks
+        .chunks(3)
+        .map(|lines| {
+            let first = lines[0].as_set();
+            let second = lines[1].as_set();
+            let mut third = lines[2].clone().0;
+            third.retain(|c| first.contains(c) && second.contains(c));
+            third.iter().copied().last().unwrap()
+        })
+        .sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

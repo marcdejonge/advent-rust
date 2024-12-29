@@ -2,11 +2,11 @@ use crate::direction::ALL_DIRECTIONS;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 use crate::parsing::Parsable;
 use bit_vec::BitVec;
-use nom::bytes::complete::{take_while, take_while_m_n};
+use nom::bytes::complete::{is_not, take_while, take_while_m_n};
 use nom::character::complete::line_ending;
 use nom::error::Error;
 use nom::multi::separated_list1;
-use nom::Parser;
+use nom::{IResult, Parser};
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
 
@@ -52,6 +52,24 @@ where
             ))
         }
     }
+}
+
+/// Parses a Grid with uneven line lengths. This all append all lines with the default T value
+/// to be square.
+pub fn uneven_grid_parser<T: From<u8> + Clone + Default>(input: &[u8]) -> IResult<&[u8], Grid<T>> {
+    let (rest, lines) = separated_list1(line_ending, is_not("\r\n")).parse(input)?;
+
+    let height = lines.len();
+    let width = lines.iter().map(|line| line.len()).max().unwrap();
+    let mut grid = Grid::new_empty(width as i32, height as i32);
+
+    for (y, line) in lines.into_iter().enumerate() {
+        for (x, &b) in line.into_iter().enumerate() {
+            grid[point2(x as i32, y as i32)] = T::from(b);
+        }
+    }
+
+    Ok((rest, grid))
 }
 
 impl<T> Grid<T> {

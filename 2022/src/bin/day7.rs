@@ -2,45 +2,40 @@
 
 use std::str::FromStr;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
+use advent_macros::parsable;
 
-struct Day {
-    dir_sizes: Vec<u32>,
+fn precompute(commands: Vec<Command>) -> Vec<u32> {
+    TraverseWithStack { iter: commands.iter(), stack: vec![0] }.collect()
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
+fn calculate_part1(dir_sizes: &Vec<u32>) -> u32 {
+    dir_sizes.iter().filter(|&&size| size < 100000).sum()
+}
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            dir_sizes: TraverseWithStack {
-                iter: lines.filter_map(|line| line.parse::<Command>().ok()),
-                stack: Vec::new(),
-            }
-            .collect(),
-        }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.dir_sizes.iter().filter(|&&size| size < 100000).sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let min_size = self.dir_sizes.last().unwrap_or(&0) - 40000000;
-        self.dir_sizes
-            .iter()
-            .cloned()
-            .filter(|&size| size >= min_size)
-            .min()
-            .expect("Could not find any")
-    }
+fn calculate_part2(dir_sizes: &Vec<u32>) -> u32 {
+    let min_size = dir_sizes.last().unwrap_or(&0) - 40000000;
+    dir_sizes
+        .iter()
+        .cloned()
+        .filter(|&size| size >= min_size)
+        .min()
+        .expect("Could not find any")
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[parsable]
 enum Command {
+    #[format=tag(b"$ cd ..")]
     CdUp,
+    #[format=preceded(tag(b"$ cd "), not_line_ending)]
     CdDown,
+    #[format=terminated(u32, not_line_ending)]
     File(u32),
+    #[format=terminated(tag(b"dir "), not_line_ending)]
+    Dir,
+    #[format=tag(b"$ ls")]
+    Ls,
 }
 
 impl FromStr for Command {
@@ -75,9 +70,9 @@ impl<I> TraverseWithStack<I, u32> {
     }
 }
 
-impl<I> Iterator for TraverseWithStack<I, u32>
+impl<'a, I> Iterator for TraverseWithStack<I, u32>
 where
-    I: Iterator<Item = Command>,
+    I: Iterator<Item = &'a Command>,
 {
     type Item = u32;
 
@@ -92,6 +87,7 @@ where
                             *current += file_size;
                         }
                     }
+                    _ => {}
                 }
             } else {
                 return self.pop();
@@ -100,12 +96,12 @@ where
     }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!( precompute => calculate_part1, calculate_part2 );
 
 #[cfg(test)]
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 7, example => 95437, 24933642 );
-    day_test!( 7 => 1086293, 366028 );
+    day_test!( 7, example => 95437, 24933642 ; precompute );
+    day_test!( 7 => 1086293, 366028 ; precompute );
 }

@@ -1,22 +1,24 @@
 #![feature(test)]
 #![feature(const_for)]
 
-use advent_lib::day::{execute_day, ExecutableDay};
-use fxhash::FxBuildHasher;
-use std::collections::HashMap;
+use advent_lib::day_main;
+use advent_lib::key::Key;
+use advent_macros::parsable;
+use fxhash::FxHashMap;
 
-type Monkeys = HashMap<Name, Monkey, FxBuildHasher>;
+#[derive(Clone, Debug)]
+#[parsable(separated_map1(
+    line_ending,
+    separated_pair(Key::parser(), tag(b": "), Monkey::parser())
+))]
+struct Monkeys(FxHashMap<Key, Monkey>);
 type Number = i64;
+const ROOT: Key = Key::fixed(b"root");
 
-struct Day {
-    root_name: Name,
-    monkeys: Monkeys,
-}
-
-fn solve(monkeys: &Monkeys, name: &Name) -> Value {
+fn solve(monkeys: &Monkeys, name: Key) -> Value {
     macro_rules! solve {
             ($left:ident, $right:ident => $operation: tt $type_left: tt $type_right: tt) => {
-                match (solve(monkeys, $left), solve(monkeys, $right)) {
+                match (solve(monkeys, *$left), solve(monkeys, *$right)) {
                     (Value::Unknown { .. }, Value::Unknown { .. }) => {
                         panic!("Both sides are unknown, cannot solve")
                     }
@@ -35,41 +37,49 @@ fn solve(monkeys: &Monkeys, name: &Name) -> Value {
             };
         }
 
-    match monkeys.get(name).expect("Could not find monkey") {
+    match monkeys.0.get(&name).expect("Could not find monkey") {
         Monkey::Unknown => Value::Unknown { applications: Vec::with_capacity(100) },
-        Monkey::Constant { value } => Value::Constant { value: *value },
-        Monkey::Add { left, right } => solve!(left, right => + Add Add),
-        Monkey::Subtract { left, right } => solve!(left, right => - SubtractFrom SubtractOf),
-        Monkey::Multiply { left, right } => solve!(left, right => * Multiply Multiply),
-        Monkey::Divide { left, right } => solve!(left, right => / DivisionOf DivideBy),
-        Monkey::Equal { left, right } => match (solve(monkeys, left), solve(monkeys, right)) {
-            (Value::Unknown { .. }, Value::Unknown { .. }) => {
-                panic!("Both sides are unknown, cannot solve")
+        Monkey::Constant { value, .. } => Value::Constant { value: *value },
+        Monkey::Add { left, right, .. } => solve!(left, right => + Add Add),
+        Monkey::Subtract { left, right, .. } => solve!(left, right => - SubtractFrom SubtractOf),
+        Monkey::Multiply { left, right, .. } => solve!(left, right => * Multiply Multiply),
+        Monkey::Divide { left, right, .. } => solve!(left, right => / DivisionOf DivideBy),
+        Monkey::Equal { left, right, .. } => {
+            match (solve(monkeys, *left), solve(monkeys, *right)) {
+                (Value::Unknown { .. }, Value::Unknown { .. }) => {
+                    panic!("Both sides are unknown, cannot solve")
+                }
+                (Value::Constant { .. }, Value::Constant { .. }) => {
+                    panic!("Both sides are constant, cannot solve")
+                }
+                (Value::Unknown { applications }, Value::Constant { value }) => Value::Constant {
+                    value: applications.iter().rev().fold(value, |acc, a| a.reverse(acc)),
+                },
+                (Value::Constant { value }, Value::Unknown { applications }) => Value::Constant {
+                    value: applications.iter().rev().fold(value, |acc, a| a.reverse(acc)),
+                },
             }
-            (Value::Constant { .. }, Value::Constant { .. }) => {
-                panic!("Both sides are constant, cannot solve")
-            }
-            (Value::Unknown { applications }, Value::Constant { value }) => Value::Constant {
-                value: applications.iter().rev().fold(value, |acc, a| a.reverse(acc)),
-            },
-            (Value::Constant { value }, Value::Unknown { applications }) => Value::Constant {
-                value: applications.iter().rev().fold(value, |acc, a| a.reverse(acc)),
-            },
-        },
+        }
     }
 }
 
-type Name = u32;
-
 #[derive(Clone, Debug)]
+#[parsable]
 enum Monkey {
+    #[format=fail::<_, (), _>]
     Unknown,
+    #[format=i64]
     Constant { value: Number },
-    Add { left: Name, right: Name },
-    Subtract { left: Name, right: Name },
-    Multiply { left: Name, right: Name },
-    Divide { left: Name, right: Name },
-    Equal { left: Name, right: Name },
+    #[format=separated_pair(Key::parser(), tag(b" + "), Key::parser())]
+    Add { left: Key, right: Key },
+    #[format=separated_pair(Key::parser(), tag(b" - "), Key::parser())]
+    Subtract { left: Key, right: Key },
+    #[format=separated_pair(Key::parser(), tag(b" * "), Key::parser())]
+    Multiply { left: Key, right: Key },
+    #[format=separated_pair(Key::parser(), tag(b" / "), Key::parser())]
+    Divide { left: Key, right: Key },
+    #[format=separated_pair(Key::parser(), tag(b" = "), Key::parser())]
+    Equal { left: Key, right: Key },
 }
 
 enum Value {
@@ -99,68 +109,29 @@ impl Application {
     }
 }
 
-fn parse_name(name: &str) -> u32 {
-    name.as_bytes().iter().fold(0, |acc, b| 26 * acc + (b - b'a') as u32)
-}
-
-impl ExecutableDay for Day {
-    type Output = Number;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let mut monkeys = HashMap::with_capacity_and_hasher(5000, FxBuildHasher::default());
-        for line in lines {
-            let mut parts = line.split(' ');
-            let monkey_name =
-                parse_name(parts.next().expect("Expected monkey name").trim_end_matches(":"));
-            let left = parts.next().expect("Expect first part");
-            let operation = parts.next();
-            if let Some(operation) = operation {
-                let left = parse_name(left);
-                let right = parse_name(parts.next().expect("Expected second part"));
-                monkeys.insert(
-                    monkey_name,
-                    match operation {
-                        "+" => Monkey::Add { left, right },
-                        "-" => Monkey::Subtract { left, right },
-                        "*" => Monkey::Multiply { left, right },
-                        "/" => Monkey::Divide { left, right },
-                        _ => panic!("Unknown operation"),
-                    },
-                );
-            } else {
-                monkeys.insert(
-                    monkey_name,
-                    Monkey::Constant { value: left.parse().expect("Expected constant number") },
-                );
-            }
-        }
-        Day { root_name: parse_name("root"), monkeys }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        if let Value::Constant { value } = solve(&self.monkeys, &self.root_name) {
-            value
-        } else {
-            panic!("Could not find a solution")
-        }
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let mut monkeys = self.monkeys.clone();
-        if let Monkey::Add { left, right } = monkeys.get(&self.root_name).unwrap() {
-            monkeys.insert(self.root_name, Monkey::Equal { left: *left, right: *right });
-        }
-        monkeys.insert(parse_name("humn"), Monkey::Unknown);
-
-        if let Value::Constant { value } = solve(&monkeys, &self.root_name) {
-            value
-        } else {
-            panic!("Could not find a solution")
-        }
+fn calculate_part1(monkeys: &Monkeys) -> i64 {
+    if let Value::Constant { value } = solve(&monkeys, ROOT) {
+        value
+    } else {
+        panic!("Could not find a solution")
     }
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(monkeys: &Monkeys) -> i64 {
+    let mut monkeys = monkeys.clone();
+    if let Monkey::Add { left, right } = monkeys.0.get(&ROOT).cloned().unwrap() {
+        monkeys.0.insert(ROOT, Monkey::Equal { left, right });
+    }
+    monkeys.0.insert(Key::fixed(b"humn"), Monkey::Unknown);
+
+    if let Value::Constant { value } = solve(&monkeys, ROOT) {
+        value
+    } else {
+        panic!("Could not find a solution")
+    }
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

@@ -2,11 +2,7 @@
 
 extern crate core;
 
-use advent_lib::day::{execute_day, ExecutableDay};
-
-struct Day {
-    numbers: Vec<i64>,
-}
+use advent_lib::day_main;
 
 #[derive(Copy, Clone, Debug)]
 struct NumberNode {
@@ -16,21 +12,11 @@ struct NumberNode {
     prev: usize,
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
+fn calculate_part1(numbers: &Vec<i64>) -> i64 { calculate(create_nodes(numbers, 1), 1) }
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { numbers: lines.filter_map(|line| line.parse().ok()).collect() }
-    }
+fn calculate_part2(numbers: &Vec<i64>) -> i64 { calculate(create_nodes(numbers, 811589153), 10) }
 
-    fn calculate_part1(&self) -> Self::Output { calculate(create_nodes(&self.numbers, 1), 1) }
-
-    fn calculate_part2(&self) -> Self::Output {
-        calculate(create_nodes(&self.numbers, 811589153), 10)
-    }
-}
-
-fn create_nodes(numbers: &Vec<i64>, multiply: i64) -> Vec<NumberNode> {
+fn create_nodes(numbers: &[i64], multiply: i64) -> Vec<NumberNode> {
     let mut result = Vec::with_capacity(5000);
     for (ix, number) in numbers.iter().enumerate() {
         let max_ix = (numbers.len() - 1) as i32;
@@ -115,7 +101,7 @@ fn calculate(mut nodes: Vec<NumberNode>, repeat: u32) -> i64 {
     node_iterate(&nodes).map(|n| n.number).step_by(1000).take(4).sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

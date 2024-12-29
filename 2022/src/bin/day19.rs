@@ -1,64 +1,47 @@
 #![feature(test)]
 
+use advent_lib::day_main;
+use advent_lib::search::depth_first_search;
+use advent_macros::parsable;
 use std::mem::transmute;
 use std::ops::{Add, Index, Sub};
-use std::str::FromStr;
-
-use prse_derive::parse;
-
-use advent_lib::day::{execute_day, ExecutableDay};
-use advent_lib::search::depth_first_search;
 
 type Count = u8;
 
-struct Day {
-    blueprints: Vec<Blueprint>,
-}
-
+#[parsable(tuple((
+    delimited(tag(b"Blueprint "), u32, single(b':')),
+    delimited(tag(b" Each ore robot costs "), RobotCost::parser(), single(b'.')),
+    delimited(tag(b" Each clay robot costs "), RobotCost::parser(), single(b'.')),
+    delimited(tag(b" Each obsidian robot costs "), RobotCost::parser(), single(b'.')),
+    delimited(tag(b" Each geode robot costs "), RobotCost::parser(), single(b'.')),
+)))]
 struct Blueprint {
     ix: u32,
     ore_bot_cost: RobotCost,
     clay_bot_cost: RobotCost,
     obsidian_bot_cost: RobotCost,
     geode_bot_cost: RobotCost,
+    #[defer(
+        ActiveRobots {
+            ore: ore_bot_cost.ore.max(clay_bot_cost.ore).max(obsidian_bot_cost.ore).max(geode_bot_cost.ore),
+            clay: obsidian_bot_cost.clay,
+            obsidian: geode_bot_cost.obsidian,
+            geode: Count::MAX,
+        }
+    )]
     max_robots: ActiveRobots,
 }
 
 #[derive(Copy, Clone, Default)]
+#[parsable(tuple((
+    map(opt(terminated(u8, tuple((tag(b" ore"), opt(tag(b" and ")))))), Option::unwrap_or_default),
+    map(opt(terminated(u8, tuple((tag(b" clay"), opt(tag(b" and ")))))), Option::unwrap_or_default),
+    map(opt(terminated(u8, tag(b" obsidian"))), Option::unwrap_or_default),
+)))]
 struct RobotCost {
     ore: Count,
     clay: Count,
     obsidian: Count,
-}
-
-impl FromStr for Blueprint {
-    type Err = String;
-
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
-        let (ix, ore_cost, clay_cost, obs_ore_cost, obs_clay_cost, geode_ore_cost, geode_obs_cost): (u32, Count, Count, Count, Count, Count, Count)
-            = parse!(line, "Blueprint {}: Each ore robot costs {} ore. Each clay robot costs {} ore. Each obsidian robot costs {} ore and {} clay. Each geode robot costs {} ore and {} obsidian.");
-        Ok(Blueprint {
-            ix,
-            ore_bot_cost: RobotCost { ore: ore_cost, ..Default::default() },
-            clay_bot_cost: RobotCost { ore: clay_cost, ..Default::default() },
-            obsidian_bot_cost: RobotCost {
-                ore: obs_ore_cost,
-                clay: obs_clay_cost,
-                ..Default::default()
-            },
-            geode_bot_cost: RobotCost {
-                ore: geode_ore_cost,
-                obsidian: geode_obs_cost,
-                ..Default::default()
-            },
-            max_robots: ActiveRobots {
-                ore: ore_cost.max(clay_cost).max(obs_ore_cost).max(geode_ore_cost),
-                clay: obs_clay_cost,
-                obsidian: geode_obs_cost,
-                geode: Count::MAX,
-            },
-        })
-    }
 }
 
 impl Index<Robot> for Blueprint {
@@ -244,42 +227,32 @@ fn calculate(blueprint: &Blueprint, start_time: Count) -> u32 {
     max_geodes as u32
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { blueprints: lines.filter_map(|line| line.parse().ok()).collect() }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.blueprints
-            .iter()
-            .map(|blueprint| blueprint.ix * calculate(blueprint, 24))
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.blueprints
-            .iter()
-            .take(3)
-            .fold(1, |acc, blueprint| acc * calculate(blueprint, 32))
-    }
+fn calculate_part1(blueprints: &Vec<Blueprint>) -> u32 {
+    blueprints.iter().map(|blueprint| blueprint.ix * calculate(blueprint, 24)).sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(blueprints: &Vec<Blueprint>) -> u32 {
+    blueprints
+        .iter()
+        .take(3)
+        .fold(1, |acc, blueprint| acc * calculate(blueprint, 32))
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {
-    use advent_lib::day_test;
-
     use super::*;
+    use advent_lib::day_test;
+    use advent_lib::parsing::Parsable;
+    use nom::Parser;
 
     day_test!( 19, example => 33, 3472 );
     day_test!( 19 => 1147, 3080 );
 
     #[test]
     fn example_steps_verification() {
-        let blueprint: Blueprint = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.".parse().unwrap();
+        let blueprint = Blueprint::parser().parse(b"Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.").unwrap().1;
         let state = State { time: 24, ..State::default() };
         let state = state.next_with_clay(&blueprint).unwrap();
         assert_eq!(21, state.time);

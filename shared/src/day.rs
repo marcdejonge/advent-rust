@@ -40,7 +40,7 @@ where
     Output: Display,
 {
     let part1_calc_start_time = Instant::now();
-    let part1 = function(&input);
+    let part1 = function(input);
     println!(
         " ├── {} calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
         name,
@@ -66,16 +66,28 @@ where
     println!();
 }
 
-pub fn execute_day<Input, O1, O2, F1, F2>(part1: F1, part2: F2)
+pub fn execute_day<ParseInput, FunctionInput, O1, O2, PF, F1, F2>(prepare: PF, part1: F1, part2: F2)
 where
-    Input: Parsable,
-    F1: Fn(&Input) -> O1,
-    F2: Fn(&Input) -> O2,
+    ParseInput: Parsable,
+    PF: Fn(ParseInput) -> FunctionInput,
+    F1: Fn(&FunctionInput) -> O1,
+    F2: Fn(&FunctionInput) -> O2,
     O1: Display,
     O2: Display,
 {
     let before = Instant::now();
-    let input = parse_input();
+    let parsed_input = parse_input();
+
+    let before_prepare = Instant::now();
+    let input = prepare(parsed_input);
+    let prepare_time = before_prepare.elapsed().as_micros();
+    if prepare_time > 0 {
+        println!(
+            " ├── Preprocessed data \x1b[3min {}µs\x1b[0m",
+            prepare_time.to_formatted_string(&FORMAT)
+        );
+    }
+
     execute_part("Part 1", part1, &input);
     execute_part("Part 2", part2, &input);
 
@@ -89,12 +101,15 @@ where
 #[macro_export]
 macro_rules! day_main {
     () => {
-        fn main() { advent_lib::day::execute_day(calculate_part1, calculate_part2) }
+        day_main!(calculate_part1, calculate_part2);
     };
     ($part1:ident) => {
         fn main() { advent_lib::day::execute_half_day($part1) }
     };
     ($part1:ident, $part2:ident) => {
-        fn main() { advent_lib::day::execute_day($part1, $part2) }
+        fn main() { advent_lib::day::execute_day(std::convert::identity, $part1, $part2) }
+    };
+    ($prepare:path => $part1:ident, $part2:ident) => {
+        fn main() { advent_lib::day::execute_day($prepare, $part1, $part2) }
     };
 }

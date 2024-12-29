@@ -1,35 +1,22 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
+use advent_macros::parsable;
 
-struct Day {
+#[parsable(map(alpha1, |bs: &[u8]| bs.iter().map(|b| b - b'a').collect()))]
+struct Input {
     bytes: Vec<u8>,
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
-
-    fn from_lines<LINES: Iterator<Item = String>>(mut lines: LINES) -> Self {
-        Day {
-            bytes: lines
-                .next()
-                .expect("Expected a single line")
-                .bytes()
-                .filter_map(|c| if c.is_ascii_lowercase() { Some(c - b'a') } else { None })
-                .collect(),
-        }
-    }
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.find(4).expect("Could not find result for part 1")
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.find(14).expect("Could not find result for part 2")
-    }
+fn calculate_part1(input: &Input) -> u32 {
+    input.find(4).expect("Could not find result for part 1")
 }
 
-impl Day {
+fn calculate_part2(input: &Input) -> u32 {
+    input.find(14).expect("Could not find result for part 2")
+}
+
+impl Input {
     fn find(&self, size: u32) -> Option<u32> {
         let mut start_iter = self.bytes.iter();
         let mut end_iter = self.bytes.iter();
@@ -51,7 +38,7 @@ impl Day {
     }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

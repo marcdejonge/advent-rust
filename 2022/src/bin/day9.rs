@@ -1,58 +1,36 @@
 #![feature(test)]
 
+use advent_lib::day_main;
+use advent_lib::direction::Direction;
+use advent_lib::geometry::{point2, Point, Vector};
+use advent_macros::parsable;
+use fxhash::FxBuildHasher;
 use std::collections::HashSet;
 
-use fxhash::FxBuildHasher;
-use rusttype::{Point, Vector};
+#[parsable(separated_list1(line_ending, separated_pair(Direction::parser(), single(b' '), i32)))]
+struct Steps(Vec<(Direction, i32)>);
 
-use advent_lib::day::{execute_day, ExecutableDay};
+fn calculate_part1(steps: &Steps) -> usize { steps.calculate_from([START; 2]) }
 
-struct Day {
-    steps: Vec<(Vector<i32>, i32)>,
+fn calculate_part2(steps: &Steps) -> usize { steps.calculate_from([START; 10]) }
+
+const START: Point<2, i32> = point2(0, 0);
+
+fn step_one_towards(orig: &Point<2, i32>, diff: &Vector<2, i32>) -> Point<2, i32> {
+    let x = if diff.x() == 0 { orig.x() } else { orig.x() + (diff.x() / diff.x().abs()) };
+    let y = if diff.y() == 0 { orig.y() } else { orig.y() + (diff.y() / diff.y().abs()) };
+    point2(x, y)
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day { steps: lines.map(parse_line).collect() }
-    }
-
-    fn calculate_part1(&self) -> Self::Output { self.calculate_from([START; 2]) }
-
-    fn calculate_part2(&self) -> Self::Output { self.calculate_from([START; 10]) }
-}
-
-const START: Point<i32> = Point { x: 0, y: 0 };
-const R: Vector<i32> = Vector { x: 1, y: 0 };
-const L: Vector<i32> = Vector { x: -1, y: 0 };
-const U: Vector<i32> = Vector { x: 0, y: 1 };
-const D: Vector<i32> = Vector { x: 0, y: -1 };
-
-fn parse_line(line: String) -> (Vector<i32>, i32) {
-    let (direction, count) = line.split_once(' ').expect("Missing space to split");
-    let direction = match direction {
-        "R" => R,
-        "L" => L,
-        "U" => U,
-        "D" => D,
-        _ => panic!("Unknown direction {}", direction),
-    };
-    (direction, count.parse().expect("Expected number"))
-}
-
-fn step_one_towards(orig: &Point<i32>, diff: &Vector<i32>) -> Point<i32> {
-    let x = if diff.x == 0 { orig.x } else { orig.x + (diff.x / diff.x.abs()) };
-    let y = if diff.y == 0 { orig.y } else { orig.y + (diff.y / diff.y.abs()) };
-    Point { x, y }
-}
-
-fn move_snake<const N: usize>(snake: [Point<i32>; N], direction: Vector<i32>) -> [Point<i32>; N] {
+fn move_snake<const N: usize>(
+    snake: [Point<2, i32>; N],
+    direction: Vector<2, i32>,
+) -> [Point<2, i32>; N] {
     let mut result = [START; N];
     result[0] = *snake.first().expect("Cannot support empty snakes") + direction;
     for ix in 1..N {
         let diff = result[ix - 1] - snake[ix];
-        result[ix] = if diff.x.abs() > 1 || diff.y.abs() > 1 {
+        result[ix] = if diff.x().abs() > 1 || diff.y().abs() > 1 {
             step_one_towards(&snake[ix], &diff)
         } else {
             snake[ix]
@@ -61,13 +39,13 @@ fn move_snake<const N: usize>(snake: [Point<i32>; N], direction: Vector<i32>) ->
     result
 }
 
-impl Day {
-    fn calculate_from<const N: usize>(&self, snake: [Point<i32>; N]) -> usize {
+impl Steps {
+    fn calculate_from<const N: usize>(&self, snake: [Point<2, i32>; N]) -> usize {
         let mut places = HashSet::with_hasher(FxBuildHasher::default());
         let mut snake = snake;
-        for &(direction, count) in &self.steps {
+        for &(direction, count) in &self.0 {
             for _ in 0..count {
-                snake = move_snake(snake, direction);
+                snake = move_snake(snake, direction.as_vec());
                 places.insert(snake[N - 1]);
             }
         }
@@ -75,7 +53,7 @@ impl Day {
     }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

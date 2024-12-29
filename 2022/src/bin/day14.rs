@@ -1,19 +1,37 @@
 #![feature(test)]
 
-use prse_derive::parse;
-use std::ops::Add;
-
-use advent_lib::day::{execute_day, ExecutableDay};
+use advent_lib::day_main;
 use advent_lib::direction::Direction;
-use advent_lib::geometry::{point2, Point};
+use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::lines::LineSegment;
+use advent_macros::{parsable, FromRepr};
+use std::ops::Add;
 
 type Line = LineSegment<2, i32>;
+type Point = advent_lib::geometry::Point<2, i32>;
 
-struct Day {
-    grid: Grid<Place>,
+#[parsable(map(
+    separated_list1(line_ending,
+        map(
+            separated_list1(tag(b" -> "), Point::parser()),
+            |points| points.into_iter().zip_with_next().map(|(start, end)|
+                LineSegment { start, end }
+            )
+        )
+    ),
+    |lines| lines.into_iter().flatten().collect(),
+))]
+struct Lines(Vec<Line>);
+
+fn generate_grid(lines: Lines) -> Grid<Place> {
+    let max_height = lines.0.iter().map(|line| line.max_y()).max().unwrap() + 2;
+    let mut grid = Grid::new_empty(1000, max_height + 1);
+    for line in lines.0 {
+        draw_line(&mut grid, line, Place::Line);
+    }
+    grid
 }
 
 fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
@@ -36,45 +54,21 @@ fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(grid: &Grid<Place>) -> usize { SandDroppingGrid::new(&grid).count() }
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        let lines: Vec<Line> = lines
-            .flat_map(|line: String| {
-                parse!(line, "{: -> :}")
-                    .into_iter()
-                    .zip_with_next()
-                    .map(|(start, end)| LineSegment { start, end })
-            })
-            .collect();
-
-        let max_height = lines.iter().map(|line| line.max_y()).max().unwrap() + 2;
-        let mut grid = Grid::new_empty(1000, max_height + 1);
-
-        for line in lines {
-            draw_line(&mut grid, line, Place::Line);
-        }
-
-        Day { grid }
+fn calculate_part2(grid: &Grid<Place>) -> usize {
+    let mut grid = SandDroppingGrid::new(&grid);
+    let y = grid.grid.height() - 1;
+    for x in grid.grid.x_range() {
+        let place = grid.grid.get_mut(point2(x, y)).unwrap();
+        *place = Place::Line;
     }
-
-    fn calculate_part1(&self) -> Self::Output { SandDroppingGrid::new(&self.grid).count() }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let mut grid = SandDroppingGrid::new(&self.grid);
-        let y = grid.grid.height() - 1;
-        for x in grid.grid.x_range() {
-            let place = grid.grid.get_mut(point2(x, y)).unwrap();
-            *place = Place::Line;
-        }
-        grid.count()
-    }
+    grid.count()
 }
 
 struct SandDroppingGrid {
     grid: Grid<Place>,
-    drop_point: Point<2, i32>,
+    drop_point: Point,
 }
 
 impl SandDroppingGrid {
@@ -83,7 +77,7 @@ impl SandDroppingGrid {
     }
 }
 impl Iterator for SandDroppingGrid {
-    type Item = Point<2, i32>;
+    type Item = Point;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut loc = self.drop_point;
@@ -120,30 +114,21 @@ impl Iterator for SandDroppingGrid {
     }
 }
 
-#[derive(Copy, Clone, Default, Eq, PartialEq, Debug)]
+#[repr(u8)]
+#[derive(FromRepr, Copy, Clone, Default, Eq, PartialEq, Debug)]
 enum Place {
     #[default]
-    Empty,
-    Sand,
-    Line,
+    Empty = b'.',
+    Sand = b'o',
+    Line = b'#',
 }
 
-impl From<Place> for char {
-    fn from(value: Place) -> Self {
-        match value {
-            Place::Empty => '.',
-            Place::Sand => 'o',
-            Place::Line => '#',
-        }
-    }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!( generate_grid => calculate_part1, calculate_part2 );
 
 #[cfg(test)]
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 14, example => 24, 93 );
-    day_test!( 14 => 843, 27625 );
+    day_test!( 14, example => 24, 93 ; generate_grid );
+    day_test!( 14 => 843, 27625 ; generate_grid );
 }

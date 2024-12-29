@@ -1,8 +1,8 @@
 #![feature(test)]
 
 use advent_lib::day_main;
+use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
-use advent_lib::direction::{direction_parser, Direction};
 use advent_lib::geometry::point2;
 use advent_lib::grid::{Grid, Location};
 use advent_macros::{parsable, FromRepr};
@@ -14,7 +14,7 @@ use Block::*;
         Grid::parser(),
         double_line_ending,
         map(
-            separated_list1(line_ending, many1(direction_parser)),
+            separated_list1(line_ending, many1(Direction::parser())),
             |commands| commands.into_iter().flatten().collect()
         )
     )

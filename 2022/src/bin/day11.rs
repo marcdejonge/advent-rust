@@ -1,81 +1,44 @@
 #![feature(test)]
-use advent_lib::day::{execute_day, ExecutableDay};
+#![allow(clippy::ptr_arg)]
+
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_macros::parsable;
 use std::cell::RefCell;
 
-struct Day {
-    monkeys: Vec<Monkey>,
-}
+fn calculate_part1(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 20, 3) }
 
-impl ExecutableDay for Day {
-    type Output = u64;
+fn calculate_part2(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 10000, 1) }
 
-    fn from_lines<LINES: Iterator<Item = String>>(lines: LINES) -> Self {
-        Day {
-            monkeys: lines
-                .chunk_by("".to_owned())
-                .enumerate()
-                .map(|(index, lines)| parse_monkey(index, lines))
-                .collect(),
-        }
-    }
-
-    fn calculate_part1(&self) -> Self::Output { self.calculate(20, 3) }
-
-    fn calculate_part2(&self) -> Self::Output { self.calculate(10000, 1) }
+#[parsable]
+#[derive(Debug, Clone, Copy)]
+enum Operation {
+    #[format=single(b'+')]
+    Add,
+    #[format=single(b'*')]
+    Multiply,
 }
 
 #[derive(Debug, Clone)]
+#[parsable(tuple((
+    delimited(tag(b"Monkey "), u32, tuple((single(b':'), line_ending))),
+    delimited(tag(b"  Starting items: "), separated_list1(tag(b", "), u64), line_ending),
+    preceded(tag(b"  Operation: new = old "), Operation::parser()),
+    delimited(space1, alt((u64, map(tag(b"old"), |_| 0))), line_ending),
+    delimited(tag(b"  Test: divisible by "), u64, line_ending),
+    delimited(tag(b"    If true: throw to monkey "), usize::parser(), line_ending),
+    delimited(tag(b"    If false: throw to monkey "), usize::parser(), opt(line_ending)),
+)))]
 struct Monkey {
+    _index: u32,
     items: Vec<u64>,
-    operation_type: char,
+    operation_type: Operation,
     amount: u64,
     test_divisible_by: u64,
     true_monkey: usize,
     false_monkey: usize,
+    #[defer(0)]
     inspected_items: u64,
-}
-
-fn parse_monkey(index: usize, lines: Vec<String>) -> Monkey {
-    if lines.len() != 6 {
-        panic!("Expected 6 lines for each monkey")
-    }
-    if lines[0] != format!("Monkey {index}:") {
-        panic!("Expected monkey in order, but starting with {}", lines[0])
-    }
-
-    let operation_line = lines[2].strip_prefix("  Operation: new = old ").expect("");
-
-    Monkey {
-        items: lines[1]
-            .strip_prefix("  Starting items: ")
-            .expect("Expected the starting items on the second line")
-            .split(", ")
-            .map(|str| str.parse::<u64>().expect("Expected only numbers"))
-            .collect(),
-        operation_type: operation_line.chars().next().expect("Expected some operation"),
-        amount: if operation_line == "* old" {
-            0
-        } else {
-            operation_line[2..].parse::<u64>().expect("Expected a number")
-        },
-        test_divisible_by: lines[3]
-            .strip_prefix("  Test: divisible by ")
-            .expect("Expected the divisible by test on line 4")
-            .parse::<u64>()
-            .expect("Expected a divisible number"),
-        true_monkey: lines[4]
-            .strip_prefix("    If true: throw to monkey ")
-            .expect("Expected the monkey to throw at on line 5")
-            .parse::<usize>()
-            .expect("Expected an index to throw to"),
-        false_monkey: lines[5]
-            .strip_prefix("    If false: throw to monkey ")
-            .expect("Expected the monkey to throw at on line 6")
-            .parse::<usize>()
-            .expect("Expected an index to throw to"),
-        inspected_items: 0,
-    }
 }
 
 fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64) -> u64) {
@@ -83,15 +46,18 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64
         let mut monkey = monkey_cell.borrow_mut();
 
         let amount = monkey.amount;
-        if monkey.operation_type == '+' {
-            for old in monkey.items.iter_mut() {
-                let add = if amount == 0 { *old } else { amount };
-                *old = reduce(*old + add, param);
+        match monkey.operation_type {
+            Operation::Add => {
+                for old in monkey.items.iter_mut() {
+                    let add = if amount == 0 { *old } else { amount };
+                    *old = reduce(*old + add, param);
+                }
             }
-        } else {
-            for old in monkey.items.iter_mut() {
-                let add = if amount == 0 { *old } else { amount };
-                *old = reduce(*old * add, param);
+            Operation::Multiply => {
+                for old in monkey.items.iter_mut() {
+                    let add = if amount == 0 { *old } else { amount };
+                    *old = reduce(*old * add, param);
+                }
             }
         }
 
@@ -126,38 +92,36 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64
     }
 }
 
-impl Day {
-    fn calculate_mod(&self) -> u64 {
-        self.monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
-    }
+fn calculate_mod(monkeys: &[Monkey]) -> u64 {
+    monkeys.iter().fold(1u64, |acc, monkey| acc * monkey.test_divisible_by)
+}
 
-    fn calculate(&self, rounds: u32, div: u64) -> u64 {
-        let calc_monkeys = self.monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
+fn calculate(monkeys: &[Monkey], rounds: u32, div: u64) -> u64 {
+    let calc_monkeys = monkeys.iter().map(|m| RefCell::new(m.clone())).collect::<Vec<_>>();
 
-        if div > 1 {
-            for _ in 0..rounds {
-                execute_round(&calc_monkeys, div, |x, div| x / div);
-            }
-        } else {
-            let modulus = self.calculate_mod();
-            for monkey in &calc_monkeys {
-                let mut monkey = monkey.borrow_mut();
-                for item in monkey.items.iter_mut() {
-                    *item %= modulus;
-                }
-            }
-
-            for _ in 0..rounds {
-                execute_round(&calc_monkeys, modulus, |x, modulus| x % modulus);
+    if div > 1 {
+        for _ in 0..rounds {
+            execute_round(&calc_monkeys, div, |x, div| x / div);
+        }
+    } else {
+        let modulus = calculate_mod(monkeys);
+        for monkey in &calc_monkeys {
+            let mut monkey = monkey.borrow_mut();
+            for item in monkey.items.iter_mut() {
+                *item %= modulus;
             }
         }
 
-        let [first, second] = calc_monkeys.iter().map(|m| m.borrow().inspected_items).max_n();
-        first * second
+        for _ in 0..rounds {
+            execute_round(&calc_monkeys, modulus, |x, modulus| x % modulus);
+        }
     }
+
+    let [first, second] = calc_monkeys.iter().map(|m| m.borrow().inspected_items).max_n();
+    first * second
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {
