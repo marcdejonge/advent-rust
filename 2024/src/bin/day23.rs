@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
 use advent_macros::parsable;
@@ -16,7 +16,7 @@ fn is_chief(key: Key) -> bool {
 }
 
 #[parsable(map(separated_list1(line_ending, parsable_pair(tag(b"-"))), generate_graph))]
-struct Day {
+struct Input {
     graph: Graph,
 }
 
@@ -62,40 +62,38 @@ fn max_bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes) -> Opti
     max
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-    fn calculate_part1(&self) -> Self::Output {
-        self.graph
-            .iter()
-            .filter(|(name, _)| is_chief(**name))
-            .map(|(name, computer_connections)| {
-                IteratorUtils::combinations(computer_connections.iter())
-                    .filter(|[snd, third]| {
-                        (!is_chief(**snd) || snd > &name)
-                            && (!is_chief(**third) || third > &name)
-                            && self.graph.get(snd).unwrap().contains(third)
-                    })
-                    .count()
-            })
-            .sum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let max_set = max_bron_kerbosh(
-            &self.graph,
-            Nodes::default(),
-            self.graph.keys().copied().collect(),
-            Nodes::default(),
-        )
-        .unwrap();
-        println!(
-            " ├── Part 2 full answer: {}",
-            max_set.iter().sorted().join(",")
-        );
-        max_set.len()
-    }
+fn calculate_part1(input: &Input) -> usize {
+    input
+        .graph
+        .iter()
+        .filter(|(name, _)| is_chief(**name))
+        .map(|(name, computer_connections)| {
+            IteratorUtils::combinations(computer_connections.iter())
+                .filter(|[snd, third]| {
+                    (!is_chief(**snd) || snd > &name)
+                        && (!is_chief(**third) || third > &name)
+                        && input.graph.get(snd).unwrap().contains(third)
+                })
+                .count()
+        })
+        .sum()
+}
+fn calculate_part2(input: &Input) -> usize {
+    let max_set = max_bron_kerbosh(
+        &input.graph,
+        Nodes::default(),
+        input.graph.keys().copied().collect(),
+        Nodes::default(),
+    )
+    .unwrap();
+    println!(
+        " ├── Part 2 full answer: {}",
+        max_set.iter().sorted().join(",")
+    );
+    max_set.len()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

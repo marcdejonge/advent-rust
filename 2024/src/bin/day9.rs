@@ -1,12 +1,12 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use std::cmp::max;
 
 #[derive(Clone)]
 #[parsable(map(is_a("0123456789"), parse_numbers))]
-struct Day {
+struct FileSystem {
     files: Vec<File>,
     free_space: Vec<Space>,
 }
@@ -47,7 +47,7 @@ struct Space {
     location: u32,
 }
 
-impl Day {
+impl FileSystem {
     fn defragment_fractional_files(&mut self) {
         let mut space_ix = 0;
         let mut file_ix = self.files.len() - 1;
@@ -109,22 +109,18 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u128;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let mut memory = self.clone();
-        memory.defragment_fractional_files();
-        memory.checksum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let mut memory = self.clone();
-        memory.defragment_whole_files();
-        memory.checksum()
-    }
+fn calculate_part1(fs: &FileSystem) -> u128 {
+    let mut fs = fs.clone();
+    fs.defragment_fractional_files();
+    fs.checksum()
+}
+fn calculate_part2(fs: &FileSystem) -> u128 {
+    let mut fs = fs.clone();
+    fs.defragment_whole_files();
+    fs.checksum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

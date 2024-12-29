@@ -1,6 +1,7 @@
 #![feature(test)]
+extern crate core;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -16,34 +17,32 @@ enum Command {
 
 #[derive(Debug)]
 #[parsable(find_many_skipping_unknown())]
-struct Day {
+struct Memory {
     commands: Vec<Command>,
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.commands
-            .iter()
-            .map(|command| if let Command::Mul(a, b) = command { a * b } else { 0 })
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.commands
-            .iter()
-            .fold((0, true), |(sum, enabled), command| match command {
-                Command::Mul(a, b) if enabled => (sum + a * b, enabled),
-                Command::Do => (sum, true),
-                Command::Dont => (sum, false),
-                _ => (sum, enabled),
-            })
-            .0
-    }
+fn calculate_part1(memory: &Memory) -> i64 {
+    memory
+        .commands
+        .iter()
+        .map(|command| if let Command::Mul(a, b) = command { a * b } else { 0 })
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(memory: &Memory) -> i64 {
+    memory
+        .commands
+        .iter()
+        .fold((0, true), |(sum, enabled), command| match command {
+            Command::Mul(a, b) if enabled => (sum + a * b, enabled),
+            Command::Do => (sum, true),
+            Command::Dont => (sum, false),
+            _ => (sum, enabled),
+        })
+        .0
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

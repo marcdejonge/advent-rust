@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_macros::parsable;
 use fxhash::FxHashMap;
@@ -92,7 +92,7 @@ impl Debug for Expression {
         map(Expression::parser(), |expr| (expr.target, expr))
     ),
 ))]
-struct Day {
+struct Computer {
     starting_values: FxHashMap<Key, bool>,
     expressions: FxHashMap<Key, Expression>,
 }
@@ -103,7 +103,7 @@ const Z: Key = Key::fixed(b"z00");
 
 fn create_key(from: Key, id: usize) -> Key { from + (id / 10) * 36 + (id % 10) }
 
-impl Day {
+impl Computer {
     fn find_target_of_expression(&self, expected: &Expression) -> Option<Key> {
         let result = self.expressions.iter().find(|(_, expr)| expr == &expected).map(|(n, _)| *n);
         if result.is_none() {
@@ -204,68 +204,59 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let mut result = 0;
-        for ix in 0..64 {
-            let name = create_key(Z, ix);
-            if !self.expressions.contains_key(&name) {
-                break;
-            }
-
-            if let Some(value) = self.evaluate(name) {
-                if value {
-                    result |= 1 << ix;
-                }
-            }
+fn calculate_part1(computer: &Computer) -> u64 {
+    let mut result = 0;
+    for ix in 0..64 {
+        let name = create_key(Z, ix);
+        if !computer.expressions.contains_key(&name) {
+            break;
         }
 
-        result
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let mut fixed_day = Day {
-            starting_values: self.starting_values.clone(),
-            expressions: self.expressions.clone(),
-        };
-        let mut swapped_names = Vec::new();
-
-        println!(" ├── Part 2, detecting the adders");
-        let mut carry = fixed_day.detect_half_adder(0).unwrap();
-        let mut index = 1;
-        while index < 45 {
-            match fixed_day.detect_full_adder(index, carry) {
-                Left(next_carry) => {
-                    carry = next_carry;
-                    index += 1;
-                }
-                Right((source_target, other_target)) => {
-                    println!("  ├── Swapping {} and {}", source_target, other_target);
-                    swapped_names.push(source_target);
-                    swapped_names.push(other_target);
-
-                    let mut source_expr = fixed_day.expressions.remove(&source_target).unwrap();
-                    let mut other_expr = fixed_day.expressions.remove(&other_target).unwrap();
-
-                    swap(&mut source_expr.target, &mut other_expr.target);
-                    fixed_day.expressions.insert(other_target, source_expr);
-                    fixed_day.expressions.insert(source_target, other_expr);
-                }
+        if let Some(value) = computer.evaluate(name) {
+            if value {
+                result |= 1 << ix;
             }
         }
-
-        swapped_names.sort();
-        println!(
-            " ├── Part 2 result: {}",
-            swapped_names.iter().map(|n| n.to_string()).join(",")
-        );
-
-        swapped_names.len() as u64
     }
+
+    result
+}
+fn calculate_part2(computer: &Computer) -> String {
+    let mut fixed_day = Computer {
+        starting_values: computer.starting_values.clone(),
+        expressions: computer.expressions.clone(),
+    };
+    let mut swapped_names = Vec::new();
+
+    println!(" ├── Part 2, detecting the adders");
+    let mut carry = fixed_day.detect_half_adder(0).unwrap();
+    let mut index = 1;
+    while index < 45 {
+        match fixed_day.detect_full_adder(index, carry) {
+            Left(next_carry) => {
+                carry = next_carry;
+                index += 1;
+            }
+            Right((source_target, other_target)) => {
+                println!("  ├── Swapping {} and {}", source_target, other_target);
+                swapped_names.push(source_target);
+                swapped_names.push(other_target);
+
+                let mut source_expr = fixed_day.expressions.remove(&source_target).unwrap();
+                let mut other_expr = fixed_day.expressions.remove(&other_target).unwrap();
+
+                swap(&mut source_expr.target, &mut other_expr.target);
+                fixed_day.expressions.insert(other_target, source_expr);
+                fixed_day.expressions.insert(source_target, other_expr);
+            }
+        }
+    }
+
+    swapped_names.sort();
+    swapped_names.iter().map(|n| n.to_string()).join(",")
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {
@@ -273,5 +264,5 @@ mod tests {
 
     day_test!( 24, example1 => 4 );
     day_test!( 24, example2 => 2024 );
-    day_test!( 24 => 48508229772400, 8 );
+    day_test!( 24 => 48508229772400, "cqr,ncd,nfj,qnw,vkg,z15,z20,z37".to_string() );
 }

@@ -1,13 +1,13 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::parsable;
 use fxhash::FxHashMap;
 use rayon::prelude::*;
 
 #[parsable]
-struct Day {
+struct Input {
     secrets: Vec<i32>,
 }
 
@@ -47,25 +47,26 @@ fn find_possible_price_changes(secret: i32) -> Prices {
     possible_changes
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.secrets.iter().map(|&s| secrets(s).take(2001).last().unwrap() as u64).sum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        self.secrets
-            .par_iter()
-            .map(|&s| find_possible_price_changes(s))
-            .reduce(FxHashMap::default, combine_prices)
-            .values()
-            .copied()
-            .max()
-            .unwrap() as u64
-    }
+fn calculate_part1(input: &Input) -> u64 {
+    input
+        .secrets
+        .iter()
+        .map(|&s| secrets(s).take(2001).last().unwrap() as u64)
+        .sum()
+}
+fn calculate_part2(input: &Input) -> i32 {
+    input
+        .secrets
+        .par_iter()
+        .map(|&s| find_possible_price_changes(s))
+        .reduce(FxHashMap::default, combine_prices)
+        .values()
+        .copied()
+        .max()
+        .unwrap()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

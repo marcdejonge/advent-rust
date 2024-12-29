@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use fxhash::FxHashSet;
 
@@ -9,12 +9,12 @@ use fxhash::FxHashSet;
     double_line_ending,
     separated_list1(line_ending, separated_list1(tag(b","), u32)),
 ))]
-struct Day {
+struct Almanac {
     ordering_rules: FxHashSet<(u32, u32)>,
     pages: Vec<Vec<u32>>,
 }
 
-impl Day {
+impl Almanac {
     fn calculate_middle(&self, use_changed: bool) -> u32 {
         self.pages
             .iter()
@@ -39,15 +39,11 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
+fn calculate_part1(almanac: &Almanac) -> u32 { almanac.calculate_middle(false) }
 
-    fn calculate_part1(&self) -> Self::Output { self.calculate_middle(false) }
+fn calculate_part2(almanac: &Almanac) -> u32 { almanac.calculate_middle(true) }
 
-    fn calculate_part2(&self) -> Self::Output { self.calculate_middle(true) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

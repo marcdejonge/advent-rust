@@ -1,10 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
-use advent_macros::parsable;
 use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -38,13 +37,6 @@ impl From<u8> for Field {
     }
 }
 
-#[parsable]
-struct Day {
-    grid: Grid<Field>,
-    #[defer(grid.find(|f| f == &Field::Visited(North)).unwrap())]
-    start: Location,
-}
-
 fn guard_walk(grid: &mut Grid<Field>, start: &Location) -> bool {
     let mut guard_pos = *start;
     let mut guard_dir = North;
@@ -62,30 +54,29 @@ fn guard_walk(grid: &mut Grid<Field>, start: &Location) -> bool {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
+fn get_start(grid: &Grid<Field>) -> Location { grid.find(|f| f == &Field::Visited(North)).unwrap() }
 
-    fn calculate_part1(&self) -> Self::Output {
-        let mut grid = self.grid.clone();
-        guard_walk(&mut grid, &self.start);
-        grid.values().filter(|&f| matches!(f, &Field::Visited(_))).count() as u32
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.grid
-            .entries()
-            .par_bridge()
-            .filter(|(_, &f)| f != Field::Blocked)
-            .filter(|(loc, _)| {
-                let mut grid = self.grid.clone();
-                grid[*loc] = Field::Blocked;
-                !guard_walk(&mut grid, &self.start)
-            })
-            .count() as u32
-    }
+fn calculate_part1(grid: &Grid<Field>) -> usize {
+    let start = get_start(grid);
+    let mut grid = grid.clone();
+    guard_walk(&mut grid, &start);
+    grid.values().filter(|&f| matches!(f, &Field::Visited(_))).count()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(grid: &Grid<Field>) -> usize {
+    let start = get_start(grid);
+    grid.entries()
+        .par_bridge()
+        .filter(|(_, &f)| f != Field::Blocked)
+        .filter(|(loc, _)| {
+            let mut grid = grid.clone();
+            grid[*loc] = Field::Blocked;
+            !guard_walk(&mut grid, &start)
+        })
+        .count()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

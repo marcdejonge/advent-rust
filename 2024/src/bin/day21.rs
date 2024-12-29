@@ -2,7 +2,7 @@
 #![feature(iter_map_windows)]
 
 use advent_lib::builder::with_default;
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::parsing::Parsable;
@@ -13,7 +13,7 @@ use nom::Parser;
 use smallvec::{smallvec, SmallVec};
 
 #[parsable(separated_list1(line_ending, map(alphanumeric1, SmallString::from)))]
-struct Day {
+struct Input {
     lines: Vec<SmallString<8>>,
 }
 
@@ -106,20 +106,16 @@ impl Moves {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let mut moves = Moves::new();
-        self.lines.iter().map(|line| moves.score(line.clone(), 2)).sum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let mut moves = Moves::new();
-        self.lines.iter().map(|line| moves.score(line.clone(), 25)).sum()
-    }
+fn calculate_part1(input: &Input) -> usize {
+    let mut moves = Moves::new();
+    input.lines.iter().map(|line| moves.score(line.clone(), 2)).sum()
+}
+fn calculate_part2(input: &Input) -> usize {
+    let mut moves = Moves::new();
+    input.lines.iter().map(|line| moves.score(line.clone(), 25)).sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

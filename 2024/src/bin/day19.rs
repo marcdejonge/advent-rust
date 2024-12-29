@@ -1,7 +1,7 @@
 #![feature(test)]
 extern crate core;
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::{parsable, FromRepr};
 use rayon::prelude::*;
 use smallvec::SmallVec;
@@ -15,7 +15,7 @@ use smallvec::SmallVec;
     double_line_ending,
     separated_list1(line_ending, many1(Color::parser())),
 ))]
-struct Day {
+struct Input {
     nodes: Vec<Node>,
     towels: Vec<Vec<Color>>,
 }
@@ -83,8 +83,8 @@ impl Node {
     }
 }
 
-impl Day {
-    fn can_be_made(&self, towel: &Vec<Color>) -> usize {
+impl Input {
+    fn can_make(&self, towel: &Vec<Color>) -> usize {
         let mut tracker = vec![0usize; self.nodes.len()];
         tracker[0] = 1;
 
@@ -108,18 +108,14 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.towels.par_iter().filter(|&towel| self.can_be_made(towel) > 0).count()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        self.towels.par_iter().map(|towel| self.can_be_made(towel)).sum()
-    }
+fn calculate_part1(input: &Input) -> usize {
+    input.towels.par_iter().filter(|&towel| input.can_make(towel) > 0).count()
+}
+fn calculate_part2(input: &Input) -> usize {
+    input.towels.par_iter().map(|towel| input.can_make(towel)).sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

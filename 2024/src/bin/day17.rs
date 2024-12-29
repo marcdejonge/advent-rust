@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use fxhash::FxHashMap;
 use smallvec::SmallVec;
@@ -25,7 +25,7 @@ impl From<&Program> for Machine {
 }
 
 #[parsable(separated_pair(separated_array(line_ending), double_line_ending, Program::parser()))]
-struct Day {
+struct MachineStart {
     registers: [Register; 3],
     program: Program,
 }
@@ -38,7 +38,7 @@ struct Machine {
 }
 
 impl Machine {
-    fn new(day: &Day) -> Self {
+    fn new(day: &MachineStart) -> Self {
         Machine { registers: day.registers, ip: 0, program: day.program.clone() }
     }
 
@@ -98,66 +98,67 @@ impl Machine {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
+fn calculate_part1(start: &MachineStart) -> u64 { Machine::new(start).execute_program().into() }
 
-    fn calculate_part1(&self) -> Self::Output { Machine::new(self).execute_program().into() }
+/*
+ * All the programs I've analyzed have the same pattern. It's a loop where B and C always
+ * depend on the current value of A. And every loop A gets shifted right by 3 bits.
+ * To find a value that outputs the same program, I'm going to test possible input values for A
+ * and see if the output matches the program. Then combine these outputs to find the final value.
+ *
+ * Pseudocode version of our input:
+ * do {
+ *   B = (A % 8) ^ 3  // 2,4, 1,3
+ *   C = A >> B       // 7,5
+ *   A = A >> 3       // 0,3
+ *   B = B ^ 5 ^ C    // 1,5, 4,1
+ *   print(B % 8)     // 5,5
+ * } while a != 0     // 3,0
+ */
+fn calculate_part2(machine_start: &MachineStart) -> u64 {
+    type ResultMap = FxHashMap<(u8, u64), Vec<u64>>;
+    let mut result_map = ResultMap::default();
 
-    /*
-     * All the programs I've analyzed have the same pattern. It's a loop where B and C always
-     * depend on the current value of A. And every loop A gets shifted right by 3 bits.
-     * To find a value that outputs the same program, I'm going to test possible input values for A
-     * and see if the output matches the program. Then combine these outputs to find the final value.
-     *
-     * Pseudocode version of our input:
-     * do {
-     *   B = (A % 8) ^ 3  // 2,4, 1,3
-     *   C = A >> B       // 7,5
-     *   A = A >> 3       // 0,3
-     *   B = B ^ 5 ^ C    // 1,5, 4,1
-     *   print(B % 8)     // 5,5
-     * } while a != 0     // 3,0
-     */
-    fn calculate_part2(&self) -> Self::Output {
-        type ResultMap = FxHashMap<(u8, u64), Vec<u64>>;
-        let mut result_map = ResultMap::default();
-
-        // Execute with any 10-bit value for A, max 7 before the 3-bit shift might have an impact
-        for start in 0..1024 {
-            let mut machine = Machine::from(&self.program);
-            machine.registers[0].0 = start;
-            if let Some(result) = machine.execute_single_output() {
-                result_map.entry((result, machine.registers[0].0)).or_default().push(start);
-            }
+    // Execute with any 10-bit value for A, max 7 before the 3-bit shift might have an impact
+    for start in 0..1024 {
+        let mut machine = Machine::from(&machine_start.program);
+        machine.registers[0].0 = start;
+        if let Some(result) = machine.execute_single_output() {
+            result_map.entry((result, machine.registers[0].0)).or_default().push(start);
         }
-
-        // Use a recursive function to find possible working values for register A
-        fn search(program: &Program, ix: usize, a: u64, result_map: &ResultMap) -> Option<u64> {
-            let output = *program.0.get(ix)?;
-            for possible in result_map.get(&(output, a & 0x7F))?.iter() {
-                let a = a << 3 | possible;
-                if ix == 0 {
-                    return Some(a);
-                } else if let Some(next) = search(program, ix - 1, a, result_map) {
-                    return Some(next);
-                }
-            }
-            None
-        }
-
-        let a = search(&self.program, self.program.0.len() - 1, 0, &result_map)
-            .expect("No solution found");
-
-        // Verify that the found solution really works
-        let mut machine = Machine::new(self);
-        machine.registers[0].0 = a;
-        assert_eq!(machine.execute_program(), self.program);
-
-        a
     }
+
+    // Use a recursive function to find possible working values for register A
+    fn search(program: &Program, ix: usize, a: u64, result_map: &ResultMap) -> Option<u64> {
+        let output = *program.0.get(ix)?;
+        for possible in result_map.get(&(output, a & 0x7F))?.iter() {
+            let a = a << 3 | possible;
+            if ix == 0 {
+                return Some(a);
+            } else if let Some(next) = search(program, ix - 1, a, result_map) {
+                return Some(next);
+            }
+        }
+        None
+    }
+
+    let a = search(
+        &machine_start.program,
+        machine_start.program.0.len() - 1,
+        0,
+        &result_map,
+    )
+    .expect("No solution found");
+
+    // Verify that the found solution really works
+    let mut machine = Machine::new(machine_start);
+    machine.registers[0].0 = a;
+    assert_eq!(machine.execute_program(), machine_start.program);
+
+    a
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use crate::Block::*;
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::grid::{Grid, Location};
@@ -13,7 +13,7 @@ use std::collections::hash_map::Entry::Vacant;
 use std::ops::Neg;
 
 #[parsable]
-struct Day {
+struct Input {
     grid: Grid<Block>,
     #[defer(grid.find(|&b| b == Start).expect("Start not found"))]
     start: Location,
@@ -41,7 +41,7 @@ impl Step {
     fn new(loc: Location, dir: Direction) -> Self { Step { loc, dir } }
 }
 
-impl Day {
+impl Input {
     fn find_all_paths(&self) -> (u32, FxHashMap<Step, u32>) {
         let mut visited = FxHashMap::default();
         let mut queue = PriorityQueue::new();
@@ -96,25 +96,21 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
+fn calculate_part1(input: &Input) -> u32 { input.find_all_paths().0 }
 
-    fn calculate_part1(&self) -> Self::Output { self.find_all_paths().0 }
+fn calculate_part2(input: &Input) -> usize {
+    let visited = input.find_all_paths().1;
 
-    fn calculate_part2(&self) -> Self::Output {
-        let visited = self.find_all_paths().1;
-
-        let mut seat_grid = self.grid.clone();
-        ALL_DIRECTIONS.iter().map(|&dir| Step::new(self.end, dir)).for_each(|step| {
-            if visited.contains_key(&step) {
-                Self::fill_seat_grid(step, &mut seat_grid, &visited);
-            }
-        });
-        seat_grid.values().filter(|&&b| b == Seat).count() as u32
-    }
+    let mut seat_grid = input.grid.clone();
+    ALL_DIRECTIONS.iter().map(|&dir| Step::new(input.end, dir)).for_each(|step| {
+        if visited.contains_key(&step) {
+            Input::fill_seat_grid(step, &mut seat_grid, &visited);
+        }
+    });
+    seat_grid.values().filter(|&&b| b == Seat).count()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

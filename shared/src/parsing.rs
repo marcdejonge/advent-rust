@@ -10,11 +10,11 @@ use smallvec::SmallVec;
 use std::hash::Hash;
 use std::ops::{Range, RangeFrom, RangeTo};
 
-pub fn handle_parser_error<'a, T>(
-    input: &'a [u8],
-    parser: impl Parser<&'a [u8], T, Error<&'a [u8]>>,
-) -> T {
-    match all_consuming(parser).parse(input).finish() {
+pub fn handle_parser_error<T>(input: &[u8]) -> T
+where
+    T: Parsable,
+{
+    match all_consuming(T::parser()).parse(input).finish() {
         Ok((_, day)) => day,
         Err(e) => {
             panic!(

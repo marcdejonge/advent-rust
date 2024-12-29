@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::parsable;
 use rayon::prelude::*;
@@ -17,24 +17,21 @@ use rayon::prelude::*;
         }
     )
 )]
-struct Day {
+struct Numbers {
     left: Vec<i64>,
     right: Vec<i64>,
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.left.iter().zip(self.right.iter()).map(|(l, r)| (l - r).abs()).sum()
-    }
-    fn calculate_part2(&self) -> Self::AltOutput {
-        let map = self.right.iter().counts_fx();
-        self.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as i64 * l).sum()
-    }
+fn calculate_part1(numbers: &Numbers) -> i64 {
+    numbers.left.iter().zip(numbers.right.iter()).map(|(l, r)| (l - r).abs()).sum()
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(numbers: &Numbers) -> i64 {
+    let map = numbers.right.iter().counts_fx();
+    numbers.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as i64 * l).sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

@@ -1,13 +1,13 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::geometry::{vector2, Vector};
 use advent_macros::parsable;
 
 type Move = Vector<2, i64>;
 
 #[parsable(separated_double_lines1())]
-struct Day {
+struct Input {
     games: Vec<Game>,
 }
 
@@ -45,26 +45,22 @@ impl Game {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = i64;
+fn calculate_part1(input: &Input) -> i64 { input.games.iter().filter_map(Game::find_score).sum() }
 
-    fn calculate_part1(&self) -> Self::Output {
-        self.games.iter().filter_map(Game::find_score).sum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        self.games
-            .iter()
-            .map(|game| {
-                let mut game = game.clone();
-                game.target = game.target + vector2(10000000000000, 10000000000000);
-                game
-            })
-            .filter_map(|game| game.find_score())
-            .sum()
-    }
+fn calculate_part2(input: &Input) -> i64 {
+    input
+        .games
+        .iter()
+        .map(|game| {
+            let mut game = game.clone();
+            game.target = game.target + vector2(10000000000000, 10000000000000);
+            game
+        })
+        .filter_map(|game| game.find_score())
+        .sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

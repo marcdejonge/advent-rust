@@ -1,13 +1,13 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use fxhash::FxHashMap;
 
 type Count = u64;
 
 #[parsable(separated_list1(space1, u64))]
-struct Day {
+struct Input {
     starting_numbers: Vec<u64>,
 }
 
@@ -39,20 +39,16 @@ impl Memoized {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = Count;
-
-    fn calculate_part1(&self) -> Self::Output {
-        let mut memoized = Memoized::new();
-        self.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 25)).sum()
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let mut memoized = Memoized::new();
-        self.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 75)).sum()
-    }
+fn calculate_part1(input: &Input) -> u64 {
+    let mut memoized = Memoized::new();
+    input.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 25)).sum()
+}
+fn calculate_part2(input: &Input) -> u64 {
+    let mut memoized = Memoized::new();
+    input.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 75)).sum()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location, Size};
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::numbers::PositiveNumbersFrom;
@@ -9,13 +9,13 @@ use itertools::Itertools;
 use std::collections::HashMap;
 
 #[parsable]
-struct Day {
+struct Field {
     grid: Grid<char>,
     #[defer(grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map())]
     antenna_locations: HashMap<char, Vec<Location>>,
 }
 
-impl Day {
+impl Field {
     fn calculate_dips<G>(
         &self,
         iterations: G,
@@ -49,14 +49,10 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(field: &Field) -> usize { field.count_dips([1]) }
+fn calculate_part2(field: &Field) -> usize { field.count_dips(PositiveNumbersFrom(0)) }
 
-    fn calculate_part1(&self) -> Self::Output { self.count_dips([1]) }
-    fn calculate_part2(&self) -> Self::Output { self.count_dips(PositiveNumbersFrom(0)) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

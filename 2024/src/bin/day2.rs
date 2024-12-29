@@ -1,13 +1,13 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_macros::parsable;
 use rayon::prelude::*;
 use std::ops::RangeInclusive;
 
 #[parsable(separated_list1(line_ending, separated_list1(space1, i32)))]
-struct Day {
+struct Input {
     reports: Vec<Vec<i32>>,
 }
 
@@ -26,7 +26,7 @@ fn find_unsafe_index(report: &&Vec<i32>) -> Option<usize> {
     }
 }
 
-fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
+fn remove_index(report: &[i32], remove_ix: usize) -> Vec<i32> {
     report
         .iter()
         .enumerate()
@@ -35,18 +35,16 @@ fn remove_index(report: &&Vec<i32>, remove_ix: usize) -> Vec<i32> {
         .collect()
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(input: &Input) -> usize {
+    input
+        .reports
+        .par_iter()
+        .filter(|report| find_unsafe_index(report).is_none())
+        .count()
+}
 
-    fn calculate_part1(&self) -> Self::Output {
-        self.reports
-            .par_iter()
-            .filter(|report| find_unsafe_index(report).is_none())
-            .count()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.reports
+fn calculate_part2(input: &Input) -> usize {
+    input.reports
             .par_iter()
             .filter(|report| match find_unsafe_index(report) {
                 None => true,
@@ -59,10 +57,9 @@ impl ExecutableDay for Day {
                 }
             })
             .count()
-    }
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

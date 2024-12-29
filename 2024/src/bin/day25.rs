@@ -1,12 +1,12 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::grid::Grid;
 use advent_macros::parsable;
 
 #[derive(Debug)]
 #[parsable(separated_double_lines1())]
-struct Day {
+struct LocksAndKeys {
     #[defer(it.iter()
         .filter(|grid: &&Grid<u8>| grid.east_line(0).all(|(_, &b)| b == b'#'))
         .map(|grid| grid.x_range()
@@ -25,20 +25,16 @@ struct Day {
     keys: Vec<Vec<usize>>,
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.keys
-            .iter()
-            .flat_map(|key| self.locks.iter().map(move |lock| (key, lock)))
-            .filter(|&(key, lock)| (0..key.len()).all(|index| key[index] + lock[index] <= 7))
-            .count()
-    }
-    fn calculate_part2(&self) -> Self::Output { 0 }
+fn calculate_part1(input: &LocksAndKeys) -> usize {
+    input
+        .keys
+        .iter()
+        .flat_map(|key| input.locks.iter().map(move |lock| (key, lock)))
+        .filter(|&(key, lock)| (0..key.len()).all(|index| key[index] + lock[index] <= 7))
+        .count()
 }
 
-fn main() { execute_day::<Day>() }
+day_main!(calculate_part1);
 
 #[cfg(test)]
 mod tests {

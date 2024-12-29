@@ -1,15 +1,15 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_macros::parsable;
 use rayon::prelude::*;
 
 #[parsable]
-struct Day {
+struct Input {
     puzzles: Vec<Puzzle>,
 }
 
-impl Day {
+impl Input {
     fn sum_of_targets(&self, allow_concat: bool) -> u64 {
         self.puzzles
             .par_iter()
@@ -59,14 +59,10 @@ fn can_make_target_multiply(target: u64, nr: u64, input: &[u64], allow_concat: b
     rem == 0 && can_make_target(div, input, allow_concat)
 }
 
-impl ExecutableDay for Day {
-    type Output = u64;
+fn calculate_part1(input: &Input) -> u64 { input.sum_of_targets(false) }
+fn calculate_part2(input: &Input) -> u64 { input.sum_of_targets(true) }
 
-    fn calculate_part1(&self) -> Self::Output { self.sum_of_targets(false) }
-    fn calculate_part2(&self) -> Self::Output { self.sum_of_targets(true) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

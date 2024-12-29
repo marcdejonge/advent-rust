@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
@@ -10,7 +10,7 @@ use std::iter::successors;
 use Block::*;
 
 #[parsable]
-struct Day {
+struct Input {
     grid: Grid<Block>,
     #[defer({
         let start = grid.find(|&b| b == Start).unwrap();
@@ -47,7 +47,7 @@ fn generate_steps(max_size: i32) -> Vec<Vector<2, i32>> {
         .collect()
 }
 
-impl Day {
+impl Input {
     fn find_cheats(&self, locations: &[Vector<2, i32>], min_saved: usize) -> usize {
         let mut distances = Grid::new_empty(self.grid.width(), self.grid.height());
         self.walk.iter().for_each(|&(ix, loc)| distances[loc] = ix);
@@ -73,14 +73,10 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(input: &Input) -> usize { input.find_cheats(&generate_steps(2), 100) }
+fn calculate_part2(input: &Input) -> usize { input.find_cheats(&generate_steps(20), 100) }
 
-    fn calculate_part1(&self) -> Self::Output { self.find_cheats(&generate_steps(2), 100) }
-    fn calculate_part2(&self) -> Self::Output { self.find_cheats(&generate_steps(20), 100) }
-}
-
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

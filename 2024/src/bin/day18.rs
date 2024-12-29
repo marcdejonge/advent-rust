@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Location;
@@ -10,7 +10,7 @@ use fxhash::FxHashSet;
 use std::ops::Range;
 
 #[parsable]
-struct Day {
+struct Input {
     locations: Vec<Location>,
     #[defer(if locations.len() >= 1024 { 71 } else { 7 })]
     size: i32,
@@ -48,7 +48,7 @@ impl SearchGraphWithGoal for Memory {
     fn heuristic(&self, loc: Location) -> Self::Score { (loc - self.target).euler() }
 }
 
-impl Day {
+impl Input {
     fn create_memory(&self, take: usize) -> Memory {
         let blocked = self.locations.iter().take(take).copied().collect();
         let valid_range = 0..self.size;
@@ -73,19 +73,15 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = usize;
+fn calculate_part1(input: &Input) -> usize { input.find_path(input.start_take).unwrap() }
 
-    fn calculate_part1(&self) -> Self::Output { self.find_path(self.start_take).unwrap() }
-
-    fn calculate_part2(&self) -> Self::Output {
-        let found = self.find_first_blocking_memory(self.start_take..self.locations.len());
-        println!("Found: {:?}", found);
-        (found.x() * 100 + found.y()) as usize
-    }
+fn calculate_part2(input: &Input) -> i32 {
+    let found = input.find_first_blocking_memory(input.start_take..input.locations.len());
+    println!("Found: {:?}", found);
+    (found.x() * 100 + found.y())
 }
 
-fn main() { execute_day::<Day>() }
+day_main!();
 
 #[cfg(test)]
 mod tests {

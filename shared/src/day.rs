@@ -5,62 +5,96 @@ use std::env;
 use std::fmt::Display;
 use std::time::Instant;
 
-pub trait ExecutableDay
-where
-    Self: Sized,
-{
-    type Output;
-    type AltOutput = Self::Output;
-    fn calculate_part1(&self) -> Self::Output;
-    fn calculate_part2(&self) -> Self::AltOutput;
-}
+const FORMAT: Locale = Locale::en;
 
-pub fn execute_day<Day>()
+fn parse_input<Input>() -> Input
 where
-    Day: ExecutableDay + Parsable,
-    Day::Output: Display,
-    Day::AltOutput: Display,
+    Input: Parsable,
 {
     let args: Vec<_> = env::args().collect();
     let file_name = args.get(1);
     if file_name.is_none() {
         println!("Please provide a file name as an argument");
-        return;
+        std::process::exit(1);
     }
     let file_name = file_name.unwrap();
     let file = std::fs::File::open(file_name).expect("Could not open file");
     let contents = unsafe { Mmap::map(&file).expect("Could not read file") };
 
-    let format = Locale::en;
     println!("Executing");
 
     let parse_file_start_time = Instant::now();
-    let day = handle_parser_error(&contents, Day::parser());
+    let input: Input = handle_parser_error(&contents);
 
     println!(
         " ├── Input parsed \x1b[3min {}µs\x1b[0m",
-        parse_file_start_time.elapsed().as_micros().to_formatted_string(&format)
+        parse_file_start_time.elapsed().as_micros().to_formatted_string(&FORMAT)
     );
 
+    input
+}
+
+fn execute_part<Input, Output, F>(name: &str, function: F, input: &Input)
+where
+    F: Fn(&Input) -> Output,
+    Output: Display,
+{
     let part1_calc_start_time = Instant::now();
-    let part1 = day.calculate_part1();
+    let part1 = function(&input);
     println!(
-        " ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
-        part1_calc_start_time.elapsed().as_micros().to_formatted_string(&format),
+        " ├── {} calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+        name,
+        part1_calc_start_time.elapsed().as_micros().to_formatted_string(&FORMAT),
         part1
     );
+}
 
-    let part2_calc_start_time = Instant::now();
-    let part2 = day.calculate_part2();
-    println!(
-        " ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
-        part2_calc_start_time.elapsed().as_micros().to_formatted_string(&format),
-        part2
-    );
+pub fn execute_half_day<Input, O1, F1>(part1: F1)
+where
+    Input: Parsable,
+    F1: Fn(&Input) -> O1,
+    O1: Display,
+{
+    let before = Instant::now();
+    let input = parse_input();
+    execute_part("Part 1", part1, &input);
 
     println!(
         " └── Total time: \x1b[3m{}µs\x1b[0m",
-        parse_file_start_time.elapsed().as_micros().to_formatted_string(&format)
+        before.elapsed().as_micros().to_formatted_string(&FORMAT)
     );
     println!();
+}
+
+pub fn execute_day<Input, O1, O2, F1, F2>(part1: F1, part2: F2)
+where
+    Input: Parsable,
+    F1: Fn(&Input) -> O1,
+    F2: Fn(&Input) -> O2,
+    O1: Display,
+    O2: Display,
+{
+    let before = Instant::now();
+    let input = parse_input();
+    execute_part("Part 1", part1, &input);
+    execute_part("Part 2", part2, &input);
+
+    println!(
+        " └── Total time: \x1b[3m{}µs\x1b[0m",
+        before.elapsed().as_micros().to_formatted_string(&FORMAT)
+    );
+    println!();
+}
+
+#[macro_export]
+macro_rules! day_main {
+    () => {
+        fn main() { advent_lib::day::execute_day(calculate_part1, calculate_part2) }
+    };
+    ($part1:ident) => {
+        fn main() { advent_lib::day::execute_half_day($part1) }
+    };
+    ($part1:ident, $part2:ident) => {
+        fn main() { advent_lib::day::execute_day($part1, $part2) }
+    };
 }

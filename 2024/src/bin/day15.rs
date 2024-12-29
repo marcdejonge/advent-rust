@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{direction_parser, Direction};
 use advent_lib::geometry::point2;
@@ -14,12 +14,12 @@ use Block::*;
         Grid::parser(),
         double_line_ending,
         map(
-            separated_list1(line_ending, many1(direction_parser)), 
+            separated_list1(line_ending, many1(direction_parser)),
             |commands| commands.into_iter().flatten().collect()
         )
     )
 )]
-struct Day {
+struct Input {
     grid: Grid<Block>,
     commands: Vec<Direction>,
 }
@@ -74,7 +74,7 @@ fn move_block(grid: &mut Grid<Block>, loc: Location, dir: Direction) {
     }
 }
 
-impl Day {
+impl Input {
     fn execute_commands(&self, grid: &mut Grid<Block>) -> u32 {
         let mut pos = grid.find(|&b| b == Robot).unwrap();
         for &command in &self.commands {
@@ -91,34 +91,32 @@ impl Day {
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
-    fn calculate_part1(&self) -> Self::Output {
-        let mut grid = self.grid.clone();
-        self.execute_commands(&mut grid)
-    }
-    fn calculate_part2(&self) -> Self::Output {
-        let mut grid = Grid::new_default(Empty, self.grid.width() * 2, self.grid.height());
-        self.grid.entries().for_each(|(pos, &b)| match b {
-            Box => {
-                grid[point2(pos.x() * 2, pos.y())] = LBox;
-                grid[point2(pos.x() * 2 + 1, pos.y())] = RBox;
-            }
-            Robot => {
-                grid[point2(pos.x() * 2, pos.y())] = Robot;
-            }
-            Wall => {
-                grid[point2(pos.x() * 2, pos.y())] = Wall;
-                grid[point2(pos.x() * 2 + 1, pos.y())] = Wall;
-            }
-            _ => {}
-        });
-
-        self.execute_commands(&mut grid)
-    }
+fn calculate_part1(input: &Input) -> u32 {
+    let mut grid = input.grid.clone();
+    input.execute_commands(&mut grid)
 }
 
-fn main() { execute_day::<Day>() }
+fn calculate_part2(input: &Input) -> u32 {
+    let mut grid = Grid::new_default(Empty, input.grid.width() * 2, input.grid.height());
+    input.grid.entries().for_each(|(pos, &b)| match b {
+        Box => {
+            grid[point2(pos.x() * 2, pos.y())] = LBox;
+            grid[point2(pos.x() * 2 + 1, pos.y())] = RBox;
+        }
+        Robot => {
+            grid[point2(pos.x() * 2, pos.y())] = Robot;
+        }
+        Wall => {
+            grid[point2(pos.x() * 2, pos.y())] = Wall;
+            grid[point2(pos.x() * 2 + 1, pos.y())] = Wall;
+        }
+        _ => {}
+    });
+
+    input.execute_commands(&mut grid)
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {

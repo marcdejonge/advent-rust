@@ -1,74 +1,63 @@
 #![feature(test)]
 
-use advent_lib::day::*;
+use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
-use advent_lib::grid::{Grid, Location};
-use advent_macros::parsable;
+use advent_lib::grid::Location;
 use fxhash::FxHashSet;
 use rayon::prelude::*;
 
-#[parsable]
-struct Day {
-    grid: Grid<u8>,
-}
+type Grid = advent_lib::grid::Grid<u8>;
 
-impl Day {
-    fn find_unique_trail_locations(&self, location: Location, endings: &mut FxHashSet<Location>) {
-        match self.grid.get(location) {
-            None => {}
-            Some(&b'9') => {
-                endings.insert(location);
-            }
-            Some(&current) => {
-                self.neighbours(location, current + 1)
-                    .for_each(|loc| self.find_unique_trail_locations(loc, endings));
-            }
+fn find_unique_trail_locations(grid: &Grid, location: Location, endings: &mut FxHashSet<Location>) {
+    match grid.get(location) {
+        None => {}
+        Some(&b'9') => {
+            endings.insert(location);
+        }
+        Some(&current) => {
+            neighbours(grid, location, current + 1)
+                .for_each(|loc| find_unique_trail_locations(grid, loc, endings));
         }
     }
+}
 
-    fn find_all_trails(&self, location: Location) -> u32 {
-        match self.grid.get(location) {
-            None => 0,
-            Some(&b'9') => 1,
-            Some(&current) => self
-                .neighbours(location, current + 1)
-                .map(|loc| self.find_all_trails(loc))
-                .sum(),
-        }
-    }
-
-    fn neighbours(&self, loc: Location, next: u8) -> impl Iterator<Item = Location> + use<'_> {
-        ALL_DIRECTIONS
-            .iter()
-            .map(move |d| loc + d.as_vec())
-            .filter(move |&loc| self.grid.get(loc) == Some(&next))
-    }
-
-    fn start_nodes(&self) -> impl Iterator<Item = Location> + use<'_> {
-        self.grid.entries().filter(|(_, &c)| c == b'0').map(|(loc, _)| loc)
+fn find_all_trails(grid: &Grid, location: Location) -> u32 {
+    match grid.get(location) {
+        None => 0,
+        Some(&b'9') => 1,
+        Some(&current) => neighbours(grid, location, current + 1)
+            .map(|loc| find_all_trails(grid, loc))
+            .sum(),
     }
 }
 
-impl ExecutableDay for Day {
-    type Output = u32;
-
-    fn calculate_part1(&self) -> Self::Output {
-        self.start_nodes()
-            .par_bridge()
-            .map(|loc| {
-                let mut result = Default::default();
-                self.find_unique_trail_locations(loc, &mut result);
-                result.len() as u32
-            })
-            .sum()
-    }
-
-    fn calculate_part2(&self) -> Self::Output {
-        self.start_nodes().par_bridge().map(|loc| self.find_all_trails(loc)).sum()
-    }
+fn neighbours(grid: &Grid, loc: Location, next: u8) -> impl Iterator<Item = Location> + use<'_> {
+    ALL_DIRECTIONS
+        .iter()
+        .map(move |d| loc + d.as_vec())
+        .filter(move |&loc| grid.get(loc) == Some(&next))
 }
 
-fn main() { execute_day::<Day>() }
+fn start_nodes(grid: &Grid) -> impl Iterator<Item = Location> + use<'_> {
+    grid.entries().filter(|(_, &c)| c == b'0').map(|(loc, _)| loc)
+}
+
+fn calculate_part1(grid: &Grid) -> usize {
+    start_nodes(grid)
+        .par_bridge()
+        .map(|loc| {
+            let mut result = Default::default();
+            find_unique_trail_locations(grid, loc, &mut result);
+            result.len()
+        })
+        .sum()
+}
+
+fn calculate_part2(grid: &Grid) -> u32 {
+    start_nodes(grid).par_bridge().map(|loc| find_all_trails(grid, loc)).sum()
+}
+
+day_main!();
 
 #[cfg(test)]
 mod tests {
