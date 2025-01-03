@@ -12,7 +12,7 @@ use Direction::*;
     separated_list1(
         line_ending,
         tuple((
-            terminated(direction_parser, space1),
+            terminated(Direction::parser(), space1),
             terminated(i64, space1),
             delimited(tag(b"("), RGB::parser(),tag(b")")),
         ))

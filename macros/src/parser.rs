@@ -75,7 +75,7 @@ fn parse_field_info(fields: &Fields) -> Result<FieldInfo, Error> {
                     field.attrs.retain(|attr| !attr.path().is_ident("defer"));
                     new_fields.push(field);
 
-                    expressions.push(quote! { #name: #expression });
+                    expressions.insert(0, quote! { #name: #expression });
                 } else if field.attrs.iter().any(|attr| attr.path().is_ident("intermediate")) {
                     field_info.names.push(field.ident.clone().unwrap());
                     field_info.types.push(field.ty.clone());
