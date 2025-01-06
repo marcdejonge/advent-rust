@@ -8,7 +8,11 @@ advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
 bit-set = "0.8.0"
 fxhash = "0.2.1"
-rusttype = "0.9.3"
 rayon = "1.10.0"
 nom = "7"
-smallvec = "1.13"
+
+[profile.release]
+strip = true
+lto = true
+panic = "abort"
+debug = "none"

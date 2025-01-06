@@ -1,9 +1,0 @@
-[workspace]
-members = ["shared", "macros", "2022", "2023", "2024"]
-resolver = "2"
-
-[profile.release]
-strip = true
-lto = true
-panic = "abort"
-debug = "none"

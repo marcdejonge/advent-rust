@@ -7,9 +7,14 @@ edition = "2021"
 advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
 rayon = "1"
-itertools = "0.13"
-prse = "1"
+itertools = "0.14.0"
 nom = "7"
 fxhash = "0.2"
 priority-queue = "2"
 smallvec = "1"
+
+[profile.release]
+strip = true
+lto = true
+panic = "abort"
+debug = "none"
