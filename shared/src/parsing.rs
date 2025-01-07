@@ -1,19 +1,22 @@
 use fxhash::{FxHashMap, FxHashSet};
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming, map};
-use nom::error::{Error, ErrorKind, ParseError};
+use nom::error::{ErrorKind, ParseError};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, separated_pair, tuple};
-use nom::{Compare, Err, Finish, IResult, InputIter, InputLength, Parser, Slice};
+use nom::{
+    AsBytes, Compare, Err, Finish, IResult, InputIter, InputLength, InputTake, Parser, Slice,
+};
+use nom_parse_trait::ParseFrom;
 use smallvec::SmallVec;
 use std::hash::Hash;
 use std::ops::{Range, RangeFrom, RangeTo};
 
 pub fn handle_parser_error<T>(input: &[u8]) -> T
 where
-    T: Parsable,
+    T: for<'a> ParseFrom<&'a [u8]>,
 {
-    match all_consuming(T::parser()).parse(input).finish() {
+    match all_consuming(T::parse).parse(input).finish() {
         Ok((_, day)) => day,
         Err(e) => {
             panic!(
@@ -30,20 +33,21 @@ where
 }
 
 #[inline]
-pub fn find_many_skipping_unknown<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
+pub fn find_many_skipping_unknown<I, E, T>() -> impl Parser<I, Vec<T>, E>
 where
-    T: Parsable,
+    T: ParseFrom<I, E>,
+    I: Clone + InputLength + Slice<RangeFrom<usize>>,
 {
-    move |mut input: &'a [u8]| {
+    move |mut input: I| {
         let mut res = Vec::new();
         while input.input_len() > 0 {
-            let value = T::parser().parse(input);
+            let value = T::parse(input.clone());
             match value {
                 Ok((left, o)) => {
                     res.push(o);
                     input = left;
                 }
-                Err(_) => input = &input[1..],
+                Err(_) => input = input.slice(1..),
             }
         }
         Ok((input, res))
@@ -85,40 +89,13 @@ where
     }
 }
 
-pub trait Parsable
+pub fn separated_array<I, E, const D: usize, T, S>(
+    mut separator: impl Parser<I, S, E>,
+) -> impl Parser<I, [T; D], E>
 where
-    Self: Sized,
+    T: ParseFrom<I, E> + Default + Copy,
 {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>>;
-}
-
-impl<T: Parsable> Parsable for Vec<T> {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> { separated_lines1() }
-}
-
-impl<T: Parsable + Eq + Hash> Parsable for FxHashSet<T> {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        separated_set1(line_ending, T::parser())
-    }
-}
-
-impl<T: Parsable> Parsable for Box<[T]> {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(separated_lines1(), |list| list.into_boxed_slice())
-    }
-}
-
-impl<T: Parsable, U: Parsable> Parsable for (T, U) {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> { parsable_pair(single(b',')) }
-}
-
-pub fn separated_array<'a, const D: usize, T, S>(
-    mut separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], [T; D], Error<&'a [u8]>>
-where
-    T: Parsable + Default + Copy,
-{
-    move |input: &'a [u8]| {
+    move |input: I| {
         let mut input = input;
         let mut result = [T::default(); D];
         let mut first = true;
@@ -130,7 +107,7 @@ where
                 first = false;
             }
 
-            let (rest, next_value) = T::parser().parse(input)?;
+            let (rest, next_value) = T::parse(input)?;
             *value = next_value;
             input = rest;
         }
@@ -138,59 +115,42 @@ where
     }
 }
 
-macro_rules! number_parsable {
-    ($($t:ty => $i:ident),*) => {
-        $(
-            impl Parsable for $t {
-                fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-                    nom::character::complete::$i
-                }
-            }
-        )*
-    };
-}
-
-number_parsable!(u8 => u8, u16 => u16, u32 => u32, u64 => u64, u128 => u128);
-number_parsable!(i8 => i8, i16 => i16, i32 => i32, i64 => i64, i128 => i128);
-
-impl Parsable for usize {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map(nom::character::complete::u64, |nr| nr as usize)
-    }
-}
-
-pub fn parsable_pair<'a, O1, O2, S>(
-    separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], (O1, O2), Error<&'a [u8]>>
+pub fn parsable_pair<I, E, O1, O2, S>(
+    separator: impl Parser<I, S, E>,
+) -> impl Parser<I, (O1, O2), E>
 where
-    O1: Parsable,
-    O2: Parsable,
+    E: ParseError<I>,
+    O1: ParseFrom<I, E>,
+    O2: ParseFrom<I, E>,
 {
-    separated_pair(O1::parser(), separator, O2::parser())
+    separated_pair(O1::parse, separator, O2::parse)
 }
 
-pub fn parsable_triple<'a, O1, O2, O3, S>(
-    separator: impl Parser<&'a [u8], S, Error<&'a [u8]>> + Clone,
-) -> impl Parser<&'a [u8], (O1, O2, O3), Error<&'a [u8]>>
+pub fn parsable_triple<I, E, O1, O2, O3, S>(
+    separator: impl Parser<I, S, E> + Clone,
+) -> impl Parser<I, (O1, O2, O3), E>
 where
-    O1: Parsable,
-    O2: Parsable,
-    O3: Parsable,
+    I: Clone,
+    E: ParseError<I>,
+    O1: ParseFrom<I, E>,
+    O2: ParseFrom<I, E>,
+    O3: ParseFrom<I, E>,
 {
     map(
         tuple((
-            O1::parser(),
+            O1::parse,
             separator.clone(),
-            O2::parser(),
+            O2::parse,
             separator,
-            O3::parser(),
+            O3::parse,
         )),
         |(o1, _, o2, _, o3)| (o1, o2, o3),
     )
 }
 
-pub fn double_line_ending<I>(input: I) -> IResult<I, (I, I)>
+pub fn double_line_ending<I, E>(input: I) -> IResult<I, (I, I), E>
 where
+    E: ParseError<I>,
     I: Slice<Range<usize>> + Slice<RangeFrom<usize>> + Slice<RangeTo<usize>>,
     I: InputIter + InputLength + Clone,
     I: Compare<&'static str>,
@@ -198,79 +158,112 @@ where
     tuple((line_ending, line_ending))(input)
 }
 
-pub fn separated_lines1<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
+pub fn separated_lines1<I, E, T>() -> impl Parser<I, Vec<T>, E>
 where
-    T: Parsable,
+    E: ParseError<I>,
+    T: ParseFrom<I, E>,
+    I: Slice<Range<usize>> + Slice<RangeFrom<usize>> + Slice<RangeTo<usize>>,
+    I: InputIter + InputLength + Clone,
+    I: Compare<&'static str>,
 {
-    separated_list1(line_ending, T::parser())
+    separated_list1(line_ending, T::parse)
 }
 
-pub fn separated_double_lines1<'a, T>() -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>>
+pub fn separated_double_lines1<I, E, T>() -> impl Parser<I, Vec<T>, E>
 where
-    T: Parsable,
+    T: ParseFrom<I, E>,
+    E: ParseError<I>,
+    I: Slice<Range<usize>> + Slice<RangeFrom<usize>> + Slice<RangeTo<usize>>,
+    I: InputIter + InputLength + Clone,
+    I: Compare<&'static str>,
 {
-    separated_list1(double_line_ending, T::parser())
+    separated_list1(double_line_ending, T::parse)
 }
 
-pub fn map_parsable<'a, T, U, F>(function: F) -> impl Parser<&'a [u8], U, Error<&'a [u8]>>
+pub fn map_parsable<I, E, T, U, F>(function: F) -> impl Parser<I, U, E>
 where
-    T: Parsable,
+    T: ParseFrom<I, E>,
     F: FnMut(T) -> U,
 {
-    map(T::parser(), function)
+    map(T::parse, function)
 }
 
-pub fn single<'a>(b: u8) -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> {
-    move |input: &'a [u8]| {
-        if input.is_empty() {
-            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Eof)))
-        } else if input[0] == b {
-            Ok((&input[1..], b))
+pub fn single<I, E>(b: u8) -> impl Parser<I, u8, E>
+where
+    E: ParseError<I>,
+    I: AsBytes + InputLength + InputTake + Clone,
+{
+    single_match(move |c| c == b)
+}
+
+pub fn single_space<I, E>() -> impl Parser<I, u8, E>
+where
+    E: ParseError<I>,
+    I: AsBytes + InputLength + InputTake + Clone,
+{
+    single(b' ')
+}
+
+pub fn single_digit<I, E>() -> impl Parser<I, u8, E>
+where
+    E: ParseError<I>,
+    I: AsBytes + InputLength + InputTake + Clone,
+{
+    single_match(|b| b.is_ascii_digit())
+}
+
+pub fn single_match<I, E>(mut matcher: impl FnMut(u8) -> bool) -> impl Parser<I, u8, E>
+where
+    E: ParseError<I>,
+    I: AsBytes + InputLength + InputTake + Clone,
+{
+    move |input: I| {
+        if input.input_len() == 0 {
+            return Err(Err::Error(E::from_error_kind(input, ErrorKind::Eof)));
+        }
+
+        let (rest, taken) = input.clone().take_split(1);
+        let bytes = taken.as_bytes();
+        let b = taken.as_bytes()[0];
+        if bytes.len() == 1 && matcher(b) {
+            Ok((rest, b))
         } else {
-            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Char)))
+            Err(Err::Error(E::from_error_kind(input, ErrorKind::Char)))
         }
     }
 }
 
-pub fn single_space<'a>() -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> { single(b' ') }
-
-pub fn single_match<'a>(
-    mut matcher: impl FnMut(u8) -> bool,
-) -> impl Parser<&'a [u8], u8, Error<&'a [u8]>> {
-    move |input: &'a [u8]| {
-        if input.is_empty() {
-            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Eof)))
-        } else if matcher(input[0]) {
-            Ok((&input[1..], input[0]))
-        } else {
-            Err(Err::Error(Error::from_error_kind(input, ErrorKind::Char)))
-        }
-    }
-}
-
-pub fn in_parens<'a, O>(
-    parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
+pub fn in_parens<I, E, O>(parser: impl Parser<I, O, E>) -> impl Parser<I, O, E>
+where
+    I: Clone + InputLength + AsBytes + InputTake,
+    E: ParseError<I>,
+{
     delimited(single(b'('), parser, single(b')'))
 }
 
-pub fn in_brackets<'a, O>(
-    parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
+pub fn in_brackets<I, E, O>(parser: impl Parser<I, O, E>) -> impl Parser<I, O, E>
+where
+    I: Clone + InputLength + AsBytes + InputTake,
+    E: ParseError<I>,
+{
     delimited(single(b'['), parser, single(b']'))
 }
 
-pub fn in_braces<'a, O>(
-    parser: impl Parser<&'a [u8], O, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], O, Error<&'a [u8]>> {
+pub fn in_braces<I, E, O>(parser: impl Parser<I, O, E>) -> impl Parser<I, O, E>
+where
+    I: Clone + InputLength + AsBytes + InputTake,
+    E: ParseError<I>,
+{
     delimited(single(b'{'), parser, single(b'}'))
 }
 
-pub fn separated_map1<'a, S, K, V>(
-    separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
-    parser: impl Parser<&'a [u8], (K, V), Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], FxHashMap<K, V>, Error<&'a [u8]>>
+pub fn separated_map1<I, E, S, K, V>(
+    separator: impl Parser<I, S, E>,
+    parser: impl Parser<I, (K, V), E>,
+) -> impl Parser<I, FxHashMap<K, V>, E>
 where
+    E: ParseError<I>,
+    I: Clone + InputLength,
     K: Eq + Hash,
 {
     map(separated_list1(separator, parser), |list| {
@@ -278,23 +271,16 @@ where
     })
 }
 
-pub fn separated_set1<'a, T, S>(
-    separator: impl Parser<&'a [u8], S, Error<&'a [u8]>>,
-    parser: impl Parser<&'a [u8], T, Error<&'a [u8]>>,
-) -> impl Parser<&'a [u8], FxHashSet<T>, Error<&'a [u8]>>
+pub fn separated_set1<I, E, T, S>(
+    separator: impl Parser<I, S, E>,
+    parser: impl Parser<I, T, E>,
+) -> impl Parser<I, FxHashSet<T>, E>
 where
     T: Eq + Hash,
+    E: ParseError<I>,
+    I: Clone + InputLength,
 {
     map(separated_list1(separator, parser), |list| {
         list.into_iter().collect::<FxHashSet<T>>()
     })
-}
-
-pub fn map_to_vec<'a, 'b, T: Clone + 'b, ParserIn>(
-    parser: ParserIn,
-) -> impl Parser<&'a [u8], Vec<T>, Error<&'a [u8]>> + use<'a, 'b, T, ParserIn>
-where
-    ParserIn: Parser<&'a [u8], &'b [T], Error<&'a [u8]>>,
-{
-    map(parser, |slice: &[T]| slice.to_vec())
 }

@@ -3,11 +3,12 @@
 use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, Point, Vector};
-use advent_macros::parsable;
+use advent_lib::parsing::single_space;
 use fxhash::FxBuildHasher;
+use nom_parse_macros::parse_from;
 use std::collections::HashSet;
 
-#[parsable(separated_list1(line_ending, separated_pair(Direction::parser(), single(b' '), i32)))]
+#[parse_from(separated_list1(line_ending, separated_pair(Direction::parse, single_space(), i32)))]
 struct Steps(Vec<(Direction, i32)>);
 
 fn calculate_part1(steps: &Steps) -> usize { steps.calculate_from([START; 2]) }

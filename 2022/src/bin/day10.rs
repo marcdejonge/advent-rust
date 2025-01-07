@@ -1,13 +1,13 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable]
+#[parse_from]
 enum Command {
-    #[format=preceded(tag(b"addx "), i32)]
+    #[format(preceded("addx ", i32))]
     Add(i32),
-    #[format=tag(b"noop")]
+    #[format("noop")]
     Noop,
 }
 

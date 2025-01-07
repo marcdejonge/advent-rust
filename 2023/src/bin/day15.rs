@@ -1,20 +1,19 @@
 #![feature(test)]
 
+use advent_lib::day_main;
+use nom_parse_macros::parse_from;
 use std::hash::Hasher;
 
-use advent_lib::day_main;
-use advent_macros::parsable;
-
-#[parsable(separated_list1(tag(b","), Operation::parser()))]
+#[parse_from(separated_list1(",", Operation::parse))]
 struct Input {
     words: Vec<Operation>,
 }
 
-#[parsable]
+#[parse_from]
 enum Operation {
-    #[format=terminated(map_to_vec(alpha1), tag(b"-"))]
+    #[format(terminated(map(alpha1, |bs: I| bs.as_bytes().to_vec()), "-"))]
     Remove(Vec<u8>),
-    #[format=separated_pair(map_to_vec(alpha1), tag(b"="), u64)]
+    #[format(separated_pair(map(alpha1, |bs: I| bs.as_bytes().to_vec()), "=", u64))]
     Set(Vec<u8>, u64),
 }
 

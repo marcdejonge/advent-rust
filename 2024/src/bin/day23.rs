@@ -3,10 +3,10 @@
 use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
-use advent_macros::parsable;
+use advent_lib::parsing::parsable_pair;
 use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
-
+use nom_parse_macros::parse_from;
 type Nodes = FxHashSet<Key>;
 type Graph = FxHashMap<Key, Nodes>;
 
@@ -15,7 +15,7 @@ fn is_chief(key: Key) -> bool {
     ((raw / 36) % 36) == 20 // Second from last character is a 't'
 }
 
-#[parsable(map(separated_list1(line_ending, parsable_pair(tag(b"-"))), generate_graph))]
+#[parse_from(map(separated_list1(line_ending, parsable_pair("-")), generate_graph))]
 struct Input {
     graph: Graph,
 }

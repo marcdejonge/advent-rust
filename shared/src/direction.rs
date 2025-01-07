@@ -1,10 +1,11 @@
 use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
-use crate::parsing::Parsable;
-use nom::error::{Error, ErrorKind};
-use nom::Parser;
+use nom::character::complete::one_of;
+use nom::error::{ErrorKind, ParseError};
+use nom::{AsChar, Compare, IResult, InputIter, InputLength, InputTake, Slice};
+use nom_parse_trait::ParseFrom;
 use num_traits::{One, Zero};
-use std::ops::Neg;
+use std::ops::{Neg, RangeFrom};
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -27,23 +28,31 @@ impl From<u8> for Direction {
     }
 }
 
-impl Parsable for Direction {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        |input: &'a [u8]| {
-            if input.is_empty() {
-                return Err(nom::Err::Error(Error::new(input, ErrorKind::Eof)));
-            }
-
-            let direction = match input[0] {
-                b'N' | b'U' | b'^' | b'3' => North,
-                b'E' | b'R' | b'>' | b'0' => East,
-                b'S' | b'D' | b'v' | b'1' => South,
-                b'W' | b'L' | b'<' | b'2' => West,
-                _ => return Err(nom::Err::Error(Error::new(input, ErrorKind::OneOf))),
-            };
-
-            Ok((&input[1..], direction))
+impl<I, E> ParseFrom<I, E> for Direction
+where
+    E: ParseError<I>,
+    I: Clone + InputLength + InputTake + InputIter,
+    <I as InputIter>::Item: AsChar + Copy,
+    I: Slice<RangeFrom<usize>>,
+    I: for<'a> Compare<&'a [u8]>,
+    for<'a> &'a str: nom::FindToken<<I as InputIter>::Item>,
+{
+    fn parse(input: I) -> IResult<I, Self, E> {
+        if input.input_len() == 0 {
+            return Err(nom::Err::Error(E::from_error_kind(input, ErrorKind::Eof)));
         }
+
+        let (rest, direction) = one_of("NESWURDL^>v<0123")(input.clone())?;
+
+        let direction = match direction {
+            'N' | 'U' | '^' | '3' => North,
+            'E' | 'R' | '>' | '0' => East,
+            'S' | 'D' | 'v' | '1' => South,
+            'W' | 'L' | '<' | '2' => West,
+            _ => return Err(nom::Err::Error(E::from_error_kind(input, ErrorKind::OneOf))),
+        };
+
+        Ok((rest, direction))
     }
 }
 

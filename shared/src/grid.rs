@@ -1,14 +1,18 @@
 use crate::direction::ALL_DIRECTIONS;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
-use crate::parsing::Parsable;
 use bit_vec::BitVec;
-use nom::bytes::complete::{is_not, take_while, take_while_m_n};
-use nom::character::complete::line_ending;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::{IResult, Parser};
+use nom::character::complete::{line_ending, not_line_ending};
+use nom::error::{ErrorKind, ParseError};
+use nom::multi::{many0, many1, separated_list1};
+use nom::sequence::preceded;
+use nom::Err::Error;
+use nom::{
+    AsBytes, AsChar, Compare, IResult, InputIter, InputLength, InputTake, InputTakeAtPosition,
+    Parser, Slice,
+};
+use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Index, IndexMut, Range};
+use std::ops::{Index, IndexMut, Range, RangeFrom, RangeTo};
 
 #[derive(Clone, Hash)]
 pub struct Grid<T> {
@@ -29,43 +33,58 @@ impl From<(Size, usize)> for Location {
     }
 }
 
-impl<T> Parsable for Grid<T>
+impl<I, E, T> ParseFrom<I, E> for Grid<T>
 where
-    T: From<u8> + Clone,
+    T: ParseFrom<I, E>,
+    E: ParseError<I>,
+    I: AsBytes + Clone + InputIter + InputLength + InputTake + InputTakeAtPosition,
+    <I as InputIter>::Item: AsChar,
+    <I as InputTakeAtPosition>::Item: AsChar,
+    I: Compare<&'static str>,
+    I: Slice<RangeFrom<usize>> + Slice<Range<usize>> + Slice<RangeTo<usize>>,
 {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        |input: &'a [u8]| {
-            let not_newline = |b: u8| b != b'\n' && b != b'\r';
-            let (_, first_line) = take_while(not_newline)(input)?;
-            let width = first_line.len();
+    fn parse(input: I) -> IResult<I, Self, E> {
+        let mut line_parser = not_line_ending.and_then(many1(T::parse));
+        let (rest, first_line) = line_parser.parse(input.clone())?;
+        let width = first_line.len();
 
-            let (rest, lines) =
-                separated_list1(line_ending, take_while_m_n(width, width, not_newline))(input)?;
-
-            let height = lines.len();
-            let items: Vec<T> =
-                lines.into_iter().flat_map(|line| line.iter().map(|&b| T::from(b))).collect();
-
-            Ok((
-                rest,
-                Grid { items, size: vector2(width as i32, height as i32) },
-            ))
+        let (rest, mut lines) = many0(preceded(line_ending, line_parser))(rest.clone())?;
+        if lines.iter().any(|line| line.len() != width) {
+            return Err(Error(E::from_error_kind(rest, ErrorKind::LengthValue)));
         }
+
+        let height = lines.len() + 1;
+        let mut items = first_line;
+        lines.iter_mut().for_each(|line| items.append(line));
+
+        Ok((
+            rest,
+            Grid { items, size: vector2(width as i32, height as i32) },
+        ))
     }
 }
 
 /// Parses a Grid with uneven line lengths. This all append all lines with the default T value
 /// to be square.
-pub fn uneven_grid_parser<T: From<u8> + Clone + Default>(input: &[u8]) -> IResult<&[u8], Grid<T>> {
-    let (rest, lines) = separated_list1(line_ending, is_not("\r\n")).parse(input)?;
-
+pub fn uneven_grid_parser<I, E, T>(input: I) -> IResult<I, Grid<T>, E>
+where
+    T: ParseFrom<I, E> + Clone + Default,
+    E: ParseError<I>,
+    I: AsBytes + Clone + InputIter + InputLength + InputTake + InputTakeAtPosition,
+    <I as InputIter>::Item: AsChar,
+    <I as InputTakeAtPosition>::Item: AsChar,
+    I: Compare<&'static str>,
+    I: Slice<RangeFrom<usize>> + Slice<Range<usize>> + Slice<RangeTo<usize>>,
+{
+    let (rest, lines) = separated_list1(line_ending, not_line_ending.and_then(many1(T::parse)))
+        .parse(input.clone())?;
+    let width = lines.iter().map(|line| line.len()).max().unwrap_or(0);
     let height = lines.len();
-    let width = lines.iter().map(|line| line.len()).max().unwrap();
-    let mut grid = Grid::new_empty(width as i32, height as i32);
 
+    let mut grid = Grid::new_empty(width as i32, height as i32);
     for (y, line) in lines.into_iter().enumerate() {
-        for (x, &b) in line.into_iter().enumerate() {
-            grid[point2(x as i32, y as i32)] = T::from(b);
+        for (x, item) in line.into_iter().enumerate() {
+            grid[point2(x as i32, y as i32)] = item;
         }
     }
 
@@ -567,11 +586,12 @@ impl<'a, T> Iterator for LinesIterator<'a, T> {
 mod tests {
     use super::Grid;
     use crate::geometry::point2;
-    use crate::parsing::Parsable;
-    use nom::Parser;
+    use nom::error::Error;
+    use nom_parse_trait::ParseFromExt;
 
     fn generate_test_grid() -> Grid<u8> {
-        Grid::parser().parse(b"123\n456\n789").unwrap().1.map(|b| b - b'0')
+        let result: Result<Grid<char>, Error<_>> = Grid::parse_complete("123\n456\n789");
+        result.unwrap().map(|&c| c as u8 - b'0')
     }
 
     #[test]

@@ -4,15 +4,16 @@ use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::iter::successors;
 use Block::*;
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Input {
     grid: Grid<Block>,
-    #[defer({
+    #[derived({
         let start = grid.find(|&b| b == Start).unwrap();
         walk_grid(&grid, start).enumerate().collect()
     })]

@@ -11,11 +11,13 @@ advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
 bit-set = "0.8.0"
 fxhash = "0.2.1"
+nom = "7"
+nom-parse-trait = "0.2.0"
+nom-parse-macros = "0.2.0"
 num = "0.4.3"
 rayon = "1.10.0"
 enum-map = "2.7.3"
 petgraph = "0.7"
-nom = "7"
 
 [profile.release]
 strip = true

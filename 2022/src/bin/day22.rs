@@ -4,8 +4,10 @@ use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, vector2, Point, Vector};
 use advent_lib::grid::{uneven_grid_parser, Grid};
-use advent_macros::{parsable, FromRepr};
+use advent_lib::parsing::double_line_ending;
+use advent_macros::FromRepr;
 use fxhash::{FxBuildHasher, FxHashMap};
+use nom_parse_macros::parse_from;
 use std::cmp::min;
 use std::ops::Neg;
 use Direction::*;
@@ -13,13 +15,13 @@ use Direction::*;
 use crate::FieldType::*;
 
 #[derive(Debug, PartialEq)]
-#[parsable]
+#[parse_from]
 enum Command {
-    #[format=u32]
+    #[format(())]
     Forward(u32),
-    #[format=single(b'L')]
+    #[format('L')]
     Left,
-    #[format=single(b'R')]
+    #[format('R')]
     Right,
 }
 
@@ -52,7 +54,7 @@ enum FieldType {
     Wall = b'#',
 }
 
-#[parsable(separated_pair(uneven_grid_parser, double_line_ending, many1(Command::parser())))]
+#[parse_from(separated_pair(uneven_grid_parser, double_line_ending, many1(Command::parse)))]
 struct GridAndCommands {
     grid: Grid<FieldType>,
     commands: Vec<Command>,
@@ -72,7 +74,7 @@ fn preprocess(input: GridAndCommands) -> Input {
 
     for y in input.grid.y_range().step_by(block_size) {
         for x in input.grid.x_range().step_by(block_size) {
-            if input.grid[point2(x, y)] != Outside {
+            if input.grid.get(point2(x, y)).cloned().unwrap_or_default() != Outside {
                 blocks.insert(
                     vector2(x, y),
                     input.grid.sub_grid(x..(x + block_size as i32), y..(y + block_size as i32)),
@@ -159,16 +161,18 @@ day_main!( preprocess => calculate_part1, calculate_part2 );
 mod tests {
     use crate::Command;
     use advent_lib::day_test;
-    use advent_lib::parsing::Parsable;
     use nom::multi::many1;
+    use nom::IResult;
     use nom::Parser;
+    use nom_parse_trait::ParseFrom;
 
     day_test!( 22, example => 6032/*, 5031 */ ; preprocess );
     day_test!( 22 => 197160 ; preprocess );
 
     #[test]
     fn test_command_parsing() {
-        let commands = many1(Command::parser()).parse(b"10L10R1L1R3").unwrap().1;
+        let commands: IResult<_, _> = many1(Command::parse).parse("10L10R1L1R3");
+        let commands = commands.unwrap().1;
         assert_eq!(
             vec![
                 Command::Forward(10),

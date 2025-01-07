@@ -1,19 +1,20 @@
 #![feature(test)]
 
-use std::fmt::{Debug, Formatter};
-
+use advent_lib::parsing::parsable_pair;
 use advent_lib::day_main;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_lines1;
+use nom_parse_macros::parse_from;
 use num::Integer;
+use std::fmt::{Debug, Formatter};
 
-#[parsable(separated_lines1())]
+#[parse_from(separated_lines1())]
 struct Weather {
     hail: Vec<Line<3>>,
 }
 
-#[parsable(parsable_pair(tuple((space0, tag(b"@"), space0))))]
+#[parse_from(parsable_pair(tuple(space0, "@", space0)))]
 #[derive(Copy, Clone)]
 struct Line<const D: usize> {
     p: Point<D, i128>,

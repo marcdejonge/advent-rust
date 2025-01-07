@@ -3,41 +3,41 @@
 
 use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 use std::cell::RefCell;
 
 fn calculate_part1(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 20, 3) }
 
 fn calculate_part2(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 10000, 1) }
 
-#[parsable]
+#[parse_from]
 #[derive(Debug, Clone, Copy)]
 enum Operation {
-    #[format=single(b'+')]
+    #[format("+")]
     Add,
-    #[format=single(b'*')]
+    #[format("*")]
     Multiply,
 }
 
 #[derive(Debug, Clone)]
-#[parsable(tuple((
-    delimited(tag(b"Monkey "), u32, tuple((single(b':'), line_ending))),
-    delimited(tag(b"  Starting items: "), separated_list1(tag(b", "), u64), line_ending),
-    preceded(tag(b"  Operation: new = old "), Operation::parser()),
-    delimited(space1, alt((u64, map(tag(b"old"), |_| 0))), line_ending),
-    delimited(tag(b"  Test: divisible by "), u64, line_ending),
-    delimited(tag(b"    If true: throw to monkey "), usize::parser(), line_ending),
-    delimited(tag(b"    If false: throw to monkey "), usize::parser(), opt(line_ending)),
-)))]
+#[parse_from(tuple(
+    delimited("Monkey ", u32, tuple(":", line_ending)),
+    delimited("  Starting items: ", separated_list1(", ", u64), line_ending),
+    preceded("  Operation: new = old ", {}),
+    delimited(space1, alt((u64, map("old", |_| 0))), line_ending),
+    delimited("  Test: divisible by ", u64, line_ending),
+    delimited("    If true: throw to monkey ", {}, line_ending),
+    delimited("    If false: throw to monkey ", {}, opt(line_ending)),
+))]
 struct Monkey {
     _index: u32,
     items: Vec<u64>,
     operation_type: Operation,
     amount: u64,
     test_divisible_by: u64,
-    true_monkey: usize,
-    false_monkey: usize,
-    #[defer(0)]
+    true_monkey: u64,
+    false_monkey: u64,
+    #[derived(0)]
     inspected_items: u64,
 }
 
@@ -63,7 +63,7 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64
 
         if monkey.true_monkey == monkey.false_monkey {
             let mut send_monkey = monkeys
-                .get(monkey.true_monkey)
+                .get(monkey.true_monkey as usize)
                 .expect("Can't find reference monkey")
                 .borrow_mut();
             for &item in monkey.items.iter() {
@@ -71,11 +71,11 @@ fn execute_round(monkeys: &Vec<RefCell<Monkey>>, param: u64, reduce: fn(u64, u64
             }
         } else {
             let mut true_monkey = monkeys
-                .get(monkey.true_monkey)
+                .get(monkey.true_monkey as usize)
                 .expect("Can't find reference true monkey")
                 .borrow_mut();
             let mut false_monkey = monkeys
-                .get(monkey.false_monkey)
+                .get(monkey.false_monkey as usize)
                 .expect("Can't find reference false monkey")
                 .borrow_mut();
             for &item in monkey.items.iter() {

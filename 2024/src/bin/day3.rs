@@ -2,21 +2,22 @@
 extern crate core;
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::find_many_skipping_unknown;
+use nom_parse_macros::parse_from;
 
+#[parse_from]
 #[derive(Debug, PartialEq, Eq)]
-#[parsable]
 enum Command {
-    #[format=delimited(tag(b"mul("), separated_pair(i64, tag(b","), i64), tag(b")"))]
+    #[format(delimited("mul(", separated_pair(i64, ",", i64), ")"))]
     Mul(i64, i64),
-    #[format=tag(b"do()")]
+    #[format("do()")]
     Do,
-    #[format=tag(b"don't()")]
+    #[format("don't()")]
     Dont,
 }
 
+#[parse_from(find_many_skipping_unknown())]
 #[derive(Debug)]
-#[parsable(find_many_skipping_unknown())]
 struct Memory {
     commands: Vec<Command>,
 }

@@ -5,14 +5,15 @@ use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::ops::{Add, Sub};
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Input {
     grid: Grid<Space>,
-    #[defer(grid.entries().filter(|(_, space)| **space == Galaxy).map(|(ix, _)| ix).collect())]
+    #[derived(grid.entries().filter(|(_, space)| **space == Galaxy).map(|(ix, _)| ix).collect())]
     galaxy_locations: Vec<Point<2, i32>>,
 }
 

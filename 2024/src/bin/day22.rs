@@ -2,11 +2,11 @@
 
 use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::parsable;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
-#[parsable]
+#[parse_from(())]
 struct Input {
     secrets: Vec<i32>,
 }

@@ -1,16 +1,17 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, separated_array};
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
+#[parse_from(preceded("Program: ", map(separated_list1(",", u8), SmallVec::from)))]
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[parsable(preceded(tag(b"Program: "), map(separated_list1(tag(b","), u8), SmallVec::from)))]
 struct Program(SmallVec<[u8; 16]>);
 
-#[parsable(preceded(delimited(tag(b"Register "), alpha1, tag(b": ")), u64))]
+#[parse_from(preceded(delimited("Register ", alpha1, ": "), u64))]
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 struct Register(u64);
 
@@ -24,7 +25,7 @@ impl From<&Program> for Machine {
     }
 }
 
-#[parsable(separated_pair(separated_array(line_ending), double_line_ending, Program::parser()))]
+#[parse_from(separated_pair(separated_array(line_ending), double_line_ending, ()))]
 struct MachineStart {
     registers: [Register; 3],
     program: Program,

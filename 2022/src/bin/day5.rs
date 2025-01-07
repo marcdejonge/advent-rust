@@ -1,10 +1,14 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::{
+    double_line_ending, in_brackets, separated_lines1, single_match, single_space,
+};
+use nom::character::{is_alphabetic, is_digit};
+use nom_parse_macros::{parse_from, parse_match};
 
 #[derive(Debug)]
-#[parsable(separated_pair(
+#[parse_from(separated_pair(
     map(
         separated_list1(
             line_ending,
@@ -12,7 +16,7 @@ use advent_macros::parsable;
                 single_space(),
                 alt((
                     in_brackets(single_match(is_alphabetic)),
-                    map(tag(b"   "), |_| b' '),
+                    map("   ", |_| b' '),
                     delimited(single_space(), single_match(is_digit), opt(single_space())),
                 ))
             )
@@ -48,22 +52,18 @@ fn parse_stacks(lines: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     stacks
 }
 
-#[derive(Debug)]
-#[parsable(tuple((
-    preceded(tag(b"move "), usize::parser()),
-    map(preceded(tag(b" from "), usize::parser()), |nr| nr - 1),
-    map(preceded(tag(b" to "), usize::parser()), |nr| nr - 1),
-)))]
+#[derive(Debug, Clone)]
+#[parse_match("move {} from {} to {}")]
 struct Command {
-    count: usize,
-    from_stack_ix: usize,
-    to_stack_ix: usize,
+    count: u32,
+    from_stack_ix: u32,
+    to_stack_ix: u32,
 }
 
 #[derive(Debug, Clone, Copy)]
 struct Position {
-    stack_ix: usize,
-    char_ix: usize,
+    stack_ix: u32,
+    char_ix: u32,
 }
 
 impl Position {
@@ -89,14 +89,16 @@ impl Input {
     fn calculate(&self, reversed: bool) -> String {
         (0..self.stack_lines.len())
             .map(|stack_ix| {
-                let pos = self
-                    .command_lines
-                    .iter()
-                    .rev()
-                    .fold(Position { stack_ix, char_ix: 0 }, |pos, command| {
-                        pos.trace_back_command(command, reversed)
-                    });
-                self.stack_lines[pos.stack_ix][pos.char_ix] as char
+                let pos = self.command_lines.iter().rev().fold(
+                    Position { stack_ix: stack_ix as u32, char_ix: 0 },
+                    |pos, command| {
+                        let mut command = command.clone();
+                        command.from_stack_ix -= 1;
+                        command.to_stack_ix -= 1;
+                        pos.trace_back_command(&command, reversed)
+                    },
+                );
+                self.stack_lines[pos.stack_ix as usize][pos.char_ix as usize] as char
             })
             .collect()
     }

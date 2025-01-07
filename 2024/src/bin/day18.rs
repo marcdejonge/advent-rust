@@ -5,16 +5,16 @@ use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Location;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
-use advent_macros::parsable;
 use fxhash::FxHashSet;
+use nom_parse_macros::parse_from;
 use std::ops::Range;
 
-#[parsable]
+#[parse_from(separated_list1(line_ending, ()))]
 struct Input {
     locations: Vec<Location>,
-    #[defer(if locations.len() >= 1024 { 71 } else { 7 })]
+    #[derived(if locations.len() >= 1024 { 71 } else { 7 })]
     size: i32,
-    #[defer(if locations.len() >= 1024 { 1024 } else { 12 })]
+    #[derived(if locations.len() >= 1024 { 1024 } else { 12 })]
     start_take: usize,
 }
 

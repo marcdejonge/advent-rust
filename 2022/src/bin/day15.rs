@@ -3,7 +3,7 @@
 
 use advent_lib::day_main;
 use advent_lib::geometry::point2;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 use std::ops::RangeInclusive;
 
 type Point = advent_lib::geometry::Point<2, i64>;
@@ -24,21 +24,14 @@ fn contains(sensors: &[Sensor], place: Point) -> bool {
     sensors.iter().any(|sensor| sensor.contains(place))
 }
 
-#[parsable(tuple((
-    map(
-        tuple((preceded(tag("Sensor at x="), i64), preceded(tag(", y="), i64))),
-        |(x,y)| point2(x, y)
-    ),
-    map(
-        tuple((preceded(tag(": closest beacon is at x="), i64), preceded(tag(", y="), i64))),
-        |(x,y)| point2(x, y)
-    ),
-)))]
+#[parse_from(tuple(
+    map(tuple(preceded("Sensor at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
+    map(tuple(preceded(": closest beacon is at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
+))]
 struct Sensor {
     sensor: Point,
-    #[intermediate]
-    beacon: Point,
-    #[defer((sensor - beacon).euler())]
+    _beacon: Point,
+    #[derived((sensor - _beacon).euler())]
     distance: i64,
 }
 

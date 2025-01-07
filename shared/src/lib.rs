@@ -1,6 +1,7 @@
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]
 #![feature(trait_alias)]
+#![feature(iter_array_chunks)]
 
 pub mod builder;
 pub mod day;

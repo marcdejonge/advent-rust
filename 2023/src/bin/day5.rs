@@ -2,14 +2,15 @@
 #![feature(iter_array_chunks)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, separated_lines1};
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::ops::Range;
 
-#[parsable(separated_pair(
-    preceded(tag(b"seeds: "), separated_list1(space1, i64)),
+#[parse_from(separated_pair(
+    preceded("seeds: ", separated_list1(space1, i64)),
     double_line_ending,
-    separated_list1(double_line_ending, Mapping::parser()),
+    separated_list1(double_line_ending, Mapping::parse),
 ))]
 struct Input {
     seeds: Vec<i64>,
@@ -17,7 +18,7 @@ struct Input {
 }
 
 #[derive(Debug)]
-#[parsable(
+#[parse_from(
     map(separated_list1(space1, i64), |nrs| (nrs[1]..nrs[1] + nrs[2], nrs[0] - nrs[1]))
 )]
 struct ChangeDefinition {
@@ -61,8 +62,8 @@ impl ChangeDefinition {
     }
 }
 
-#[parsable(
-    preceded(tuple((take_while(|b| b != b' '), tag(b" map:"), line_ending)), separated_lines1())
+#[parse_from(
+    preceded(tuple((take_while(|b: <I as InputTakeAtPosition>::Item| b.as_char() != ' '), " map:", line_ending)), separated_lines1())
 )]
 struct Mapping {
     changes: Vec<ChangeDefinition>,

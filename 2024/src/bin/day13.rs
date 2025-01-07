@@ -2,30 +2,31 @@
 
 use advent_lib::day_main;
 use advent_lib::geometry::{vector2, Vector};
-use advent_macros::parsable;
+use advent_lib::parsing::separated_double_lines1;
+use nom_parse_macros::parse_from;
 
 type Move = Vector<2, i64>;
 
-#[parsable(separated_double_lines1())]
+#[parse_from(separated_double_lines1())]
 struct Input {
     games: Vec<Game>,
 }
 
 #[derive(Debug, Clone)]
-#[parsable(tuple((
+#[parse_from(tuple(
     map(
-        delimited(tag(b"Button A: X+"), separated_pair(i64, tag(b", Y+"), i64), line_ending),
+        delimited("Button A: X+", separated_pair(i64, ", Y+", i64), line_ending),
         |(x, y)| vector2(x, y),
     ),
     map(
-        delimited(tag(b"Button B: X+"), separated_pair(i64, tag(b", Y+"), i64), line_ending),
+        delimited("Button B: X+", separated_pair(i64, ", Y+", i64), line_ending),
         |(x, y)| vector2(x, y),
     ),
     map(
-        preceded(tag(b"Prize: X="), separated_pair(i64, tag(b", Y="), i64)),
+        preceded("Prize: X=", separated_pair(i64, ", Y=", i64)),
         |(x, y)| vector2(x, y),
     ),
-)))]
+))]
 struct Game {
     button_a: Move,
     button_b: Move,

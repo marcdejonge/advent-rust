@@ -4,14 +4,14 @@ use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location, Size};
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::numbers::PositiveNumbersFrom;
-use advent_macros::parsable;
 use itertools::Itertools;
+use nom_parse_macros::parse_from;
 use std::collections::HashMap;
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Field {
     grid: Grid<char>,
-    #[defer(grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map())]
+    #[derived(grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map())]
     antenna_locations: HashMap<char, Vec<Location>>,
 }
 

@@ -1,10 +1,11 @@
-use crate::parsing::{separated_array, Parsable};
+use crate::parsing::separated_array;
 use nom::bytes::complete::tag;
 use nom::character::complete::space0;
 use nom::combinator::map;
-use nom::error::Error;
+use nom::error::ParseError;
 use nom::sequence::tuple;
-use nom::Parser;
+use nom::{AsChar, Compare, IResult, InputTake, InputTakeAtPosition, Parser};
+use nom_parse_trait::ParseFrom;
 use num_traits::{abs, One, Signed};
 use std::cmp::min;
 use std::fmt::{Debug, Formatter};
@@ -30,15 +31,20 @@ where
     fn default() -> Self { Point { coords: [T::default(); D] } }
 }
 
-impl<const D: usize, T> Parsable for Point<D, T>
+impl<I, E, const D: usize, T> ParseFrom<I, E> for Point<D, T>
 where
-    T: Default + Copy + Parsable,
+    T: Default + Copy + ParseFrom<I, E>,
+    I: Clone + InputTake + InputTakeAtPosition,
+    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    I: for<'a> Compare<&'a [u8]>,
+    E: ParseError<I>,
 {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn parse(input: I) -> IResult<I, Self, E> {
         map(
-            separated_array(tuple((space0, tag(b","), space0))),
+            separated_array(tuple((space0, tag(b",".as_ref()), space0))),
             |coords| Point { coords },
         )
+        .parse(input)
     }
 }
 
@@ -91,15 +97,20 @@ pub struct Vector<const D: usize, T> {
     pub coords: [T; D],
 }
 
-impl<const D: usize, T> Parsable for Vector<D, T>
+impl<I, E, const D: usize, T> ParseFrom<I, E> for Vector<D, T>
 where
-    T: Default + Copy + Parsable,
+    T: Default + Copy + ParseFrom<I, E>,
+    I: Clone + InputTake + InputTakeAtPosition,
+    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    I: for<'a> Compare<&'a [u8]>,
+    E: ParseError<I>,
 {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
+    fn parse(input: I) -> IResult<I, Self, E> {
         map(
-            separated_array(tuple((space0, tag(b","), space0))),
+            separated_array(tuple((space0, tag(b",".as_ref()), space0))),
             |coords| Vector { coords },
         )
+        .parse(input)
     }
 }
 

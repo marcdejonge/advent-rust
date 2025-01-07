@@ -3,11 +3,11 @@
 use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, vector2};
-use advent_macros::parsable;
 use fxhash::FxBuildHasher;
+use nom_parse_macros::parse_from;
 use std::collections::HashMap;
 
-#[parsable(many1(Direction::parser()))]
+#[parse_from(many1(Direction::parse))]
 struct Moves(Vec<Direction>);
 
 type Vector = advent_lib::geometry::Vector<2, i32>;

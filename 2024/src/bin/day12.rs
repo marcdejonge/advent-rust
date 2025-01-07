@@ -5,12 +5,12 @@ use advent_lib::direction::CardinalDirections::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Input {
-    plot: Grid<u8>,
-    #[defer(plot.detect_regions())]
+    plot: Grid<char>,
+    #[derived(plot.detect_regions())]
     regions: Vec<Vec<Location>>,
 }
 

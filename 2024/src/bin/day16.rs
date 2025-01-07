@@ -5,19 +5,20 @@ use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::grid::{Grid, Location};
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use priority_queue::PriorityQueue;
 use std::cmp::{min, Reverse};
 use std::collections::hash_map::Entry::Vacant;
 use std::ops::Neg;
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Input {
     grid: Grid<Block>,
-    #[defer(grid.find(|&b| b == Start).expect("Start not found"))]
+    #[derived(grid.find(|&b| b == Start).expect("Start not found"))]
     start: Location,
-    #[defer(grid.find(|&b| b == End).expect("End not found"))]
+    #[derived(grid.find(|&b| b == End).expect("End not found"))]
     end: Location,
 }
 

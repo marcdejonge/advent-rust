@@ -2,36 +2,34 @@
 
 use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location};
-use advent_macros::parsable;
 use rayon::prelude::*;
 
-#[parsable(
-    map_parsable(|grid: Grid<_>| {
-        let mut numbers = Vec::<GridNumber>::new();
-        let mut saved_number = GridNumber::default();
-        let mut symbols = Vec::<Symbol>::new();
-
-        grid.east_lines().for_each(|line| {
-            line.for_each(|(index, &b)| match b {
-                b'.' => saved_number.save(&mut numbers),
-                b'0'..=b'9' => saved_number.add_digit(index, b),
-                b'*' => {
-                    saved_number.save(&mut numbers);
-                    symbols.push(Symbol { index, is_gear: true });
-                }
-                _ => {
-                    saved_number.save(&mut numbers);
-                    symbols.push(Symbol { index, is_gear: false });
-                }
-            });
-            saved_number.save(&mut numbers);
-        });
-        (symbols, numbers)
-    })
-)]
 struct Input {
     symbols: Vec<Symbol>,
     numbers: Vec<GridNumber>,
+}
+
+fn prepare_input(grid: Grid<char>) -> Input {
+    let mut numbers = Vec::<GridNumber>::new();
+    let mut saved_number = GridNumber::default();
+    let mut symbols = Vec::<Symbol>::new();
+
+    grid.east_lines().for_each(|line| {
+        line.for_each(|(index, &b)| match b {
+            '.' => saved_number.save(&mut numbers),
+            '0'..='9' => saved_number.add_digit(index, b as u8),
+            '*' => {
+                saved_number.save(&mut numbers);
+                symbols.push(Symbol { index, is_gear: true });
+            }
+            _ => {
+                saved_number.save(&mut numbers);
+                symbols.push(Symbol { index, is_gear: false });
+            }
+        });
+        saved_number.save(&mut numbers);
+    });
+    Input { symbols, numbers }
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -91,12 +89,12 @@ fn calculate_part2(input: &Input) -> usize {
         .sum()
 }
 
-day_main!();
+day_main!(prepare_input => calculate_part1, calculate_part2);
 
 #[cfg(test)]
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 3, example => 4361, 467835 );
-    day_test!( 3 => 536576, 75741499 );
+    day_test!( 3, example => 4361, 467835 ; prepare_input );
+    day_test!( 3 => 536576, 75741499 ; prepare_input );
 }

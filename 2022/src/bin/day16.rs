@@ -6,8 +6,8 @@ use advent_lib::key::Key;
 use advent_lib::search::{
     breadth_first_search, depth_first_search, find_max_nonoverlapping_combination,
 };
-use advent_macros::parsable;
 use fxhash::{FxBuildHasher, FxHashMap};
+use nom_parse_macros::parse_from;
 use std::collections::HashMap;
 
 type Distance = i32;
@@ -21,14 +21,14 @@ struct SewerSystem {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[parsable(tuple((
-    preceded(tag(b"Valve "), Key::parser()),
-    preceded(tag(b" has flow rate="), i32),
+#[parse_from(tuple(
+    preceded("Valve ", Key::parse),
+    preceded(" has flow rate=", i32),
     preceded(
-        alt((tag(b"; tunnels lead to valves "), tag(b"; tunnel leads to valve "))), 
-        separated_list1(tag(b", "), Key::parser())
+        alt("; tunnels lead to valves ", "; tunnel leads to valve "),
+        separated_list1(", ", Key::parse)
     ),
-)))]
+))]
 struct ParsedValve {
     name: Key,
     rate: FlowRate,

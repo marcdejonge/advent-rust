@@ -2,15 +2,15 @@
 #![feature(array_chunks)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
 use fxhash::FxHashSet;
+use nom_parse_macros::parse_from;
 
-#[parsable]
+#[parse_from(())]
 struct Input {
     rucksacks: Vec<Rucksack>,
 }
 
-#[parsable(map(alpha1, |bs: &[u8]| bs.iter().map(|&b| get_priority(b)).collect()))]
+#[parse_from(map(alpha1, |bs: I| bs.as_bytes().iter().map(|&b| get_priority(b)).collect()))]
 #[derive(Clone)]
 struct Rucksack(Vec<u32>);
 

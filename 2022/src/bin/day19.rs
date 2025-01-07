@@ -2,26 +2,26 @@
 
 use advent_lib::day_main;
 use advent_lib::search::depth_first_search;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 use std::mem::transmute;
 use std::ops::{Add, Index, Sub};
 
 type Count = u8;
 
-#[parsable(tuple((
-    delimited(tag(b"Blueprint "), u32, single(b':')),
-    delimited(tag(b" Each ore robot costs "), RobotCost::parser(), single(b'.')),
-    delimited(tag(b" Each clay robot costs "), RobotCost::parser(), single(b'.')),
-    delimited(tag(b" Each obsidian robot costs "), RobotCost::parser(), single(b'.')),
-    delimited(tag(b" Each geode robot costs "), RobotCost::parser(), single(b'.')),
-)))]
+#[parse_from(tuple(
+    delimited("Blueprint ", u32, ':'),
+    delimited(" Each ore robot costs ", RobotCost::parse, '.'),
+    delimited(" Each clay robot costs ", RobotCost::parse, '.'),
+    delimited(" Each obsidian robot costs ", RobotCost::parse, '.'),
+    delimited(" Each geode robot costs ", RobotCost::parse, '.'),
+))]
 struct Blueprint {
     ix: u32,
     ore_bot_cost: RobotCost,
     clay_bot_cost: RobotCost,
     obsidian_bot_cost: RobotCost,
     geode_bot_cost: RobotCost,
-    #[defer(
+    #[derived(
         ActiveRobots {
             ore: ore_bot_cost.ore.max(clay_bot_cost.ore).max(obsidian_bot_cost.ore).max(geode_bot_cost.ore),
             clay: obsidian_bot_cost.clay,
@@ -33,11 +33,17 @@ struct Blueprint {
 }
 
 #[derive(Copy, Clone, Default)]
-#[parsable(tuple((
-    map(opt(terminated(u8, tuple((tag(b" ore"), opt(tag(b" and ")))))), Option::unwrap_or_default),
-    map(opt(terminated(u8, tuple((tag(b" clay"), opt(tag(b" and ")))))), Option::unwrap_or_default),
-    map(opt(terminated(u8, tag(b" obsidian"))), Option::unwrap_or_default),
-)))]
+#[parse_from(tuple(
+    map(
+        opt(terminated(u8, tuple(b" ore", opt(b" and ")))),
+        Option::unwrap_or_default
+    ),
+    map(
+        opt(terminated(u8, tuple(" clay", opt(b" and ")))),
+        Option::unwrap_or_default
+    ),
+    map(opt(terminated(u8, " obsidian")), Option::unwrap_or_default),
+))]
 struct RobotCost {
     ore: Count,
     clay: Count,
@@ -244,15 +250,16 @@ day_main!();
 mod tests {
     use super::*;
     use advent_lib::day_test;
-    use advent_lib::parsing::Parsable;
-    use nom::Parser;
+    use nom::IResult;
+    use nom_parse_trait::ParseFrom;
 
     day_test!( 19, example => 33, 3472 );
     day_test!( 19 => 1147, 3080 );
 
     #[test]
     fn example_steps_verification() {
-        let blueprint = Blueprint::parser().parse(b"Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.").unwrap().1;
+        let blueprint : IResult<_, _>= Blueprint::parse("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
+        let blueprint = blueprint.unwrap().1;
         let state = State { time: 24, ..State::default() };
         let state = state.next_with_clay(&blueprint).unwrap();
         assert_eq!(21, state.time);

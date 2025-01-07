@@ -1,15 +1,15 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable(
+#[parse_from(
     map(
         separated_pair(
-            preceded(tuple((tag(b"Time:"), space1)), separated_list1(space1, u64)),
+            preceded(tuple(("Time:", space1)), separated_list1(space1, u64)),
             line_ending,
             preceded(
-                tuple((tag(b"Distance:"), space1)),
+                tuple(("Distance:", space1)),
                 separated_list1(space1, u64),
             ),
         ),

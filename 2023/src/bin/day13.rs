@@ -1,15 +1,16 @@
 #![feature(test)]
 
+use advent_lib::day_main;
+use advent_lib::geometry::point2;
+use advent_lib::grid::Grid;
+use advent_lib::parsing::double_line_ending;
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::cmp::min;
 use std::ops::Add;
 
-use advent_lib::day_main;
-use advent_lib::geometry::point2;
-use advent_lib::grid::Grid;
-use advent_macros::{parsable, FromRepr};
-
-#[parsable(separated_list1(double_line_ending, Grid::parser()))]
+#[parse_from(separated_list1(double_line_ending, Grid::parse))]
 struct Grids(Vec<Grid<Item>>);
 
 #[repr(u8)]
@@ -85,13 +86,14 @@ mod tests {
     mod find_reflection_tests {
         use crate::find_reflection;
         use advent_lib::grid::Grid;
-        use advent_lib::parsing::Parsable;
-        use nom::Parser;
+        use nom::IResult;
+        use nom_parse_trait::ParseFrom;
 
         #[test]
         fn single() {
             let text = b"#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
-            let grid = Grid::parser().parse(text).unwrap().1;
+            let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
+            let grid = grid.unwrap().1;
             assert_eq!(6, find_reflection(&grid, 0));
             assert_eq!(12, find_reflection(&grid, 1));
         }
@@ -100,7 +102,8 @@ mod tests {
         fn test2() {
             let text =
                 b".##.##.##..\n#.######.##\n.#..##..#..\n#.#.##.#.##\n#.#....#.##\n.#..##..###\n##..##..###\n##..##..###\n.#.####.#..\n#..####..##\n.#.#..#.#..\n.##.##.##..\n.##....##..";
-            let grid = Grid::parser().parse(text).unwrap().1;
+            let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
+            let grid = grid.unwrap().1;
             assert_eq!(10, find_reflection(&grid, 0));
             assert_eq!(5, find_reflection(&grid, 1));
         }

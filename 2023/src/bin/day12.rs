@@ -4,13 +4,14 @@ use std::ops::Add;
 
 use crate::Spring::{Broken, Operational, Unknown};
 use advent_lib::day_main;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
-#[parsable(separated_list1(
+#[parse_from(separated_list1(
     line_ending,
-    separated_pair(many1(Spring::parser()), space1, separated_list1(tag(b","), u64),),
+    separated_pair(many1(Spring::parse), space1, separated_list1(",", u64),),
 ))]
 struct Input {
     lines: Vec<(Vec<Spring>, Vec<u64>)>,

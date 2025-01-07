@@ -2,22 +2,23 @@
 
 use advent_lib::day_main;
 use advent_lib::key::Key;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, separated_map1};
 use fxhash::FxHashMap;
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
+use nom_parse_macros::parse_from;
 use std::fmt::{Debug, Formatter};
 use std::mem::swap;
 use Operation::*;
 
-#[parsable]
+#[parse_from]
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 enum Operation {
-    #[format=tag(b"AND")]
+    #[format("AND")]
     And,
-    #[format=tag(b"XOR")]
+    #[format("XOR")]
     Xor,
-    #[format=tag(b"OR")]
+    #[format("OR")]
     Or,
 }
 
@@ -32,12 +33,12 @@ impl Debug for Operation {
 }
 
 #[derive(Clone)]
-#[parsable(tuple((
-        Key::parser(),
-        delimited(space0, Operation::parser(), space0),
-        Key::parser(),
-        preceded(tag(b" -> "), Key::parser()),
-)))]
+#[parse_from(tuple(
+    Key::parse,
+    delimited(space0, Operation::parse, space0),
+    Key::parse,
+    preceded(" -> ", Key::parse),
+))]
 struct Expression {
     left: Key,
     operation: Operation,
@@ -81,15 +82,15 @@ impl Debug for Expression {
     }
 }
 
-#[parsable(separated_pair(
+#[parse_from(separated_pair(
     separated_map1(
         line_ending,
-        separated_pair(Key::parser(), tag(b": "), map(u8, |v| v != 0))
+        separated_pair(Key::parse, ": ", map(u8, |v| v != 0))
     ),
     double_line_ending,
     separated_map1(
         line_ending,
-        map(Expression::parser(), |expr| (expr.target, expr))
+        map(Expression::parse, |expr| (expr.target, expr))
     ),
 ))]
 struct Computer {

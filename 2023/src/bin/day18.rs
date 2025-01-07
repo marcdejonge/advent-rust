@@ -5,16 +5,16 @@ extern crate core;
 use advent_lib::day_main;
 use advent_lib::direction::*;
 use advent_lib::rgb::*;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 use Direction::*;
 
-#[parsable(
+#[parse_from(
     separated_list1(
         line_ending,
         tuple((
-            terminated(Direction::parser(), space1),
+            terminated(Direction::parse, space1),
             terminated(i64, space1),
-            delimited(tag(b"("), RGB::parser(),tag(b")")),
+            delimited("(", RGB::parse, ")"),
         ))
     )
 )]

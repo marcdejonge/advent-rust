@@ -3,14 +3,12 @@
 
 use advent_lib::day_main;
 use advent_lib::key::Key;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_map1;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 
 #[derive(Clone, Debug)]
-#[parsable(separated_map1(
-    line_ending,
-    separated_pair(Key::parser(), tag(b": "), Monkey::parser())
-))]
+#[parse_from(separated_map1(line_ending, separated_pair(Key::parse, ": ", Monkey::parse)))]
 struct Monkeys(FxHashMap<Key, Monkey>);
 type Number = i64;
 const ROOT: Key = Key::fixed(b"root");
@@ -64,21 +62,21 @@ fn solve(monkeys: &Monkeys, name: Key) -> Value {
 }
 
 #[derive(Clone, Debug)]
-#[parsable]
+#[parse_from]
 enum Monkey {
-    #[format=fail::<_, (), _>]
+    #[format(fail::<_, (), _>)]
     Unknown,
-    #[format=i64]
+    #[format(i64)]
     Constant { value: Number },
-    #[format=separated_pair(Key::parser(), tag(b" + "), Key::parser())]
+    #[format(separated_pair(Key::parse, " + ", Key::parse))]
     Add { left: Key, right: Key },
-    #[format=separated_pair(Key::parser(), tag(b" - "), Key::parser())]
+    #[format(separated_pair(Key::parse, " - ", Key::parse))]
     Subtract { left: Key, right: Key },
-    #[format=separated_pair(Key::parser(), tag(b" * "), Key::parser())]
+    #[format(separated_pair(Key::parse, " * ", Key::parse))]
     Multiply { left: Key, right: Key },
-    #[format=separated_pair(Key::parser(), tag(b" / "), Key::parser())]
+    #[format(separated_pair(Key::parse, " / ", Key::parse))]
     Divide { left: Key, right: Key },
-    #[format=separated_pair(Key::parser(), tag(b" = "), Key::parser())]
+    #[format(separated_pair(Key::parse, " = ", Key::parse))]
     Equal { left: Key, right: Key },
 }
 

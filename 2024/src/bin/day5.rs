@@ -1,13 +1,14 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, separated_set1};
 use fxhash::FxHashSet;
+use nom_parse_macros::parse_from;
 
-#[parsable(separated_pair(
-    separated_set1(line_ending, separated_pair(u32, tag(b"|"), u32)),
+#[parse_from(separated_pair(
+    separated_set1::<I, E, _, _>(line_ending, separated_pair(u32, "|", u32)),
     double_line_ending,
-    separated_list1(line_ending, separated_list1(tag(b","), u32)),
+    separated_list1(line_ending, separated_list1(",", u32)),
 ))]
 struct Almanac {
     ordering_rules: FxHashSet<(u32, u32)>,

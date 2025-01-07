@@ -1,28 +1,35 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::parsable_pair;
+use nom_parse_macros::parse_from;
 use Left::*;
 use Right::*;
 
-#[parsable(separated_list1(line_ending, parsable_pair(space1)))]
+#[parse_from(separated_list1(line_ending, parsable_pair(space1)))]
 struct Input {
     input: Vec<(Left, Right)>,
 }
 
-#[parsable]
+#[parse_from]
 #[derive(Clone, Copy)]
 enum Left {
+    #[format("A")]
     A,
+    #[format("B")]
     B,
+    #[format("C")]
     C,
 }
 
-#[parsable]
+#[parse_from]
 #[derive(Clone, Copy)]
 enum Right {
+    #[format("X")]
     X,
+    #[format("Y")]
     Y,
+    #[format("Z")]
     Z,
 }
 

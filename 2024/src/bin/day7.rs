@@ -1,10 +1,10 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
-#[parsable]
+#[parse_from(separated_list1(line_ending, {}))]
 struct Input {
     puzzles: Vec<Puzzle>,
 }
@@ -19,7 +19,7 @@ impl Input {
     }
 }
 
-#[parsable(separated_pair(u64, tag(b": "), separated_list1(tag(b" "), u64)))]
+#[parse_from(separated_pair(u64, ": ", separated_list1(" ", u64)))]
 struct Puzzle {
     target: u64,
     input: Vec<u64>,

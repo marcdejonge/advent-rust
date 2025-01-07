@@ -2,12 +2,14 @@
 
 use advent_lib::day_main;
 use advent_lib::parsing::single;
-use advent_macros::parsable;
 use nom::combinator::map;
+use nom::error::ParseError;
 use nom::multi::separated_list0;
-use nom::IResult;
-use nom::Parser;
+use nom::{AsBytes, IResult, InputLength, InputTake, Slice};
+use nom::{AsChar, InputIter, Parser};
+use nom_parse_macros::parse_from;
 use std::cmp::Ordering;
+use std::ops::RangeFrom;
 
 fn calculate_part1(input: &Input) -> usize {
     input
@@ -37,7 +39,7 @@ fn calculate_part2(input: &Input) -> usize {
     start_ix * end_ix
 }
 
-#[parsable(separated_list1(many1(line_ending), parse_packet))]
+#[parse_from(separated_list1(many1(line_ending), parse_packet))]
 struct Input {
     packets: Vec<Packet>,
 }
@@ -48,9 +50,15 @@ enum Packet {
     Single(u32),
 }
 
-fn parse_packet(input: &[u8]) -> IResult<&[u8], Packet> {
-    if let Ok((rest, _)) = single(b'[').parse(input) {
-        let (rest, packets) = separated_list0(single(b','), parse_packet).parse(rest)?;
+fn parse_packet<I, E>(input: I) -> IResult<I, Packet, E>
+where
+    E: ParseError<I>,
+    I: Clone + AsBytes + InputLength + InputTake + InputIter,
+    <I as InputIter>::Item: AsChar + Copy,
+    I: Slice<RangeFrom<usize>>,
+{
+    if let Ok((rest, _)) = single::<I, E>(b'[').parse(input.clone()) {
+        let (rest, packets) = separated_list0(single(b','), parse_packet::<I, E>).parse(rest)?;
         let (rest, _) = single(b']').parse(rest)?;
         Ok((rest, Packet::List(packets)))
     } else {

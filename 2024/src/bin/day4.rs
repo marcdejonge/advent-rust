@@ -1,20 +1,35 @@
 #![feature(test)]
 
+use crate::Block::*;
 use advent_lib::day_main;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
+use nom_parse_macros::parse_from;
 
 type Step = Vector<2, i32>;
 
-fn check_ms_around_a(grid: &Grid<u8>, location: Location, first: Step, second: Step) -> bool {
+#[parse_from]
+#[derive(Clone, Copy, PartialEq)]
+enum Block {
+    #[format("X")]
+    X,
+    #[format("M")]
+    M,
+    #[format("A")]
+    A,
+    #[format("S")]
+    S,
+}
+
+fn check_ms_around_a(grid: &Grid<Block>, location: Location, first: Step, second: Step) -> bool {
     match grid.get(location + first) {
-        Some(&b'M') => grid.get(location + second) == Some(&b'S'),
-        Some(&b'S') => grid.get(location + second) == Some(&b'M'),
+        Some(&M) => grid.get(location + second) == Some(&S),
+        Some(&S) => grid.get(location + second) == Some(&M),
         _ => false,
     }
 }
 
-fn calculate_part1(grid: &Grid<u8>) -> usize {
+fn calculate_part1(grid: &Grid<Block>) -> usize {
     const DIRECTIONS: [Step; 8] = [
         vector2(1, -1),
         vector2(1, 0),
@@ -27,24 +42,24 @@ fn calculate_part1(grid: &Grid<u8>) -> usize {
     ];
 
     grid.entries()
-        .filter(|(_, &char)| char == b'X')
+        .filter(|(_, &char)| char == X)
         .map(|(location, _)| {
             DIRECTIONS
                 .iter()
                 .filter(|&&dir| {
-                    grid.get(location + dir) == Some(&b'M')
-                        && grid.get(location + dir * 2) == Some(&b'A')
-                        && grid.get(location + dir * 3) == Some(&b'S')
+                    grid.get(location + dir) == Some(&M)
+                        && grid.get(location + dir * 2) == Some(&A)
+                        && grid.get(location + dir * 3) == Some(&S)
                 })
                 .count()
         })
         .sum()
 }
 
-fn calculate_part2(grid: &Grid<u8>) -> usize {
+fn calculate_part2(grid: &Grid<Block>) -> usize {
     grid.entries()
         .filter(|(location, &char)| {
-            char == b'A'
+            char == A
                 && check_ms_around_a(grid, *location, vector2(1, -1), vector2(-1, 1))
                 && check_ms_around_a(grid, *location, vector2(1, 1), vector2(-1, -1))
         })

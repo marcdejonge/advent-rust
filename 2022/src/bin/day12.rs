@@ -3,8 +3,17 @@
 use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::grid::{Grid, Location};
+use advent_lib::parsing::single_match;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use nom::character::is_alphabetic;
+use nom_parse_macros::parse_from;
 
+#[parse_from(map(single_match(is_alphabetic), |value: u8| (value, match value {
+    b'S' => 0,
+    b'E' => 26,
+    b'a'..=b'z' => (value - b'a') as i32,
+    _ => panic!("Unsupported character"),
+})))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Node {
     c: u8,

@@ -2,16 +2,9 @@
 
 use advent_lib::day_main;
 use advent_lib::key::Key;
-use advent_lib::parsing::Parsable;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_lines1;
 use fxhash::FxHashMap;
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::combinator::map;
-use nom::error::Error;
-use nom::multi::separated_list1;
-use nom::sequence::{preceded, separated_pair};
-use nom::Parser;
+use nom_parse_macros::parse_from;
 use num::integer::lcm;
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
@@ -21,7 +14,7 @@ const BUTTON: Key = Key::fixed(b"button");
 const BROADCASTER: Key = Key::fixed(b"broadcaster");
 const RX: Key = Key::fixed(b"rx");
 
-#[parsable(map(separated_lines1(), parse_modules))]
+#[parse_from(map(separated_lines1(), parse_modules))]
 struct Input {
     initial_state: State,
     reverse_mapping: FxHashMap<Key, Vec<Key>>,
@@ -103,11 +96,37 @@ impl State {
     }
 }
 
+#[parse_from]
 #[derive(Debug, Clone)]
 enum Module {
+    #[format(separated_pair(
+        value(BROADCASTER, "broadcaster"),
+        " -> ",
+        separated_list1(", ", Key::parse),
+    ))]
     Broadcaster { name: Key, connections: Vec<Key> },
-    FlipFlop { name: Key, connections: Vec<Key>, state: bool },
-    Conjunction { name: Key, connections: Vec<Key>, incoming_state: FxHashMap<Key, bool> },
+    #[format(separated_pair(
+        preceded("%", Key::parse),
+        " -> ",
+        separated_list1(", ", Key::parse),
+    ))]
+    FlipFlop {
+        name: Key,
+        connections: Vec<Key>,
+        #[derived(false)]
+        state: bool,
+    },
+    #[format(separated_pair(
+        preceded("&", Key::parse),
+        " -> ",
+        separated_list1(", ", Key::parse),
+    ))]
+    Conjunction {
+        name: Key,
+        connections: Vec<Key>,
+        #[derived(Default::default())]
+        incoming_state: FxHashMap<Key, bool>,
+    },
 }
 
 impl Module {
@@ -125,41 +144,6 @@ impl Module {
             FlipFlop { name, .. } => *name,
             Conjunction { name, .. } => *name,
         }
-    }
-}
-
-impl Parsable for Module {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        alt((
-            map(
-                separated_pair(
-                    tag(b"broadcaster"),
-                    tag(b" -> "),
-                    separated_list1(tag(b", "), Key::parser()),
-                ),
-                |(_, connections)| Broadcaster { name: BROADCASTER, connections },
-            ),
-            map(
-                separated_pair(
-                    preceded(tag(b"%"), Key::parser()),
-                    tag(b" -> "),
-                    separated_list1(tag(b", "), Key::parser()),
-                ),
-                |(name, connections)| FlipFlop { name, connections, state: false },
-            ),
-            map(
-                separated_pair(
-                    preceded(tag(b"&"), Key::parser()),
-                    tag(b" -> "),
-                    separated_list1(tag(b", "), Key::parser()),
-                ),
-                |(name, connections)| Conjunction {
-                    name,
-                    connections,
-                    incoming_state: Default::default(),
-                },
-            ),
-        ))
     }
 }
 

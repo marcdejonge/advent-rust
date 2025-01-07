@@ -1,5 +1,6 @@
-use crate::parsing::{handle_parser_error, Parsable};
+use crate::parsing::handle_parser_error;
 use memmap2::Mmap;
+use nom_parse_trait::ParseFrom;
 use num_format::{Locale, ToFormattedString};
 use std::env;
 use std::fmt::Display;
@@ -9,7 +10,7 @@ const FORMAT: Locale = Locale::en;
 
 fn parse_input<Input>() -> Input
 where
-    Input: Parsable,
+    Input: for<'a> ParseFrom<&'a [u8]>,
 {
     let args: Vec<_> = env::args().collect();
     let file_name = args.get(1);
@@ -49,14 +50,15 @@ where
     );
 }
 
-pub fn execute_half_day<Input, O1, F1>(part1: F1)
+pub fn execute_half_day<ParseInput, FunctionInput, O1, PF, F1>(prepare: PF, part1: F1)
 where
-    Input: Parsable,
-    F1: Fn(&Input) -> O1,
+    ParseInput: for<'a> ParseFrom<&'a [u8]>,
+    PF: Fn(ParseInput) -> FunctionInput,
+    F1: Fn(&FunctionInput) -> O1,
     O1: Display,
 {
     let before = Instant::now();
-    let input = parse_input();
+    let input = prepare(parse_input());
     execute_part("Part 1", part1, &input);
 
     println!(
@@ -68,7 +70,7 @@ where
 
 pub fn execute_day<ParseInput, FunctionInput, O1, O2, PF, F1, F2>(prepare: PF, part1: F1, part2: F2)
 where
-    ParseInput: Parsable,
+    ParseInput: for<'a> ParseFrom<&'a [u8]>,
     PF: Fn(ParseInput) -> FunctionInput,
     F1: Fn(&FunctionInput) -> O1,
     F2: Fn(&FunctionInput) -> O2,
@@ -104,7 +106,10 @@ macro_rules! day_main {
         day_main!(calculate_part1, calculate_part2);
     };
     ($part1:ident) => {
-        fn main() { advent_lib::day::execute_half_day($part1) }
+        fn main() { advent_lib::day::execute_half_day(std::convert::identity, $part1) }
+    };
+    ($prepare:path => $part1:ident) => {
+        fn main() { advent_lib::day::execute_half_day($prepare, $part1) }
     };
     ($part1:ident, $part2:ident) => {
         fn main() { advent_lib::day::execute_day(std::convert::identity, $part1, $part2) }

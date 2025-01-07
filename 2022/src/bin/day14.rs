@@ -6,16 +6,17 @@ use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::lines::LineSegment;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use std::ops::Add;
 
 type Line = LineSegment<2, i32>;
 type Point = advent_lib::geometry::Point<2, i32>;
 
-#[parsable(map(
+#[parse_from(map(
     separated_list1(line_ending,
         map(
-            separated_list1(tag(b" -> "), Point::parser()),
+            separated_list1(" -> ", Point::parse),
             |points| points.into_iter().zip_with_next().map(|(start, end)|
                 LineSegment { start, end }
             )

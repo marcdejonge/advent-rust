@@ -1,9 +1,9 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable(separated_list1(line_ending, map(alphanumeric1, |bs: &[u8]| bs.to_vec())))]
+#[parse_from(separated_list1(line_ending, map(alphanumeric1, |bs: I| bs.as_bytes().to_vec())))]
 struct Input {
     digits: Vec<Vec<u8>>,
 }

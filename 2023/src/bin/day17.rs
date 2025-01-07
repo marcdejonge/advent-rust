@@ -5,21 +5,20 @@ use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_lib::parsing::single_digit;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable(
-    map(Grid::parser(), |mut grid| {
-        grid.entries_mut().for_each(|(_, cell)| *cell -= b'0');
-        grid
-    })
-)]
+#[parse_from(map(single_digit(), |b: u8| b - b'0'))]
+struct Digit(u8);
+
+#[parse_from(Grid::parse)]
 struct Input {
-    grid: Grid<u8>,
+    grid: Grid<Digit>,
 }
 
 struct Target<'a> {
-    grid: &'a Grid<u8>,
+    grid: &'a Grid<Digit>,
     min_steps: i32,
     max_steps: i32,
 }
@@ -32,7 +31,7 @@ impl Target<'_> {
             .filter_map(
                 |(loc, _, _)| if loc.x() == 0 && loc.y() == 0 { None } else { self.grid.get(*loc) },
             )
-            .map(|b| *b as usize)
+            .map(|b| b.0 as usize)
             .sum()
     }
 }
@@ -51,14 +50,14 @@ impl SearchGraph for Target<'_> {
             let left_loc = curr_loc + left.as_vec();
             let left_cell = self.grid.get(left_loc);
             if let Some(cell) = left_cell {
-                neighbours.push(((left_loc, left, 1), *cell as i32));
+                neighbours.push(((left_loc, left, 1), cell.0 as i32));
             }
 
             let right = curr_dir.turn_right();
             let right_loc = curr_loc + right.as_vec();
             let right_cell = self.grid.get(right_loc);
             if let Some(cell) = right_cell {
-                neighbours.push(((right_loc, right, 1), *cell as i32));
+                neighbours.push(((right_loc, right, 1), cell.0 as i32));
             }
         }
 
@@ -66,7 +65,7 @@ impl SearchGraph for Target<'_> {
             let straight_loc = curr_loc + curr_dir.as_vec();
             let straight_cell = self.grid.get(straight_loc);
             if let Some(cell) = straight_cell {
-                neighbours.push(((straight_loc, curr_dir, straight_steps + 1), *cell as i32));
+                neighbours.push(((straight_loc, curr_dir, straight_steps + 1), cell.0 as i32));
             }
         }
 

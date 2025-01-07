@@ -5,14 +5,14 @@ use advent_lib::builder::with_default;
 use advent_lib::day_main;
 use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::grid::{Grid, Location};
-use advent_lib::parsing::Parsable;
 use advent_lib::small_string::SmallString;
-use advent_macros::parsable;
 use fxhash::FxHashMap;
-use nom::Parser;
+use nom::IResult;
+use nom_parse_macros::parse_from;
+use nom_parse_trait::ParseFrom;
 use smallvec::{smallvec, SmallVec};
 
-#[parsable(separated_list1(line_ending, map(alphanumeric1, SmallString::from)))]
+#[parse_from(separated_list1(line_ending, map(alphanumeric1, SmallString::from)))]
 struct Input {
     lines: Vec<SmallString<8>>,
 }
@@ -28,8 +28,9 @@ struct Moves {
 
 impl Moves {
     fn register_locations(&mut self, grid: &[u8], offset: Vector<2, i32>) {
-        Grid::parser().parse(grid).unwrap().1.entries().for_each(|(point, &c)| {
-            self.positions.insert(c, point + offset);
+        let result: IResult<_, Grid<char>> = ParseFrom::parse(grid);
+        result.unwrap().1.entries().for_each(|(point, &c)| {
+            self.positions.insert(c as u8, point + offset);
         });
     }
 

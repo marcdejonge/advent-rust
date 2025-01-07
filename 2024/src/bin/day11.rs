@@ -1,12 +1,12 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 
 type Count = u64;
 
-#[parsable(separated_list1(space1, u64))]
+#[parse_from(separated_list1(space1, u64))]
 struct Input {
     starting_numbers: Vec<u64>,
 }

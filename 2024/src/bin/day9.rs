@@ -1,24 +1,25 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom::AsBytes;
+use nom_parse_macros::parse_from;
 use std::cmp::max;
 
 #[derive(Clone)]
-#[parsable(map(is_a("0123456789"), parse_numbers))]
+#[parse_from(map(digit1, parse_numbers))]
 struct FileSystem {
     files: Vec<File>,
     free_space: Vec<Space>,
 }
 
-fn parse_numbers(input: &[u8]) -> (Vec<File>, Vec<Space>) {
+fn parse_numbers(input: impl AsBytes) -> (Vec<File>, Vec<Space>) {
     let mut files = Vec::new();
     let mut free_space = Vec::new();
     let mut file_ix = 0;
     let mut location = 0;
     let mut empty = false;
 
-    for size in input.iter().map(|c| c - b'0') {
+    for size in input.as_bytes().iter().map(|c| c - b'0') {
         if empty {
             free_space.push(Space { size, location });
             location += size as u32;

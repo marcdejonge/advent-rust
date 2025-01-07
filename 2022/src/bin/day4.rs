@@ -1,30 +1,34 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::parsable_pair;
+use nom_parse_macros::parse_from;
 
-#[parsable(parsable_pair(tag(b"-")))]
+#[parse_from(parsable_pair("-"))]
 struct Range {
     from: u32,
     to: u32,
 }
+
+#[parse_from(parsable_pair(","))]
+struct RangePair(Range, Range);
 
 impl Range {
     fn contains(&self, value: u32) -> bool { value >= self.from && value <= self.to }
     fn wraps(&self, other: &Range) -> bool { self.from <= other.from && self.to >= other.to }
 }
 
-fn calculate_part1(range_pair: &Vec<(Range, Range)>) -> usize {
+fn calculate_part1(range_pair: &Vec<RangePair>) -> usize {
     range_pair
         .iter()
-        .filter(|(first, second)| first.wraps(second) || second.wraps(first))
+        .filter(|RangePair(first, second)| first.wraps(second) || second.wraps(first))
         .count()
 }
 
-fn calculate_part2(range_pair: &Vec<(Range, Range)>) -> usize {
+fn calculate_part2(range_pair: &Vec<RangePair>) -> usize {
     range_pair
         .iter()
-        .filter(|(first, second)| {
+        .filter(|RangePair(first, second)| {
             first.contains(second.from)
                 || first.contains(second.to)
                 || second.contains(first.from)

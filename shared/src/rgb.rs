@@ -1,11 +1,10 @@
-use crate::parsing::Parsable;
 use nom::bytes::complete::{tag, take_while_m_n};
-use nom::combinator::map_res;
-use nom::error::Error;
+use nom::error::ParseError;
 use nom::sequence::preceded;
-use nom::Parser;
+use nom::{AsChar, Compare, IResult, InputIter, InputLength, InputTake, Parser, Slice};
+use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Display, Formatter};
-use std::num::ParseIntError;
+use std::ops::RangeFrom;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub struct RGB {
@@ -14,20 +13,29 @@ pub struct RGB {
     pub blue: u8,
 }
 
-impl Parsable for RGB {
-    fn parser<'a>() -> impl Parser<&'a [u8], Self, Error<&'a [u8]>> {
-        map_res(
-            preceded(
-                tag(b"#"),
-                take_while_m_n(6, 6, |b: u8| b.is_ascii_hexdigit()),
-            ),
-            |digits: &'a [u8]| {
-                let red = u8::from_str_radix(std::str::from_utf8(&digits[0..2]).unwrap(), 16)?;
-                let green = u8::from_str_radix(std::str::from_utf8(&digits[2..4]).unwrap(), 16)?;
-                let blue = u8::from_str_radix(std::str::from_utf8(&digits[4..6]).unwrap(), 16)?;
-                Ok::<RGB, ParseIntError>(RGB { red, green, blue })
-            },
-        )
+impl<I, E> ParseFrom<I, E> for RGB
+where
+    E: ParseError<I>,
+    I: Clone + InputTake + InputLength + InputIter,
+    <I as InputIter>::Item: AsChar + Copy,
+    I: Slice<RangeFrom<usize>>,
+    I: Compare<&'static str>,
+{
+    fn parse(input: I) -> IResult<I, Self, E> {
+        fn parse_hex([a, b]: [impl AsChar; 2]) -> u8 {
+            let a = a.as_char();
+            let b = b.as_char();
+            (a.to_digit(16).unwrap() * 16 + b.to_digit(16).unwrap()) as u8
+        }
+
+        let (rest, parsed) =
+            preceded(tag("#"), take_while_m_n(6, 6, AsChar::is_hex_digit)).parse(input)?;
+
+        let mut iter = parsed.iter_elements().array_chunks();
+        let red = iter.next().map(parse_hex).unwrap();
+        let green = iter.next().map(parse_hex).unwrap();
+        let blue = iter.next().map(parse_hex).unwrap();
+        Ok((rest, RGB { red, green, blue }))
     }
 }
 

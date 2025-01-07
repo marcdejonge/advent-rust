@@ -6,10 +6,11 @@ use advent_lib::day_main;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::key::Key;
 use advent_lib::lines::LineSegment;
-use advent_macros::parsable;
+use advent_lib::parsing::{parsable_pair, separated_lines1};
 use fxhash::{FxHashMap, FxHashSet};
+use nom_parse_macros::parse_from;
 
-#[parsable(map(parsable_pair(tag(b"~")), |(start, end)| LineSegment{ start, end }))]
+#[parse_from(map(parsable_pair("~"), |(start, end)| LineSegment{ start, end }))]
 struct Brick(LineSegment<3, i64>);
 type BrickSet = bit_set::BitSet<usize>;
 
@@ -23,7 +24,7 @@ impl Brick {
     fn height(&self) -> i64 { self.0.end.z() - self.0.start.z() + 1 }
 }
 
-#[parsable(map(separated_lines1(), |mut bricks: Vec<Brick>| {
+#[parse_from(map(separated_lines1(), |mut bricks: Vec<Brick>| {
     bricks.sort_by_key(|brick| brick.0.start.z());
     bricks
 }))]

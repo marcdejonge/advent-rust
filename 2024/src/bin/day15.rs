@@ -5,16 +5,18 @@ use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::point2;
 use advent_lib::grid::{Grid, Location};
-use advent_macros::{parsable, FromRepr};
+use advent_lib::parsing::double_line_ending;
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use std::cmp::PartialEq;
 use Block::*;
 
-#[parsable(
+#[parse_from(
     separated_pair(
-        Grid::parser(),
+        Grid::parse,
         double_line_ending,
         map(
-            separated_list1(line_ending, many1(Direction::parser())),
+            separated_list1(line_ending, many1(Direction::parse)),
             |commands| commands.into_iter().flatten().collect()
         )
     )

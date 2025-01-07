@@ -4,16 +4,16 @@ use advent_lib::day_main;
 use advent_lib::graph_utils::dijkstra_explore;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
-use advent_macros::parsable;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use num::integer::sqrt;
 use petgraph::algo::dijkstra;
 use petgraph::prelude::*;
 
-#[parsable(map(
+#[parse_from(map(
     separated_list1(
         line_ending,
-        separated_pair(Key::parser(), tag(": "), separated_list1(space1, Key::parser())),
+        separated_pair(Key::parse, ": ", separated_list1(space1, Key::parse)),
     ),
     parse_graph
 ))]

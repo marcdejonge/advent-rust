@@ -1,17 +1,16 @@
 #![feature(test)]
 
-use bit_set::BitSet;
-
 use advent_lib::day_main;
 use advent_lib::grid::Grid;
+use advent_lib::parsing::single_match;
+use bit_set::BitSet;
+use nom::character::is_digit;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
 #[derive(Clone)]
+#[parse_from(map(single_match(is_digit), |b| b - b'0' + 1))]
 struct Height(u8);
-
-impl From<u8> for Height {
-    fn from(b: u8) -> Self { Height(b - b'0' + 1) }
-}
 
 #[inline]
 fn for_all_lines<ID, CF, C, LC>(

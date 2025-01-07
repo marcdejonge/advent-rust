@@ -1,6 +1,7 @@
 #![feature(test)]
 
 use fxhash::{FxHashMap, FxHashSet};
+use nom_parse_macros::parse_from;
 use petgraph::algo::all_simple_paths;
 use petgraph::prelude::*;
 
@@ -10,16 +11,16 @@ use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
 
 use crate::Cell::*;
 
-#[parsable]
+#[parse_from(Grid::parse)]
 struct Input {
     grid: Grid<Cell>,
-    #[defer(grid.east_line(0).find(|&(_, c)| c == &Ground).expect("Could not find starting location").0)]
+    #[derived(grid.east_line(0).find(|&(_, c)| c == &Ground).expect("Could not find starting location").0)]
     start: Point<2, i32>,
-    #[defer(grid.east_line(grid.height() - 1).find(|&(_, c)| c == &Ground).expect("Could not find ending location").0)]
+    #[derived(grid.east_line(grid.height() - 1).find(|&(_, c)| c == &Ground).expect("Could not find ending location").0)]
     end: Point<2, i32>,
 }
 

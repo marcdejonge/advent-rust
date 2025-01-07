@@ -1,25 +1,37 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_lines1;
+use nom_parse_macros::parse_from;
 use std::cmp::max;
 
-#[parsable(separated_lines1())]
+#[parse_from(separated_lines1())]
 struct Input {
     games: Vec<Game>,
 }
 
-#[parsable(separated_pair(
-    preceded(tag(b"Game "), u64),
-    tag(b": "),
-    separated_list1(tag(b"; "), Draw::parser())
-))]
+#[parse_from(separated_pair(preceded("Game ", u64), ": ", separated_list1("; ", Draw::parse)))]
 #[derive(Debug)]
 struct Game {
     index: u64,
     draws: Vec<Draw>,
 }
-
+#[parse_from(
+    map(separated_list1(
+        tag(", "),
+        alt((
+                map(terminated(u64, tag(" red")), Draw::red),
+                map(terminated(u64, tag(" green")), Draw::green),
+                map(terminated(u64, tag(" blue")), Draw::blue),
+            )),
+    ), |draws| {
+        draws.iter().fold((0,0,0), |(cr, cg, cb), next| (
+            cr + next.red,
+            cg + next.green,
+            cb + next.blue,
+        ))
+    })
+)]
 #[derive(Debug)]
 struct Draw {
     red: u64,
@@ -33,35 +45,6 @@ impl Draw {
     fn red(count: u64) -> Self { Draw { red: count, green: 0, blue: 0 } }
     fn green(count: u64) -> Self { Draw { red: 0, green: count, blue: 0 } }
     fn blue(count: u64) -> Self { Draw { red: 0, green: 0, blue: count } }
-}
-
-impl advent_lib::parsing::Parsable for Draw {
-    fn parser<'a>() -> impl nom::Parser<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
-        use nom::branch::alt;
-        use nom::bytes::complete::tag;
-        use nom::character::complete::u64;
-        use nom::combinator::map;
-        use nom::multi::separated_list1;
-        use nom::sequence::terminated;
-
-        map(
-            separated_list1(
-                tag(b", "),
-                alt((
-                    map(terminated(u64, tag(b" red")), Draw::red),
-                    map(terminated(u64, tag(b" green")), Draw::green),
-                    map(terminated(u64, tag(b" blue")), Draw::blue),
-                )),
-            ),
-            |draws| {
-                draws.iter().fold(Draw::empty(), |curr, next| Draw {
-                    red: curr.red + next.red,
-                    green: curr.green + next.green,
-                    blue: curr.blue + next.blue,
-                })
-            },
-        )
-    }
 }
 
 fn calculate_part1(input: &Input) -> u64 {

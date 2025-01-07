@@ -1,9 +1,9 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
 
-#[parsable(map(alpha1, |bs: &[u8]| bs.iter().map(|b| b - b'a').collect()))]
+#[parse_from(map(alpha1, |bs: I| bs.as_bytes().iter().map(|b| b - b'a').collect()))]
 struct Input {
     bytes: Vec<u8>,
 }

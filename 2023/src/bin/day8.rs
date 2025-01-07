@@ -3,30 +3,26 @@
 use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, separated_map1};
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use num::integer::lcm;
 use rayon::prelude::*;
 
-#[parsable(
+#[parse_from(
     separated_pair(
         many1(alt((
-            map(tag(b"L"), |_| Turn::Left),
-            map(tag(b"R"), |_| Turn::Right),
+            map("L", |_| Turn::Left),
+            map("R", |_| Turn::Right),
         ))),
         double_line_ending,
-        map(
-            separated_list1(
-                line_ending,
-                separated_pair(
-                    Key::parser(),
-                    tag(b" = "),
-                    delimited(tag(b"("),
-                        separated_pair(Key::parser(), tag(b", "), Key::parser()),
-                    tag(b")")),
-                ),
+        separated_map1(
+            line_ending,
+            separated_pair(
+                Key::parse,
+                " = ",
+                delimited("(", separated_pair(Key::parse, ", ", Key::parse), ")"),
             ),
-            |list| list.into_iter().collect()
         )
     )
 )]

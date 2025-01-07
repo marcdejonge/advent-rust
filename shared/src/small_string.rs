@@ -1,3 +1,4 @@
+use nom::AsBytes;
 use smallvec::{Array, SmallVec};
 
 #[derive(Debug, Default, Clone, Hash, PartialEq, Eq)]
@@ -11,7 +12,7 @@ where
 {
     pub fn new() -> Self { Self::default() }
 
-    pub fn from(s: &[u8]) -> Self { SmallString(s.into()) }
+    pub fn from<I: AsBytes>(s: I) -> Self { SmallString(s.as_bytes().into()) }
 
     pub fn len(&self) -> usize { self.0.len() }
 

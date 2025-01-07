@@ -2,27 +2,36 @@
 
 use advent_lib::day_main;
 use advent_lib::grid::Grid;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_double_lines1;
+use nom_parse_macros::parse_from;
+
+#[parse_from(separated_double_lines1())]
+struct Grids(Vec<Grid<char>>);
 
 #[derive(Debug)]
-#[parsable(separated_double_lines1())]
 struct LocksAndKeys {
-    #[defer(it.iter()
-        .filter(|grid: &&Grid<u8>| grid.east_line(0).all(|(_, &b)| b == b'#'))
-        .map(|grid| grid.x_range()
-            .map(|x| grid.south_line(x).take_while(|(_, &b)| b == b'#').count())
-            .collect())
-        .collect()
-    )]
     locks: Vec<Vec<usize>>,
-    #[defer(it.iter()
-        .filter(|grid: &&Grid<u8>| grid.east_line(grid.height() - 1).all(|(_, &b)| b == b'#'))
-        .map(|grid| grid.x_range()
-            .map(|x| grid.north_line(x).take_while(|(_, &b)| b == b'#').count())
-            .collect())
-        .collect()
-    )]
     keys: Vec<Vec<usize>>,
+}
+
+fn parse_grid(grids: Grids) -> LocksAndKeys {
+    let mut result = LocksAndKeys { locks: Vec::new(), keys: Vec::new() };
+    for grid in grids.0 {
+        if grid.east_line(0).all(|(_, &c)| c == '#') {
+            result.locks.push(
+                grid.x_range()
+                    .map(|x| grid.south_line(x).take_while(|(_, &c)| c == '#').count())
+                    .collect(),
+            )
+        } else if grid.east_line(grid.height() - 1).all(|(_, &c)| c == '#') {
+            result.keys.push(
+                grid.x_range()
+                    .map(|x| grid.north_line(x).take_while(|(_, &c)| c == '#').count())
+                    .collect(),
+            )
+        }
+    }
+    result
 }
 
 fn calculate_part1(input: &LocksAndKeys) -> usize {
@@ -34,12 +43,12 @@ fn calculate_part1(input: &LocksAndKeys) -> usize {
         .count()
 }
 
-day_main!(calculate_part1);
+day_main!(parse_grid => calculate_part1);
 
 #[cfg(test)]
 mod tests {
     use advent_lib::day_test;
 
-    day_test!( 25, example1 => 3 );
-    day_test!( 25 => 3021 );
+    day_test!( 25, example1 => 3 ; parse_grid );
+    day_test!( 25 => 3021 ; parse_grid );
 }

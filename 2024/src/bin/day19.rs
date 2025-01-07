@@ -2,18 +2,17 @@
 extern crate core;
 
 use advent_lib::day_main;
-use advent_macros::{parsable, FromRepr};
+use advent_lib::parsing::{double_line_ending, many_1_n};
+use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
 #[derive(Debug)]
-#[parsable(separated_pair(
-    map(
-        separated_list1(tag(b", "), many_1_n(Color::parser())),
-        Node::generate_nodes
-    ),
+#[parse_from(separated_pair(
+    map(separated_list1(", ", many_1_n(Color::parse)), Node::generate_nodes),
     double_line_ending,
-    separated_list1(line_ending, many1(Color::parser())),
+    separated_list1(line_ending, many1(Color::parse)),
 ))]
 struct Input {
     nodes: Vec<Node>,

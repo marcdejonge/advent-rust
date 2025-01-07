@@ -79,7 +79,7 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
             .collect();
 
         let parse_lines = variants.iter().map(|(ident, expr, _, _)| {
-            quote! { #expr => Ok((&input[1..], #name::#ident)), }
+            quote! { #expr => Ok((rest, #name::#ident)), }
         });
 
         Ok(quote! {
@@ -108,17 +108,21 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
                 }
             }
 
-            impl advent_lib::parsing::Parsable for #name {
-                fn parser<'a>() -> impl nom::Parser<&'a[u8], Self, nom::error::Error<&'a[u8]>> {
-                    |input: &'a [u8]| {
-                        if input.len() == 0 {
-                            return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Eof)));
-                        }
+            impl<I, E> nom_parse_trait::ParseFrom<I, E> for #name
+            where
+                E: nom::error::ParseError<I>,
+                I: nom::InputLength + nom::InputTake + nom::AsBytes,
+            {
+                fn parse(input: I) -> nom::IResult<I, Self, E> {
+                    if input.input_len() == 0 {
+                        return Err(nom::Err::Error(E::from_error_kind(input, nom::error::ErrorKind::Eof)));
+                    }
 
-                        match input[0] {
-                            #(#parse_lines)*
-                            _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Char))),
-                        }
+                    let (rest, value) = input.take_split(1);
+
+                    match value.as_bytes()[0] {
+                        #(#parse_lines)*
+                        _ => Err(nom::Err::Error(E::from_error_kind(input, nom::error::ErrorKind::Char))),
                     }
                 }
             }

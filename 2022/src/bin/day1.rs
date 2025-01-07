@@ -1,10 +1,11 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::double_line_ending;
+use nom_parse_macros::parse_from;
 use std::collections::BinaryHeap;
 
-#[parsable(separated_list1(double_line_ending, separated_list1(line_ending, i32)))]
+#[parse_from(separated_list1(double_line_ending, separated_list1(line_ending, i32)))]
 struct Input {
     sums: Vec<Vec<i32>>,
 }

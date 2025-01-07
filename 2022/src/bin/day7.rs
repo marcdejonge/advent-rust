@@ -1,9 +1,8 @@
 #![feature(test)]
 
-use std::str::FromStr;
-
 use advent_lib::day_main;
-use advent_macros::parsable;
+use nom_parse_macros::parse_from;
+use std::str::FromStr;
 
 fn precompute(commands: Vec<Command>) -> Vec<u32> {
     TraverseWithStack { iter: commands.iter(), stack: vec![0] }.collect()
@@ -24,17 +23,17 @@ fn calculate_part2(dir_sizes: &Vec<u32>) -> u32 {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-#[parsable]
+#[parse_from]
 enum Command {
-    #[format=tag(b"$ cd ..")]
+    #[format("$ cd ..")]
     CdUp,
-    #[format=preceded(tag(b"$ cd "), not_line_ending)]
+    #[format(preceded("$ cd ", not_line_ending))]
     CdDown,
-    #[format=terminated(u32, not_line_ending)]
+    #[format(terminated(u32, not_line_ending))]
     File(u32),
-    #[format=terminated(tag(b"dir "), not_line_ending)]
+    #[format(terminated("dir ", not_line_ending))]
     Dir,
-    #[format=tag(b"$ ls")]
+    #[format("$ ls")]
     Ls,
 }
 

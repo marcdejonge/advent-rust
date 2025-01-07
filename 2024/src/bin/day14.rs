@@ -4,20 +4,16 @@ use advent_lib::day_main;
 use advent_lib::direction::CardinalDirections;
 use advent_lib::geometry::{vector2, vector4, Point, Vector};
 use advent_lib::grid::Grid;
-use advent_macros::parsable;
+use nom_parse_macros::{parse_from, parse_match};
 use rayon::prelude::*;
 
-#[parsable]
+#[parse_from(separated_list1(line_ending, ()))]
 struct Input {
     robots: Vec<Robot>,
 }
 
 #[derive(Clone)]
-#[parsable(separated_pair(
-    preceded(tag(b"p="), Point::parser()),
-    space1,
-    preceded(tag(b"v="), Vector::parser()),
-))]
+#[parse_match("p={} v={}")]
 struct Robot {
     p: Point<2, i32>,
     v: Vector<2, i32>,

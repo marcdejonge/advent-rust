@@ -1,21 +1,22 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_macros::parsable;
+use advent_lib::parsing::separated_lines1;
 use fxhash::FxHashSet;
+use nom_parse_macros::parse_from;
 use std::ops::Shl;
 
-#[parsable(separated_lines1())]
+#[parse_from(separated_lines1())]
 struct Input {
     cards: Vec<Card>,
 }
 
-#[parsable(
+#[parse_from(
     preceded(
-        tuple((tag(b"Card"), space1, u64, tag(b":"), space1)),
+        tuple(("Card", space1, u64, ":", space1)),
         separated_pair(
             map(separated_list1(space1, u8), |winning| winning.into_iter().collect()),
-            tuple((tag(b" |"), space1)),
+            tuple((" |", space1)),
             separated_list1(space1, u8),
         ),
     )

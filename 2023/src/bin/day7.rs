@@ -3,13 +3,17 @@
 use std::fmt::{Debug, Formatter, Write};
 
 use enum_map::{Enum, EnumMap};
+use nom::error::ParseError;
+use nom::{AsBytes, InputLength, InputTake};
+use nom_parse_macros::parse_from;
+use nom_parse_trait::ParseFrom;
 use rayon::prelude::*;
 
 use crate::Score::*;
 use advent_lib::day_main;
-use advent_macros::{parsable, FromRepr};
+use advent_macros::FromRepr;
 
-#[parsable(separated_list1(line_ending, separated_pair(parse_hand, space1, u64)))]
+#[parse_from(separated_list1(line_ending, separated_pair(parse_hand, space1, u64)))]
 struct Input {
     bets: Vec<([Card; 5], u64)>,
 }
@@ -130,10 +134,12 @@ impl Score {
     }
 }
 
-fn parse_hand(input: &[u8]) -> nom::IResult<&[u8], [Card; 5]> {
-    use advent_lib::parsing::Parsable;
-
-    nom::combinator::map(nom::multi::many_m_n(5, 5, Card::parser()), |list| {
+fn parse_hand<I, E>(input: I) -> nom::IResult<I, [Card; 5], E>
+where
+    E: ParseError<I>,
+    I: Clone + InputLength + InputTake + AsBytes,
+{
+    nom::combinator::map(nom::multi::many_m_n(5, 5, Card::parse), |list| {
         list.try_into().unwrap()
     })(input)
 }
@@ -166,8 +172,11 @@ mod tests {
 
     mod parsing {
         use crate::*;
+        use nom::error::Error;
 
-        fn score_from(hand: &[u8]) -> Score { Score::from(&parse_hand(hand).unwrap().1) }
+        fn score_from(hand: &[u8]) -> Score {
+            Score::from(&parse_hand::<_, Error<_>>(hand).unwrap().1)
+        }
 
         #[test]
         fn test_scores() {
@@ -181,7 +190,7 @@ mod tests {
         }
 
         fn score_from_jokers(hand: &[u8]) -> Score {
-            Score::from(&jokers(parse_hand(hand).unwrap().1))
+            Score::from(&jokers(parse_hand::<_, Error<_>>(hand).unwrap().1))
         }
 
         #[test]

@@ -2,38 +2,32 @@
 
 use advent_lib::day_main;
 use advent_lib::key::Key;
-use advent_macros::parsable;
+use advent_lib::parsing::{double_line_ending, in_braces, separated_lines1, separated_map1};
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use std::ops::RangeInclusive;
 use CheckType::*;
 
-#[parsable(
+#[parse_from(
     in_braces(map(
-        tuple((preceded(tag(b"x="), i64),preceded(tag(b",m="), i64),preceded(tag(b",a="), i64),preceded(tag(b",s="), i64))),
+        tuple((preceded("x=", i64),preceded(",m=", i64),preceded(",a=", i64),preceded(",s=", i64))),
         |(x, m, a, s)| [x, m, a, s],
     ))
 )]
 struct Parts([i64; 4]);
 type PartsRange = [RangeInclusive<i64>; 4];
 
-#[parsable(
-    separated_pair(
-        separated_map1(
-            line_ending,
-            tuple((
-                Key::parser(),
-                in_braces(
-                    tuple((
-                        separated_list1(tag(b","), Check::parser()),
-                        preceded(tag(b","), Key::parser()),
-                    ))
-                )
-            )),
+#[parse_from(separated_pair(
+    separated_map1(
+        line_ending,
+        tuple(
+            Key::parse,
+            in_braces(tuple(separated_list1(",", Check::parse), preceded(",", Key::parse),))
         ),
-        double_line_ending,
-        separated_lines1(),
-    )
-)]
+    ),
+    double_line_ending,
+    separated_lines1(),
+))]
 struct Input {
     checks: FxHashMap<Key, (Vec<Check>, Key)>,
     parts: Vec<Parts>,
@@ -107,25 +101,12 @@ impl Input {
     }
 }
 
-#[parsable(
-    tuple((
-        alt((
-            value(0, tag(b"x")),
-            value(1, tag(b"m")),
-            value(2, tag(b"a")),
-            value(3, tag(b"s")),
-        )),
-        alt((
-            value(LessThan, tag(b"<")),
-            value(GreaterThan, tag(b">")),
-        )),
-        i64,
-        preceded(
-            tag(b":"),
-            Key::parser(),
-        ),
-    ))
-)]
+#[parse_from(tuple(
+    alt(value(0, "x"), value(1, "m"), value(2, "a"), value(3, "s"),),
+    alt(value(LessThan, "<"), value(GreaterThan, ">"),),
+    i64,
+    preceded(":", Key::parse),
+))]
 struct Check {
     type_key: usize,
     check_type: CheckType,

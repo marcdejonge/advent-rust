@@ -4,37 +4,18 @@ use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[parse_from]
 enum Field {
+    #[format(".")]
     Empty,
+    #[format("#")]
     Blocked,
+    #[format(Direction::parse)]
     Visited(Direction),
-}
-
-impl From<Field> for char {
-    fn from(field: Field) -> Self {
-        match field {
-            Field::Empty => '.',
-            Field::Blocked => '#',
-            Field::Visited(North) => '^',
-            Field::Visited(East) => '>',
-            Field::Visited(South) => 'v',
-            Field::Visited(West) => '<',
-        }
-    }
-}
-
-impl From<u8> for Field {
-    fn from(value: u8) -> Self {
-        match value {
-            b'.' => Field::Empty,
-            b'#' => Field::Blocked,
-            b'^' => Field::Visited(North),
-            _ => panic!("Illegal byte representation for a Field: {value}"),
-        }
-    }
 }
 
 fn guard_walk(grid: &mut Grid<Field>, start: &Location) -> bool {
