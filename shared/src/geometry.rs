@@ -3,8 +3,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::space0;
 use nom::combinator::map;
 use nom::error::ParseError;
-use nom::sequence::tuple;
-use nom::{AsChar, Compare, IResult, InputTake, InputTakeAtPosition, Parser};
+use nom::{AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use num_traits::{abs, One, Signed};
 use std::cmp::min;
@@ -34,14 +33,14 @@ where
 impl<I, E, const D: usize, T> ParseFrom<I, E> for Point<D, T>
 where
     T: Default + Copy + ParseFrom<I, E>,
-    I: Clone + InputTake + InputTakeAtPosition,
-    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    I: Input,
+    <I as Input>::Item: AsChar + Clone,
     I: for<'a> Compare<&'a [u8]>,
     E: ParseError<I>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
         map(
-            separated_array(tuple((space0, tag(b",".as_ref()), space0))),
+            separated_array((space0, tag(b",".as_ref()), space0)),
             |coords| Point { coords },
         )
         .parse(input)
@@ -100,14 +99,14 @@ pub struct Vector<const D: usize, T> {
 impl<I, E, const D: usize, T> ParseFrom<I, E> for Vector<D, T>
 where
     T: Default + Copy + ParseFrom<I, E>,
-    I: Clone + InputTake + InputTakeAtPosition,
-    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    I: Input,
+    <I as Input>::Item: AsChar + Clone,
     I: for<'a> Compare<&'a [u8]>,
     E: ParseError<I>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
         map(
-            separated_array(tuple((space0, tag(b",".as_ref()), space0))),
+            separated_array((space0, tag(b",".as_ref()), space0)),
             |coords| Vector { coords },
         )
         .parse(input)

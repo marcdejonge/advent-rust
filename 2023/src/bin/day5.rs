@@ -63,7 +63,7 @@ impl ChangeDefinition {
 }
 
 #[parse_from(
-    preceded(tuple((take_while(|b: <I as InputTakeAtPosition>::Item| b.as_char() != ' '), " map:", line_ending)), separated_lines1())
+    preceded((take_while(|b: <I as Input>::Item| b.as_char() != ' '), " map:", line_ending), separated_lines1())
 )]
 struct Mapping {
     changes: Vec<ChangeDefinition>,

@@ -2,10 +2,10 @@ use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
 use nom::character::complete::one_of;
 use nom::error::{ErrorKind, ParseError};
-use nom::{AsChar, Compare, IResult, InputIter, InputLength, InputTake, Slice};
+use nom::{AsChar, Compare, IResult, Input};
 use nom_parse_trait::ParseFrom;
 use num_traits::{One, Zero};
-use std::ops::{Neg, RangeFrom};
+use std::ops::Neg;
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -31,11 +31,10 @@ impl From<u8> for Direction {
 impl<I, E> ParseFrom<I, E> for Direction
 where
     E: ParseError<I>,
-    I: Clone + InputLength + InputTake + InputIter,
-    <I as InputIter>::Item: AsChar + Copy,
-    I: Slice<RangeFrom<usize>>,
+    I: Input,
+    <I as Input>::Item: AsChar + Copy,
     I: for<'a> Compare<&'a [u8]>,
-    for<'a> &'a str: nom::FindToken<<I as InputIter>::Item>,
+    for<'a> &'a str: nom::FindToken<<I as Input>::Item>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
         if input.input_len() == 0 {

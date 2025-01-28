@@ -11,11 +11,11 @@ use Direction::*;
 #[parse_from(
     separated_list1(
         line_ending,
-        tuple((
-            terminated(Direction::parse, space1),
+        (
+            terminated({}, space1),
             terminated(i64, space1),
-            delimited("(", RGB::parse, ")"),
-        ))
+            delimited("(", {}, ")"),
+        )
     )
 )]
 struct Input {

@@ -111,7 +111,7 @@ pub fn generate_from(ast: syn::DeriveInput) -> Result<TokenStream, Error> {
             impl<I, E> nom_parse_trait::ParseFrom<I, E> for #name
             where
                 E: nom::error::ParseError<I>,
-                I: nom::InputLength + nom::InputTake + nom::AsBytes,
+                I: nom::Input + nom::AsBytes,
             {
                 fn parse(input: I) -> nom::IResult<I, Self, E> {
                     if input.input_len() == 0 {

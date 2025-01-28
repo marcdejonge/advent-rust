@@ -1,10 +1,9 @@
 use nom::bytes::complete::{tag, take_while_m_n};
 use nom::error::ParseError;
 use nom::sequence::preceded;
-use nom::{AsChar, Compare, IResult, InputIter, InputLength, InputTake, Parser, Slice};
+use nom::{AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::RangeFrom;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub struct RGB {
@@ -16,9 +15,8 @@ pub struct RGB {
 impl<I, E> ParseFrom<I, E> for RGB
 where
     E: ParseError<I>,
-    I: Clone + InputTake + InputLength + InputIter,
-    <I as InputIter>::Item: AsChar + Copy,
-    I: Slice<RangeFrom<usize>>,
+    I: Input,
+    <I as Input>::Item: AsChar + Copy,
     I: Compare<&'static str>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {

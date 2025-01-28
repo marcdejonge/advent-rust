@@ -1,9 +1,9 @@
 use nom::bytes::complete::take_while_m_n;
 use nom::error::{Error, ParseError};
-use nom::{AsBytes, AsChar, IResult, InputIter, InputLength, InputTake, Parser, Slice};
+use nom::{AsBytes, AsChar, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Display, Formatter, Write};
-use std::ops::{Add, RangeFrom};
+use std::ops::Add;
 use std::str::FromStr;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
@@ -62,9 +62,8 @@ impl FromStr for Key {
 impl<I, E> ParseFrom<I, E> for Key
 where
     E: ParseError<I>,
-    I: Clone + InputIter + InputLength + InputTake + AsBytes,
-    <I as InputIter>::Item: AsChar + Copy,
-    I: Slice<RangeFrom<usize>>,
+    I: AsBytes + Input,
+    <I as Input>::Item: AsChar + Copy,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
         let (rest, key) = take_while_m_n(1, 12, AsChar::is_alphanum).parse(input)?;
@@ -140,7 +139,7 @@ mod tests {
     use nom::error::Error;
     use nom::Finish;
 
-    fn parse(input: &str) -> Result<Key, nom::error::Error<&str>> {
+    fn parse(input: &str) -> Result<Key, Error<&str>> {
         Key::parse(input).finish().map(|(_, key)| key)
     }
 

@@ -6,10 +6,10 @@ use nom_parse_macros::parse_from;
 #[parse_from(
     map(
         separated_pair(
-            preceded(tuple(("Time:", space1)), separated_list1(space1, u64)),
+            preceded(("Time:", space1), separated_list1(space1, u64)),
             line_ending,
             preceded(
-                tuple(("Distance:", space1)),
+                ("Distance:", space1),
                 separated_list1(space1, u64),
             ),
         ),

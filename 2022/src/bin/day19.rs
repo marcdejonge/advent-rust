@@ -8,7 +8,7 @@ use std::ops::{Add, Index, Sub};
 
 type Count = u8;
 
-#[parse_from(tuple(
+#[parse_from((
     delimited("Blueprint ", u32, ':'),
     delimited(" Each ore robot costs ", RobotCost::parse, '.'),
     delimited(" Each clay robot costs ", RobotCost::parse, '.'),
@@ -33,13 +33,13 @@ struct Blueprint {
 }
 
 #[derive(Copy, Clone, Default)]
-#[parse_from(tuple(
+#[parse_from((
     map(
-        opt(terminated(u8, tuple(b" ore", opt(b" and ")))),
+        opt(terminated(u8, (b" ore", opt(b" and ")))),
         Option::unwrap_or_default
     ),
     map(
-        opt(terminated(u8, tuple(" clay", opt(b" and ")))),
+        opt(terminated(u8, (" clay", opt(b" and ")))),
         Option::unwrap_or_default
     ),
     map(opt(terminated(u8, " obsidian")), Option::unwrap_or_default),

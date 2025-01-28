@@ -33,7 +33,7 @@ impl Debug for Operation {
 }
 
 #[derive(Clone)]
-#[parse_from(tuple(
+#[parse_from((
     Key::parse,
     delimited(space0, Operation::parse, space0),
     Key::parse,

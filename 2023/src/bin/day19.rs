@@ -10,7 +10,7 @@ use CheckType::*;
 
 #[parse_from(
     in_braces(map(
-        tuple((preceded("x=", i64),preceded(",m=", i64),preceded(",a=", i64),preceded(",s=", i64))),
+        (preceded("x=", i64),preceded(",m=", i64),preceded(",a=", i64),preceded(",s=", i64)),
         |(x, m, a, s)| [x, m, a, s],
     ))
 )]
@@ -20,9 +20,9 @@ type PartsRange = [RangeInclusive<i64>; 4];
 #[parse_from(separated_pair(
     separated_map1(
         line_ending,
-        tuple(
-            Key::parse,
-            in_braces(tuple(separated_list1(",", Check::parse), preceded(",", Key::parse),))
+        (
+            {},
+            in_braces((separated_list1(",", {}), preceded(",", {})))
         ),
     ),
     double_line_ending,
@@ -101,9 +101,9 @@ impl Input {
     }
 }
 
-#[parse_from(tuple(
-    alt(value(0, "x"), value(1, "m"), value(2, "a"), value(3, "s"),),
-    alt(value(LessThan, "<"), value(GreaterThan, ">"),),
+#[parse_from((
+    alt(value(0, "x"), value(1, "m"), value(2, "a"), value(3, "s")),
+    alt(value(LessThan, "<"), value(GreaterThan, ">")),
     i64,
     preceded(":", Key::parse),
 ))]

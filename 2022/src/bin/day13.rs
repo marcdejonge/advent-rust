@@ -5,11 +5,10 @@ use advent_lib::parsing::single;
 use nom::combinator::map;
 use nom::error::ParseError;
 use nom::multi::separated_list0;
-use nom::{AsBytes, IResult, InputLength, InputTake, Slice};
-use nom::{AsChar, InputIter, Parser};
+use nom::{AsBytes, IResult};
+use nom::{AsChar, Parser};
 use nom_parse_macros::parse_from;
 use std::cmp::Ordering;
-use std::ops::RangeFrom;
 
 fn calculate_part1(input: &Input) -> usize {
     input
@@ -53,9 +52,8 @@ enum Packet {
 fn parse_packet<I, E>(input: I) -> IResult<I, Packet, E>
 where
     E: ParseError<I>,
-    I: Clone + AsBytes + InputLength + InputTake + InputIter,
-    <I as InputIter>::Item: AsChar + Copy,
-    I: Slice<RangeFrom<usize>>,
+    I: AsBytes + nom::Input,
+    <I as nom::Input>::Item: AsChar + Copy,
 {
     if let Ok((rest, _)) = single::<I, E>(b'[').parse(input.clone()) {
         let (rest, packets) = separated_list0(single(b','), parse_packet::<I, E>).parse(rest)?;

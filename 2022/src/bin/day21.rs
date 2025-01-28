@@ -64,7 +64,7 @@ fn solve(monkeys: &Monkeys, name: Key) -> Value {
 #[derive(Clone, Debug)]
 #[parse_from]
 enum Monkey {
-    #[format(fail::<_, (), _>)]
+    #[format(fail::<_, (), _>())]
     Unknown,
     #[format(i64)]
     Constant { value: Number },
@@ -108,7 +108,7 @@ impl Application {
 }
 
 fn calculate_part1(monkeys: &Monkeys) -> i64 {
-    if let Value::Constant { value } = solve(&monkeys, ROOT) {
+    if let Value::Constant { value } = solve(monkeys, ROOT) {
         value
     } else {
         panic!("Could not find a solution")

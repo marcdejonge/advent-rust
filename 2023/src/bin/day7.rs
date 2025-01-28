@@ -4,9 +4,9 @@ use std::fmt::{Debug, Formatter, Write};
 
 use enum_map::{Enum, EnumMap};
 use nom::error::ParseError;
-use nom::{AsBytes, InputLength, InputTake};
+use nom::AsBytes;
+use nom::Parser;
 use nom_parse_macros::parse_from;
-use nom_parse_trait::ParseFrom;
 use rayon::prelude::*;
 
 use crate::Score::*;
@@ -137,11 +137,13 @@ impl Score {
 fn parse_hand<I, E>(input: I) -> nom::IResult<I, [Card; 5], E>
 where
     E: ParseError<I>,
-    I: Clone + InputLength + InputTake + AsBytes,
+    I: nom::Input + AsBytes,
 {
-    nom::combinator::map(nom::multi::many_m_n(5, 5, Card::parse), |list| {
-        list.try_into().unwrap()
-    })(input)
+    nom::combinator::map(
+        nom::multi::many_m_n(5, 5, nom_parse_trait::ParseFrom::parse),
+        |list| list.try_into().unwrap(),
+    )
+    .parse(input)
 }
 
 fn jokers(cards: [Card; 5]) -> [Card; 5] {

@@ -6,13 +6,10 @@ use nom::error::{ErrorKind, ParseError};
 use nom::multi::{many0, many1, separated_list1};
 use nom::sequence::preceded;
 use nom::Err::Error;
-use nom::{
-    AsBytes, AsChar, Compare, IResult, InputIter, InputLength, InputTake, InputTakeAtPosition,
-    Parser, Slice,
-};
+use nom::{AsBytes, AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Index, IndexMut, Range, RangeFrom, RangeTo};
+use std::ops::{Index, IndexMut, Range};
 
 #[derive(Clone, Hash)]
 pub struct Grid<T> {
@@ -37,18 +34,16 @@ impl<I, E, T> ParseFrom<I, E> for Grid<T>
 where
     T: ParseFrom<I, E>,
     E: ParseError<I>,
-    I: AsBytes + Clone + InputIter + InputLength + InputTake + InputTakeAtPosition,
-    <I as InputIter>::Item: AsChar,
-    <I as InputTakeAtPosition>::Item: AsChar,
+    I: AsBytes + Input,
+    <I as Input>::Item: AsChar,
     I: Compare<&'static str>,
-    I: Slice<RangeFrom<usize>> + Slice<Range<usize>> + Slice<RangeTo<usize>>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
         let mut line_parser = not_line_ending.and_then(many1(T::parse));
         let (rest, first_line) = line_parser.parse(input.clone())?;
         let width = first_line.len();
 
-        let (rest, mut lines) = many0(preceded(line_ending, line_parser))(rest.clone())?;
+        let (rest, mut lines) = many0(preceded(line_ending, line_parser)).parse(rest.clone())?;
         if lines.iter().any(|line| line.len() != width) {
             return Err(Error(E::from_error_kind(rest, ErrorKind::LengthValue)));
         }
@@ -70,11 +65,9 @@ pub fn uneven_grid_parser<I, E, T>(input: I) -> IResult<I, Grid<T>, E>
 where
     T: ParseFrom<I, E> + Clone + Default,
     E: ParseError<I>,
-    I: AsBytes + Clone + InputIter + InputLength + InputTake + InputTakeAtPosition,
-    <I as InputIter>::Item: AsChar,
-    <I as InputTakeAtPosition>::Item: AsChar,
+    I: AsBytes + Input,
+    <I as Input>::Item: AsChar,
     I: Compare<&'static str>,
-    I: Slice<RangeFrom<usize>> + Slice<Range<usize>> + Slice<RangeTo<usize>>,
 {
     let (rest, lines) = separated_list1(line_ending, not_line_ending.and_then(many1(T::parse)))
         .parse(input.clone())?;

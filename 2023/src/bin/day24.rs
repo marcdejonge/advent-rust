@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::parsing::parsable_pair;
 use advent_lib::day_main;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::parsing::parsable_pair;
 use advent_lib::parsing::separated_lines1;
 use nom_parse_macros::parse_from;
 use num::Integer;
@@ -14,7 +14,7 @@ struct Weather {
     hail: Vec<Line<3>>,
 }
 
-#[parse_from(parsable_pair(tuple(space0, "@", space0)))]
+#[parse_from(parsable_pair((space0, "@", space0)))]
 #[derive(Copy, Clone)]
 struct Line<const D: usize> {
     p: Point<D, i128>,
@@ -94,7 +94,7 @@ fn calculate_part2(weather: &Weather) -> i128 {
                 // Just try a bunch of speeds, both positive and negative
                 .flat_map(|x| [x, -x].into_iter())
                 .find(|test_speed| {
-                    *test_speed != -1 // Hack for the example, it find this erroneously
+                    *test_speed != -1 // Hack for the example, it finds this erroneously
                         && weather
                             .hail
                             .iter()

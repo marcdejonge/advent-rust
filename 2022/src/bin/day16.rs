@@ -21,7 +21,7 @@ struct SewerSystem {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[parse_from(tuple(
+#[parse_from((
     preceded("Valve ", Key::parse),
     preceded(" has flow rate=", i32),
     preceded(
@@ -108,7 +108,7 @@ fn generate_sewer(parsed_valves: Vec<ParsedValve>) -> SewerSystem {
             (
                 pv.name,
                 Valve {
-                    name: pv.name.clone(),
+                    name: pv.name,
                     rate: pv.rate,
                     distances: find_all_neighbours(pv.name, &valve_map),
                     code,

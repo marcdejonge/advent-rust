@@ -4,7 +4,7 @@ use advent_lib::day_main;
 use advent_lib::direction::CardinalDirections;
 use advent_lib::geometry::{vector2, vector4, Point, Vector};
 use advent_lib::grid::Grid;
-use nom_parse_macros::{parse_from, parse_match};
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
 #[parse_from(separated_list1(line_ending, ()))]
@@ -13,7 +13,7 @@ struct Input {
 }
 
 #[derive(Clone)]
-#[parse_match("p={} v={}")]
+#[parse_from(match "p={} v={}")]
 struct Robot {
     p: Point<2, i32>,
     v: Vector<2, i32>,

@@ -4,8 +4,7 @@ use advent_lib::day_main;
 use advent_lib::parsing::{
     double_line_ending, in_brackets, separated_lines1, single_match, single_space,
 };
-use nom::character::{is_alphabetic, is_digit};
-use nom_parse_macros::{parse_from, parse_match};
+use nom_parse_macros::parse_from;
 
 #[derive(Debug)]
 #[parse_from(separated_pair(
@@ -14,11 +13,11 @@ use nom_parse_macros::{parse_from, parse_match};
             line_ending,
             separated_list1(
                 single_space(),
-                alt((
-                    in_brackets(single_match(is_alphabetic)),
+                alt(
+                    in_brackets(single_match(AsChar::is_alpha)),
                     map("   ", |_| b' '),
-                    delimited(single_space(), single_match(is_digit), opt(single_space())),
-                ))
+                    delimited(single_space(), single_match(AsChar::is_dec_digit), opt(single_space())),
+                )
             )
         ),
         parse_stacks,
@@ -53,7 +52,7 @@ fn parse_stacks(lines: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
 }
 
 #[derive(Debug, Clone)]
-#[parse_match("move {} from {} to {}")]
+#[parse_from(match "move {} from {} to {}")]
 struct Command {
     count: u32,
     from_stack_ix: u32,

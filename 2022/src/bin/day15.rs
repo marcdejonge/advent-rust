@@ -24,9 +24,9 @@ fn contains(sensors: &[Sensor], place: Point) -> bool {
     sensors.iter().any(|sensor| sensor.contains(place))
 }
 
-#[parse_from(tuple(
-    map(tuple(preceded("Sensor at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
-    map(tuple(preceded(": closest beacon is at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
+#[parse_from((
+    map((preceded("Sensor at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
+    map((preceded(": closest beacon is at x=", i64), preceded(", y=", i64)),|(x,y)| point2(x, y)),
 ))]
 struct Sensor {
     sensor: Point,

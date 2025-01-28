@@ -13,7 +13,7 @@ struct Input {
 }
 
 #[derive(Debug, Clone)]
-#[parse_from(tuple(
+#[parse_from((
     map(
         delimited("Button A: X+", separated_pair(i64, ", Y+", i64), line_ending),
         |(x, y)| vector2(x, y),

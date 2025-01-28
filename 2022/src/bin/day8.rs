@@ -4,12 +4,11 @@ use advent_lib::day_main;
 use advent_lib::grid::Grid;
 use advent_lib::parsing::single_match;
 use bit_set::BitSet;
-use nom::character::is_digit;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
 #[derive(Clone)]
-#[parse_from(map(single_match(is_digit), |b| b - b'0' + 1))]
+#[parse_from(map(single_match(AsChar::is_dec_digit), |b| b - b'0' + 1))]
 struct Height(u8);
 
 #[inline]

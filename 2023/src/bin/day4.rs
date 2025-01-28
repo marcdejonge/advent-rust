@@ -13,10 +13,10 @@ struct Input {
 
 #[parse_from(
     preceded(
-        tuple(("Card", space1, u64, ":", space1)),
+        ("Card", space1, u64, ":", space1),
         separated_pair(
             map(separated_list1(space1, u8), |winning| winning.into_iter().collect()),
-            tuple((" |", space1)),
+            (" |", space1),
             separated_list1(space1, u8),
         ),
     )

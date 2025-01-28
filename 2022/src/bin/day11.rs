@@ -20,8 +20,8 @@ enum Operation {
 }
 
 #[derive(Debug, Clone)]
-#[parse_from(tuple(
-    delimited("Monkey ", u32, tuple(":", line_ending)),
+#[parse_from((
+    delimited("Monkey ", u32, (":", line_ending)),
     delimited("  Starting items: ", separated_list1(", ", u64), line_ending),
     preceded("  Operation: new = old ", {}),
     delimited(space1, alt((u64, map("old", |_| 0))), line_ending),
