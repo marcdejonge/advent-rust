@@ -9,8 +9,8 @@ advent-macros = { path = "../macros" }
 bit-set = "0.8.0"
 fxhash = "0.2.1"
 nom = "8"
-nom-parse-trait = "0.3.0"
-nom-parse-macros = "0.3.0"
+nom-parse-trait = "0.3.2"
+nom-parse-macros = "0.3.1"
 rayon = "1.10.0"
 
 [profile.release]
