@@ -235,29 +235,37 @@ impl<T> Grid<T> {
         self.items.get_unchecked_mut((x + y * width) as usize)
     }
 
-    pub fn north_line(&self, x: i32) -> LineIterator<T> {
+    pub fn north_line<'a>(&'a self, x: i32) -> LineIterator<'a, T> {
         LineIterator::North { grid: self, x, y: self.height() - 1 }
     }
 
-    pub fn east_line(&self, y: i32) -> LineIterator<T> {
+    pub fn east_line<'a>(&'a self, y: i32) -> LineIterator<'a, T> {
         LineIterator::East { grid: self, x: 0, y }
     }
 
-    pub fn south_line(&self, x: i32) -> LineIterator<T> {
+    pub fn south_line<'a>(&'a self, x: i32) -> LineIterator<'a, T> {
         LineIterator::South { grid: self, x, y: 0 }
     }
 
-    pub fn west_line(&self, y: i32) -> LineIterator<T> {
+    pub fn west_line<'a>(&'a self, y: i32) -> LineIterator<'a, T> {
         LineIterator::West { grid: self, x: self.width() - 1, y }
     }
 
-    pub fn north_lines(&self) -> LinesIterator<T> { LinesIterator::North { grid: self, x: 0 } }
+    pub fn north_lines<'a>(&'a self) -> LinesIterator<'a, T> {
+        LinesIterator::North { grid: self, x: 0 }
+    }
 
-    pub fn east_lines(&self) -> LinesIterator<T> { LinesIterator::East { grid: self, y: 0 } }
+    pub fn east_lines<'a>(&'a self) -> LinesIterator<'a, T> {
+        LinesIterator::East { grid: self, y: 0 }
+    }
 
-    pub fn south_lines(&self) -> LinesIterator<T> { LinesIterator::South { grid: self, x: 0 } }
+    pub fn south_lines<'a>(&'a self) -> LinesIterator<'a, T> {
+        LinesIterator::South { grid: self, x: 0 }
+    }
 
-    pub fn west_lines(&self) -> LinesIterator<T> { LinesIterator::West { grid: self, y: 0 } }
+    pub fn west_lines<'a>(&'a self) -> LinesIterator<'a, T> {
+        LinesIterator::West { grid: self, y: 0 }
+    }
 
     pub fn mut_line<F>(&mut self, start: Location, direction: Vector<2, i32>, function: F)
     where

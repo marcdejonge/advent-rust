@@ -1,5 +1,4 @@
 #![feature(test)]
-#![feature(array_chunks)]
 
 use advent_lib::day_main;
 use fxhash::FxHashSet;

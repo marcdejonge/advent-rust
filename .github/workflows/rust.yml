@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        projects: [ "2022", "2023", "2024", "shared" ]
-    
+        projects: ["2022", "2023", "2024", "shared"]
+
     steps:
       - uses: actions/checkout@v4
       - name: Update Rust to nightly

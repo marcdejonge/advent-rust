@@ -82,7 +82,7 @@ impl<'a> Iterator for NodesIterator<'a> {
     }
 }
 
-fn node_iterate(nodes: &Vec<NumberNode>) -> NodesIterator {
+fn node_iterate<'a>(nodes: &'a Vec<NumberNode>) -> NodesIterator<'a> {
     let zero_ix = nodes
         .iter()
         .enumerate()
