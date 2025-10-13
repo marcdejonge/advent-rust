@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bit-vec = "0.8"
 fxhash = "0.2"
+image = "0.25.8"
 memmap2 = "0.9"
 nom = "8"
 nom-parse-trait = "0.3.2"

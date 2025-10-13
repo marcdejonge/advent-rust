@@ -22,7 +22,7 @@ macro_rules! day_test {
         mod $name {
             use super::super::*;
 
-            const input: &[u8] = include_bytes!(concat!(
+            const INPUT: &[u8] = include_bytes!(concat!(
                 "../../input/day",
                 stringify!($day),
                 "_",
@@ -32,7 +32,7 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
             }
         }
@@ -44,7 +44,7 @@ macro_rules! day_test {
         mod $name {
             use super::super::*;
 
-            const input: &[u8] = include_bytes!(concat!(
+            const INPUT: &[u8] = include_bytes!(concat!(
                 "../../input/day",
                 stringify!($day),
                 "_",
@@ -54,13 +54,13 @@ macro_rules! day_test {
 
             #[test]
             fn part1() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
             }
 
             #[test]
             fn part2() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 advent_lib::test_utils::assert_day(&parsed, calculate_part2, $part2_result);
             }
         }
@@ -74,12 +74,12 @@ macro_rules! day_test {
             use super::super::*;
             use test::Bencher;
 
-            const input: &[u8] =
+            const INPUT: &[u8] =
                 include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
                 })
@@ -95,12 +95,12 @@ macro_rules! day_test {
             use super::super::*;
             use test::Bencher;
 
-            const input: &[u8] =
+            const INPUT: &[u8] =
                 include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&parsed, calculate_part1, $part1_result);
                 })
@@ -108,7 +108,7 @@ macro_rules! day_test {
 
             #[bench]
             fn part2(b: &mut Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(input));
+                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
                 b.iter(|| {
                     advent_lib::test_utils::assert_day(&parsed, calculate_part2, $part2_result);
                 })

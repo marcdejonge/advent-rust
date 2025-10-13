@@ -1,12 +1,12 @@
 #![feature(test)]
 
 use advent_lib::day_main;
-use advent_lib::direction::Direction;
+use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, vector2, Point, Vector};
 use advent_lib::grid::{uneven_grid_parser, Grid};
 use advent_lib::parsing::double_line_ending;
 use advent_macros::FromRepr;
-use fxhash::{FxBuildHasher, FxHashMap};
+use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use std::cmp::min;
 use std::ops::Neg;
@@ -25,23 +25,17 @@ enum Command {
     Right,
 }
 
+#[derive(Debug, Copy, Clone)]
 struct Person {
-    position: Point<2, i32>,
-    direction: Direction,
+    pos: Point<2, i32>,
+    dir: Direction,
 }
 
 impl Person {
-    fn step(&self) -> Point<2, i32> { self.position + self.direction }
+    fn step(&self) -> Person { Person { dir: self.dir, pos: self.pos + self.dir } }
 
     fn score(&self) -> i32 {
-        (self.position.x() + 1) * 4
-            + (self.position.y() + 1) * 1000
-            + match self.direction {
-                East => 0,
-                South => 1,
-                West => 2,
-                North => 3,
-            }
+        (self.pos.x() + 1) * 4 + (self.pos.y() + 1) * 1000 + i32::from(self.dir)
     }
 }
 
@@ -61,99 +55,230 @@ struct GridAndCommands {
 }
 
 #[derive(Debug)]
+struct Block {
+    grid: Grid<FieldType>,
+    offset: Vector<2, i32>,
+}
+
+#[derive(Debug)]
 struct Input {
     commands: Vec<Command>,
-    block_size: usize,
-    blocks: FxHashMap<Vector<2, i32>, Grid<FieldType>>,
-    start_offset: Vector<2, i32>,
+    block_size: i32,
+    blocks: [Block; 6],
+    block_jump_2d: BlockJumps,
+    block_jump_3d: BlockJumps,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum Turn {
+    None,
+    Left,
+    Right,
+    Around,
+}
+
+impl Turn {
+    fn apply(&self, person: &Person, block_size: i32) -> Person {
+        let position = person.pos + (person.dir.neg().as_vec() * block_size);
+        match self {
+            Self::None => Person { dir: person.dir, pos: position },
+            Self::Left => Person {
+                dir: person.dir.turn_left(),
+                pos: point2(position.y(), block_size - position.x() - 1),
+            },
+            Self::Right => Person {
+                dir: person.dir.turn_right(),
+                pos: point2(block_size - position.y() - 1, position.x()),
+            },
+            Self::Around => Person {
+                dir: -person.dir,
+                pos: point2(
+                    block_size - position.x() - 1,
+                    (block_size) - position.y() - 1,
+                ),
+            },
+        }
+    }
 }
 
 fn preprocess(input: GridAndCommands) -> Input {
-    let mut blocks = FxHashMap::with_capacity_and_hasher(10, FxBuildHasher::default());
-    let block_size = (min(input.grid.x_range().end, input.grid.y_range().end) / 3) as usize;
+    let mut blocks = vec![];
+    let block_size = min(input.grid.x_range().end, input.grid.y_range().end) / 3;
 
-    for y in input.grid.y_range().step_by(block_size) {
-        for x in input.grid.x_range().step_by(block_size) {
+    for y in input.grid.y_range().step_by(block_size as usize) {
+        for x in input.grid.x_range().step_by(block_size as usize) {
             if input.grid.get(point2(x, y)).cloned().unwrap_or_default() != Outside {
-                blocks.insert(
-                    vector2(x, y),
-                    input.grid.sub_grid(x..(x + block_size as i32), y..(y + block_size as i32)),
-                );
+                blocks.push(Block {
+                    grid: input.grid.sub_grid(x..(x + block_size), y..(y + block_size)),
+                    offset: vector2(x, y),
+                });
             }
         }
     }
 
-    let start_block = *blocks.keys().find(|offset| offset.y() == 0).unwrap();
+    let blocks = blocks.try_into().expect("Expected 6 blocks as input");
+    let block_jump_2d = calc_block_jumps_2d(&blocks);
+    let block_jump_3d = calc_block_jumps_3d(&blocks);
 
-    Input { commands: input.commands, block_size, blocks, start_offset: start_block }
-}
-
-impl Input {
-    fn next_block_2d(
-        &self,
-        current_offset: &Vector<2, i32>,
-        direction: &Direction,
-    ) -> (Vector<2, i32>, &Grid<FieldType>) {
-        let step = direction.as_vec() * self.block_size as i32;
-        let mut next_offset = *current_offset;
-        let modulus = 4 * self.block_size as i32;
-
-        for _ in 0..5 {
-            next_offset = next_offset + step;
-            next_offset = vector2(
-                (next_offset.x() + modulus) % modulus,
-                (next_offset.y() + modulus) % modulus,
-            );
-            if let Some(block) = self.blocks.get(&next_offset) {
-                return (next_offset, block);
-            }
-        }
-
-        panic!("No block found")
+    Input {
+        commands: input.commands,
+        block_size,
+        blocks: blocks,
+        block_jump_2d,
+        block_jump_3d,
     }
 }
 
-fn calculate_part1(input: &Input) -> i32 {
-    let mut current_offset = input.start_offset;
-    let mut current_block = input.blocks.get(&current_offset).unwrap();
-    let mut person = Person { position: point2(0, 0), direction: East };
+type BlockJumps = FxHashMap<(usize, Direction), (usize, Turn)>;
 
-    for command in &input.commands {
-        match command {
-            Command::Forward(steps) => {
-                for _ in 0..*steps {
-                    let mut next_position = person.step();
-                    match current_block.get(next_position) {
-                        Some(Empty) => person.position = next_position,
-                        Some(Wall) => break,
-                        Some(Outside) => panic!("Outside a block should not be possible"),
-                        None => {
-                            let (next_offset, next_block) =
-                                input.next_block_2d(&current_offset, &person.direction);
-                            next_position = next_position
-                                + (person.direction.neg().as_vec() * (input.block_size as i32));
+fn calc_block_jumps_2d(blocks: &[Block; 6]) -> BlockJumps {
+    let mut jumps = FxHashMap::default();
+    let block_size = blocks[0].grid.width();
 
-                            if next_block.get(next_position) == Some(&Wall) {
-                                break;
-                            }
+    for start_ix in 0..6 {
+        let start_offset = blocks[start_ix].offset;
+        for direction in ALL_DIRECTIONS {
+            let step = direction.as_vec() * block_size;
+            let modulus = 4 * block_size;
+            let mut next_offset = start_offset;
 
-                            current_offset = next_offset;
-                            current_block = next_block;
-                            person.position = next_position;
+            for _ in 1..=4 {
+                next_offset = (next_offset + step + vector2(modulus, modulus)) % modulus;
+                if let Some((next_ix, _)) =
+                    blocks.iter().enumerate().find(|(_, block)| block.offset == next_offset)
+                {
+                    jumps.insert((start_ix, direction), (next_ix, Turn::None));
+                    break;
+                }
+            }
+        }
+    }
+
+    return jumps;
+}
+
+fn calc_block_jumps_3d(blocks: &[Block; 6]) -> BlockJumps {
+    let mut jumps = FxHashMap::default();
+    let block_size = blocks[0].grid.width();
+
+    if block_size == 4 {
+        jumps.insert((0, North), (1, Turn::Around));
+        jumps.insert((0, East), (5, Turn::Around));
+        jumps.insert((0, South), (3, Turn::None));
+        jumps.insert((0, West), (2, Turn::Left));
+
+        jumps.insert((1, North), (0, Turn::Around));
+        jumps.insert((1, East), (2, Turn::None));
+        jumps.insert((1, South), (4, Turn::Around));
+        jumps.insert((1, West), (5, Turn::Left));
+
+        jumps.insert((2, North), (0, Turn::Right));
+        jumps.insert((2, East), (3, Turn::None));
+        jumps.insert((2, South), (4, Turn::Left));
+        jumps.insert((2, West), (1, Turn::None));
+
+        jumps.insert((3, North), (0, Turn::None));
+        jumps.insert((3, East), (5, Turn::Right));
+        jumps.insert((3, South), (4, Turn::None));
+        jumps.insert((3, West), (2, Turn::None));
+
+        jumps.insert((4, North), (3, Turn::None));
+        jumps.insert((4, East), (5, Turn::None));
+        jumps.insert((4, South), (1, Turn::Around));
+        jumps.insert((4, West), (2, Turn::Right));
+
+        jumps.insert((5, North), (3, Turn::Left));
+        jumps.insert((5, East), (0, Turn::Around));
+        jumps.insert((5, South), (1, Turn::Right));
+        jumps.insert((5, West), (4, Turn::None));
+    } else {
+        jumps.insert((0, North), (5, Turn::Right));
+        jumps.insert((0, East), (1, Turn::None));
+        jumps.insert((0, South), (2, Turn::None));
+        jumps.insert((0, West), (3, Turn::Around));
+
+        jumps.insert((1, North), (5, Turn::None));
+        jumps.insert((1, East), (4, Turn::Around));
+        jumps.insert((1, South), (2, Turn::Right));
+        jumps.insert((1, West), (0, Turn::None));
+
+        jumps.insert((2, North), (0, Turn::None));
+        jumps.insert((2, East), (1, Turn::Left));
+        jumps.insert((2, South), (4, Turn::None));
+        jumps.insert((2, West), (3, Turn::Left));
+
+        jumps.insert((3, North), (2, Turn::Right));
+        jumps.insert((3, East), (4, Turn::None));
+        jumps.insert((3, South), (5, Turn::None));
+        jumps.insert((3, West), (0, Turn::Around));
+
+        jumps.insert((4, North), (2, Turn::None));
+        jumps.insert((4, East), (1, Turn::Around));
+        jumps.insert((4, South), (5, Turn::Right));
+        jumps.insert((4, West), (3, Turn::None));
+
+        jumps.insert((5, North), (3, Turn::None));
+        jumps.insert((5, East), (4, Turn::Left));
+        jumps.insert((5, South), (1, Turn::None));
+        jumps.insert((5, West), (0, Turn::Left));
+    }
+
+    return jumps;
+}
+
+fn handle_command(
+    input: &Input,
+    block_jump: &BlockJumps,
+    command: &Command,
+    index: &usize,
+    person: &Person,
+) -> (usize, Person) {
+    let mut person = person.clone();
+    let mut index = *index;
+
+    match command {
+        Command::Forward(steps) => {
+            for _ in 0..*steps {
+                let mut next_person = person.step();
+                match input.blocks[index].grid.get(next_person.pos) {
+                    Some(Empty) => person = next_person,
+                    Some(Wall) => break,
+                    Some(Outside) => panic!("Outside a block should not be possible"),
+                    None => {
+                        let (next_ix, turn) = block_jump[&(index, person.dir)];
+                        next_person = turn.apply(&next_person, input.block_size);
+
+                        if input.blocks[next_ix].grid.get(next_person.pos) == Some(&Wall) {
+                            break;
                         }
+
+                        (index, person) = (next_ix, next_person);
                     }
                 }
             }
-            Command::Left => person.direction = person.direction.turn_left(),
-            Command::Right => person.direction = person.direction.turn_right(),
         }
+        Command::Left => person.dir = person.dir.turn_left(),
+        Command::Right => person.dir = person.dir.turn_right(),
     }
 
-    person.position = person.position + current_offset;
+    (index, person)
+}
+
+fn calculate(input: &Input, block_jump: &BlockJumps) -> i32 {
+    let mut index = 0;
+    let mut person = Person { pos: point2(0, 0), dir: East };
+
+    for command in &input.commands {
+        (index, person) = handle_command(input, block_jump, command, &mut index, &mut person);
+    }
+
+    person.pos = person.pos + input.blocks[index].offset;
     person.score()
 }
 
-fn calculate_part2(_input: &Input) -> i32 { todo!() }
+fn calculate_part1(input: &Input) -> i32 { calculate(input, &input.block_jump_2d) }
+
+fn calculate_part2(input: &Input) -> i32 { calculate(input, &input.block_jump_3d) }
 
 day_main!( preprocess => calculate_part1, calculate_part2 );
 
@@ -166,8 +291,8 @@ mod tests {
     use nom::Parser;
     use nom_parse_trait::ParseFrom;
 
-    day_test!( 22, example => 6032/*, 5031 */ ; preprocess );
-    day_test!( 22 => 197160 ; preprocess );
+    day_test!( 22, example => 6032, 5031 ; preprocess );
+    day_test!( 22 => 197160, 145065 ; preprocess );
 
     #[test]
     fn test_command_parsing() {

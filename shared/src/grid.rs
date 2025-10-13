@@ -1,6 +1,7 @@
 use crate::direction::ALL_DIRECTIONS;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 use bit_vec::BitVec;
+use image::{Rgba, RgbaImage};
 use nom::character::complete::{line_ending, not_line_ending};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::{many0, many1, separated_list1};
@@ -415,6 +416,17 @@ impl<T> Grid<T> {
         }
 
         regions
+    }
+
+    pub fn render_to_image(&self, filename: &str, mapping: impl Fn(&T) -> [u8; 4]) {
+        let mut image = RgbaImage::new(self.width() as u32, self.height() as u32);
+        self.entries().for_each(|(loc, val)| {
+            let pixel = image.get_pixel_mut(loc.x() as u32, loc.y() as u32);
+            *pixel = Rgba(mapping(val));
+        });
+        image
+            .save_with_format(filename, image::ImageFormat::Png)
+            .expect("Expect saving to not be a problem");
     }
 }
 

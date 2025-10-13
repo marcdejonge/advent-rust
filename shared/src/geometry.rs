@@ -9,7 +9,7 @@ use num_traits::{abs, One, Signed};
 use std::cmp::min;
 use std::fmt::{Debug, Formatter};
 use std::iter::Sum;
-use std::ops::{Add, Div, Index, Mul, Neg, Rem, Sub};
+use std::ops::{Add, AddAssign, Div, Index, Mul, Neg, Rem, Sub};
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Point<const D: usize, T> {
@@ -254,6 +254,15 @@ impl<const D: usize, T: Add<Output = T> + Copy, V: Into<Vector<D, T>>> Add<V> fo
     }
 }
 
+// point += vector
+impl<const D: usize, T: AddAssign + Copy, V: Into<Vector<D, T>>> AddAssign<V> for Point<D, T> {
+    fn add_assign(&mut self, rhs: V) {
+        for (ix, v) in rhs.into().coords.into_iter().enumerate() {
+            self.coords[ix] += v;
+        }
+    }
+}
+
 // vector + vector -> vector
 impl<const D: usize, T: Add<Output = T> + Copy, V: Into<Vector<D, T>>> Add<V> for Vector<D, T> {
     type Output = Vector<D, T>;
@@ -324,6 +333,12 @@ impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Point<D, T> {
 impl<const D: usize, T: Mul<Output = T> + Copy> Mul<T> for Vector<D, T> {
     type Output = Vector<D, T>;
     fn mul(self, rhs: T) -> Vector<D, T> { Vector { coords: self.coords.map(|c| c * rhs) } }
+}
+
+// vector % const = vector
+impl<const D: usize, T: Rem<Output = T> + Copy> Rem<T> for Vector<D, T> {
+    type Output = Vector<D, T>;
+    fn rem(self, rhs: T) -> Self::Output { Vector { coords: self.coords.map(|c| c % rhs) } }
 }
 
 impl<const D: usize, T: Div<Output = T> + Copy> Div<T> for Vector<D, T> {

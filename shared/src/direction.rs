@@ -106,16 +106,27 @@ impl Neg for Direction {
     }
 }
 
-impl From<Direction> for usize {
-    fn from(value: Direction) -> Self {
-        match value {
-            North => 3,
-            East => 0,
-            South => 1,
-            West => 2,
+macro_rules! direction_into_nr {
+    () => {};
+    ($nr_type:ty) => {
+        impl From<Direction> for $nr_type {
+            fn from(value: Direction) -> Self {
+                match value {
+                    North => 3,
+                    East => 0,
+                    South => 1,
+                    West => 2,
+                }
+            }
         }
-    }
+    };
+    ($nr_type:ty, $($types:ty),*) => {
+        direction_into_nr!($nr_type);
+        direction_into_nr!($($types),*);
+    };
 }
+
+direction_into_nr!(i8, i16, i32, i64, u8, u16, u32, u64, usize);
 
 impl<T> From<Direction> for Vector<2, T>
 where
