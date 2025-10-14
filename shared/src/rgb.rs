@@ -20,19 +20,17 @@ where
     I: Compare<&'static str>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
-        fn parse_hex([a, b]: [impl AsChar; 2]) -> u8 {
-            let a = a.as_char();
-            let b = b.as_char();
-            (a.to_digit(16).unwrap() * 16 + b.to_digit(16).unwrap()) as u8
+        fn parse_hex(a: impl AsChar, b: impl AsChar) -> u8 {
+            (a.as_char().to_digit(16).unwrap() * 16 + b.as_char().to_digit(16).unwrap()) as u8
         }
 
         let (rest, parsed) =
             preceded(tag("#"), take_while_m_n(6, 6, AsChar::is_hex_digit)).parse(input)?;
 
-        let mut iter = parsed.iter_elements().array_chunks();
-        let red = iter.next().map(parse_hex).unwrap();
-        let green = iter.next().map(parse_hex).unwrap();
-        let blue = iter.next().map(parse_hex).unwrap();
+        let mut chars = parsed.iter_elements();
+        let red = parse_hex(chars.next().unwrap(), chars.next().unwrap());
+        let green = parse_hex(chars.next().unwrap(), chars.next().unwrap());
+        let blue = parse_hex(chars.next().unwrap(), chars.next().unwrap());
         Ok((rest, RGB { red, green, blue }))
     }
 }

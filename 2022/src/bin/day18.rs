@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::geometry::{unit_vector, vector3, FindBoundingBox};
 use advent_lib::search::depth_first_search;
+use advent_lib::*;
 use fxhash::{FxBuildHasher, FxHashSet};
 use std::collections::HashSet;
 
@@ -59,11 +59,5 @@ fn calculate_part2(points: &FxHashSet<Point>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 18, example => 64, 58 );
-    day_test!( 18 => 4320, 2456 );
-}
+day_test!( 18, example => 64, 58 );
+day_test!( 18 => 4320, 2456 );

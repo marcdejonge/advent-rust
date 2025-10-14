@@ -4,12 +4,12 @@ use std::ops::Neg;
 
 use fxhash::hash64;
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use advent_macros::FromRepr;
 
 #[repr(u8)]
@@ -32,7 +32,7 @@ fn drop_cell(
         }
         Stone::Rolling => {
             grid.swap(location, *last_location);
-            *last_location = *last_location + direction.as_vec()
+            *last_location += direction.as_vec()
         }
         Stone::None => {}
     }
@@ -107,11 +107,5 @@ fn calculate_part2(grid: &Grid<Stone>) -> i32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 14, example => 136, 64);
-    day_test!( 14 => 110407, 87273);
-}
+day_test!( 14, example => 136, 64);
+day_test!( 14 => 110407, 87273);

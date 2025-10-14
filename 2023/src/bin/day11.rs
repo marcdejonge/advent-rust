@@ -1,10 +1,10 @@
 #![feature(test)]
 
 use crate::Space::*;
-use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -83,11 +83,5 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 11, example => 374, 82000210);
-    day_test!( 11 => 10490062, 382979724122 );
-}
+day_test!( 11, example => 374, 82000210);
+day_test!( 11 => 10490062, 382979724122 );

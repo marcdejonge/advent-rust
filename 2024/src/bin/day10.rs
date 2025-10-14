@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::grid::Location;
 use advent_lib::parsing::single_digit;
+use advent_lib::*;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -75,11 +75,5 @@ fn calculate_part2(grid: &Grid) -> u32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 10, example1 => 36, 81 );
-    day_test!( 10 => 737, 1619);
-}
+day_test!( 10, example1 => 36, 81 );
+day_test!( 10 => 737, 1619);

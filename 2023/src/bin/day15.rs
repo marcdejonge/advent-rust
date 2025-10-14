@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::hash::Hasher;
 
@@ -97,11 +97,5 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 15, example => 1320, 145 );
-    day_test!( 15 => 505379, 263211 );
-}
+day_test!( 15, example => 1320, 145 );
+day_test!( 15 => 505379, 263211 );

@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::separated_lines1;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::cmp::max;
 
@@ -78,11 +78,5 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 2, example => 8, 2286 );
-    day_test!( 2 => 2716, 72227 );
-}
+day_test!( 2, example => 8, 2286 );
+day_test!( 2 => 2716, 72227 );

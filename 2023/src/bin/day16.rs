@@ -4,12 +4,12 @@
 use fxhash::FxHashSet;
 use rayon::prelude::*;
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::search::depth_first_search;
+use advent_lib::*;
 use advent_macros::FromRepr;
 
 fn neighbours(
@@ -102,11 +102,5 @@ fn calculate_part2(grid: &Grid<Mirror>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 16, example => 46, 51 );
-    day_test!( 16 => 7482, 7896 );
-}
+day_test!( 16, example => 46, 51 );
+day_test!( 16 => 7482, 7896 );

@@ -1,8 +1,8 @@
 #![feature(test)]
 #![feature(iter_collect_into)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
@@ -51,11 +51,5 @@ fn calculate_part1(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_n
 fn calculate_part2(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_prev(v)).sum() }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 9, example => 114, 2);
-    day_test!( 9 => 1995001648, 988 );
-}
+day_test!( 9, example => 114, 2);
+day_test!( 9 => 1995001648, 988 );

@@ -2,10 +2,10 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_collect_into)]
 
-use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
@@ -130,11 +130,5 @@ fn calculate_part1(input: &Input) -> usize { input.into_iter().within_bounds().n
 fn calculate_part2(input: &Input) -> usize { input.calculate_far(26_501_365) }
 
 day_main!( prepare_grid => calculate_part1, calculate_part2 );
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 21, example => 42 ; prepare_grid );
-    day_test!( 21 => 3847, 637537341306357 ; prepare_grid );
-}
+day_test!( 21, example => 42 ; crate::prepare_grid );
+day_test!( 21 => 3847, 637537341306357 ; crate::prepare_grid );

@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_lib::parsing::{double_line_ending, in_braces, separated_lines1, separated_map1};
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use std::ops::RangeInclusive;
@@ -129,11 +129,5 @@ fn calculate_part2(input: &Input) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 19, example => 19114, 167409079868000 );
-    day_test!( 19 => 425811, 131796824371749 );
-}
+day_test!( 19, example => 19114, 167409079868000 );
+day_test!( 19 => 425811, 131796824371749 );

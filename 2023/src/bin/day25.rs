@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::graph_utils::dijkstra_explore;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use num::integer::sqrt;
@@ -85,11 +85,5 @@ fn calculate_part1(input: &Input) -> usize {
 }
 
 day_main!(calculate_part1);
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 25, example => 54 );
-    day_test!( 25 => 571753 );
-}
+day_test!( 25, example => 54 );
+day_test!( 25 => 571753 );

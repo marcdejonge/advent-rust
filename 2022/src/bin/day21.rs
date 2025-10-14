@@ -1,9 +1,8 @@
 #![feature(test)]
-#![feature(const_for)]
 
-use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_lib::parsing::separated_map1;
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 
@@ -130,11 +129,5 @@ fn calculate_part2(monkeys: &Monkeys) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 21, example => 152, 301 );
-    day_test!( 21 => 21208142603224, 3882224466191 );
-}
+day_test!( 21, example => 152, 301 );
+day_test!( 21 => 21208142603224, 3882224466191 );

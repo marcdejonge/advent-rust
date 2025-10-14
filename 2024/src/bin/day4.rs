@@ -1,9 +1,9 @@
 #![feature(test)]
 
 use crate::Block::*;
-use advent_lib::day_main;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 type Step = Vector<2, i32>;
@@ -67,11 +67,5 @@ fn calculate_part2(grid: &Grid<Block>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 4, example1 => 18, 9 );
-    day_test!( 4 => 2530, 1921);
-}
+day_test!( 4, example1 => 18, 9 );
+day_test!( 4 => 2530, 1921);

@@ -1,9 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location, Size};
 use advent_lib::iter_utils::IteratorUtils;
-use advent_lib::numbers::PositiveNumbersFrom;
+use advent_lib::*;
 use itertools::Itertools;
 use nom_parse_macros::parse_from;
 use std::collections::HashMap;
@@ -31,15 +30,15 @@ impl Field {
             .take_while(|p| self.grid.is_valid_location(p))
     }
 
-    fn count_dips(&self, iterations: impl IntoIterator<Item = i32> + Copy) -> usize {
+    fn count_dips(&self, iterations: impl IntoIterator<Item = i32> + Clone) -> usize {
         self.antenna_locations
             .values()
-            .flat_map(move |same_antenna_locations| {
+            .flat_map(|same_antenna_locations| {
                 IteratorUtils::combinations(same_antenna_locations.iter()).flat_map(
-                    move |[&first, &second]| {
+                    |[&first, &second]| {
                         Iterator::chain(
-                            self.calculate_dips(iterations, first, first - second),
-                            self.calculate_dips(iterations, second, second - first),
+                            self.calculate_dips(iterations.clone(), first, first - second),
+                            self.calculate_dips(iterations.clone(), second, second - first),
                         )
                     },
                 )
@@ -50,14 +49,8 @@ impl Field {
 }
 
 fn calculate_part1(field: &Field) -> usize { field.count_dips([1]) }
-fn calculate_part2(field: &Field) -> usize { field.count_dips(PositiveNumbersFrom(0)) }
+fn calculate_part2(field: &Field) -> usize { field.count_dips(0..) }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 8, example1 => 14, 34 );
-    day_test!( 8 => 299, 1032);
-}
+day_test!( 8, example1 => 14, 34 );
+day_test!( 8 => 299, 1032);

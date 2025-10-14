@@ -1,7 +1,8 @@
 #![feature(test)]
+#![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::parsable_pair;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(parsable_pair("-"))]
@@ -38,11 +39,5 @@ fn calculate_part2(range_pair: &Vec<RangePair>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 4, example => 2, 4 );
-    day_test!( 4 => 580, 895 );
-}
+day_test!( 4, example => 2, 4 );
+day_test!( 4 => 580, 895 );

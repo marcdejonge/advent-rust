@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
+use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -78,11 +78,5 @@ fn calculate_part1(input: &Input) -> usize { input.find_cheats(&generate_steps(2
 fn calculate_part2(input: &Input) -> usize { input.find_cheats(&generate_steps(20), 100) }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 20, example1 => 0, 0 );
-    day_test!( 20 => 1459, 1016066 );
-}
+day_test!( 20, example1 => 0, 0 );
+day_test!( 20 => 1459, 1016066 );

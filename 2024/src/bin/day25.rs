@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::grid::Grid;
 use advent_lib::parsing::separated_double_lines1;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(separated_double_lines1())]
@@ -44,11 +44,5 @@ fn calculate_part1(input: &LocksAndKeys) -> usize {
 }
 
 day_main!(parse_grid => calculate_part1);
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 25, example1 => 3 ; parse_grid );
-    day_test!( 25 => 3021 ; parse_grid );
-}
+day_test!( 25, example1 => 3 ; crate::parse_grid );
+day_test!( 25 => 3021 ; crate::parse_grid );

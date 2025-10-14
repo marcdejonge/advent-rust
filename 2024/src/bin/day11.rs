@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 
@@ -28,7 +28,7 @@ impl Memoized {
         } else if start == 0 {
             self.how_many_splits(1, times - 1)
         } else if start.ilog10() % 2 == 1 {
-            let split = 10u64.pow((start.ilog10() + 1) / 2);
+            let split = 10u64.pow(start.ilog10().div_ceil(2));
             self.how_many_splits(start / split, times - 1)
                 + self.how_many_splits(start % split, times - 1)
         } else {
@@ -49,11 +49,5 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 11, example1 => 55312, 65601038650482 );
-    day_test!( 11 => 217443, 257246536026785);
-}
+day_test!( 11, example1 => 55312, 65601038650482 );
+day_test!( 11 => 217443, 257246536026785);

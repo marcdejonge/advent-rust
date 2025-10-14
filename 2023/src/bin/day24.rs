@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::geometry::{point2, BoundingBox, Point, Vector};
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::parsing::parsable_pair;
 use advent_lib::parsing::separated_lines1;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use num::Integer;
 use std::fmt::{Debug, Formatter};
@@ -140,11 +140,5 @@ fn calculate_part2(weather: &Weather) -> i128 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 24, example => 2, 47 );
-    day_test!( 24 => 19523, 566373506408017 );
-}
+day_test!( 24, example => 2, 47 );
+day_test!( 24 => 19523, 566373506408017 );

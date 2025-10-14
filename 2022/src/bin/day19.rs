@@ -1,7 +1,8 @@
 #![feature(test)]
+#![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
 use advent_lib::search::depth_first_search;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::mem::transmute;
 use std::ops::{Add, Index, Sub};
@@ -245,16 +246,14 @@ fn calculate_part2(blueprints: &Vec<Blueprint>) -> u32 {
 }
 
 day_main!();
+day_test!( 19, example => 33, 3472 );
+day_test!( 19 => 1147, 3080 );
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use advent_lib::day_test;
     use nom::IResult;
     use nom_parse_trait::ParseFrom;
-
-    day_test!( 19, example => 33, 3472 );
-    day_test!( 19 => 1147, 3080 );
 
     #[test]
     fn example_steps_verification() {

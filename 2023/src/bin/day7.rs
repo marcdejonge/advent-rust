@@ -10,7 +10,7 @@ use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
 use crate::Score::*;
-use advent_lib::day_main;
+use advent_lib::*;
 use advent_macros::FromRepr;
 
 #[parse_from(separated_list1(line_ending, separated_pair(parse_hand, space1, u64)))]
@@ -164,14 +164,11 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
+day_test!( 7, example => 6440, 5905 );
+day_test!( 7 => 250602641, 251037509 );
 
 #[cfg(test)]
 mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 7, example => 6440, 5905 );
-    day_test!( 7 => 250602641, 251037509 );
-
     mod parsing {
         use crate::*;
         use nom::error::Error;

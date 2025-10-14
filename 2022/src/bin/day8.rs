@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::grid::Grid;
 use advent_lib::parsing::single_match;
+use advent_lib::*;
 use bit_set::BitSet;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -94,11 +94,5 @@ fn calculate_part2(tree_heights: &Grid<Height>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 8, example => 21, 8 );
-    day_test!( 8 => 1700, 470596 );
-}
+day_test!( 8, example => 21, 8 );
+day_test!( 8 => 1700, 470596 );

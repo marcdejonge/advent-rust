@@ -1,8 +1,8 @@
 #![feature(test)]
 extern crate core;
 
-use advent_lib::day_main;
 use advent_lib::parsing::find_many_skipping_unknown;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from]
@@ -44,12 +44,6 @@ fn calculate_part2(memory: &Memory) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 3, example1 => 161, 161 );
-    day_test!( 3, example2 => 161, 48 );
-    day_test!( 3 => 171183089, 63866497);
-}
+day_test!( 3, example1 => 161, 161 );
+day_test!( 3, example2 => 161, 48 );
+day_test!( 3 => 171183089, 63866497);

@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(separated_list1(line_ending, map(alphanumeric1, |bs: I| bs.as_bytes().to_vec())))]
@@ -65,12 +65,6 @@ fn parse_prefix(line: &[u8], check_text: bool) -> Option<u32> {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 1, example1 => 142, 142 );
-    day_test!( 1, example2 => 209, 281 );
-    day_test!( 1 => 54338, 53389);
-}
+day_test!( 1, example1 => 142, 142 );
+day_test!( 1, example2 => 209, 281 );
+day_test!( 1 => 54338, 53389);

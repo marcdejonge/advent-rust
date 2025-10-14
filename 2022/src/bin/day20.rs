@@ -1,8 +1,9 @@
 #![feature(test)]
+#![allow(clippy::ptr_arg)]
 
 extern crate core;
 
-use advent_lib::day_main;
+use advent_lib::*;
 
 #[derive(Copy, Clone, Debug)]
 struct NumberNode {
@@ -102,11 +103,5 @@ fn calculate(mut nodes: Vec<NumberNode>, repeat: u32) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 20, example => 3, 1623178306 );
-    day_test!( 20 => 18257, 4148032160983 );
-}
+day_test!( 20, example => 3, 1623178306 );
+day_test!( 20 => 18257, 4148032160983 );

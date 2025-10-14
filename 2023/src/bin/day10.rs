@@ -3,11 +3,11 @@
 extern crate core;
 
 use crate::PipeCell::*;
-use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use std::ops::{Add, Neg};
 
@@ -185,15 +185,9 @@ fn calculate_part2(grid: &Grid<PipeCell>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 10, example1 => 4, 1 );
-    day_test!( 10, example2 => 8, 1 );
-    day_test!( 10, example3 => 23, 4 );
-    day_test!( 10, example4 => 22, 4 );
-    day_test!( 10, example5 => 70, 8 );
-    day_test!( 10 => 6714, 429 );
-}
+day_test!( 10, example1 => 4, 1 );
+day_test!( 10, example2 => 8, 1 );
+day_test!( 10, example3 => 23, 4 );
+day_test!( 10, example4 => 22, 4 );
+day_test!( 10, example5 => 70, 8 );
+day_test!( 10 => 6714, 429 );

@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
@@ -32,11 +32,5 @@ fn calculate_part2(numbers: &Numbers) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 1, example1 => 11, 31 );
-    day_test!( 1 => 1889772, 23228917);
-}
+day_test!( 1, example1 => 11, 31 );
+day_test!( 1 => 1889772, 23228917);

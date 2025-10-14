@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        projects: ["2022", "2023", "2024", "shared"]
+        projects: ["2022", "2023", "2024"]
 
     steps:
       - uses: actions/checkout@v4
@@ -20,4 +20,16 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run tests
         working-directory: ./${{ matrix.projects }}
+        run: ../.github/cargo-test.sh
+
+  test-shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Rust to nightly
+        run: rustup update nightly && rustup default nightly
+      - name: Setup Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        working-directory: ./shared
         run: cargo test --tests --no-fail-fast

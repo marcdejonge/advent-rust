@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 
@@ -56,11 +56,5 @@ fn calculate_part2(input: &Input) -> u32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 3, example => 157, 70 );
-    day_test!( 3 => 8123, 2620 );
-}
+day_test!( 3, example => 157, 70 );
+day_test!( 3 => 8123, 2620 );

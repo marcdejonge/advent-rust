@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::CardinalDirections::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(Grid::parse)]
@@ -41,15 +41,9 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 12, example1 => 140, 80 );
-    day_test!( 12, example2 => 772, 436 );
-    day_test!( 12, example3 => 1930, 1206 );
-    day_test!( 12, example4 => 692, 236 );
-    day_test!( 12, example5 => 1184, 368 );
-    day_test!( 12 => 1489582, 914966);
-}
+day_test!( 12, example1 => 140, 80 );
+day_test!( 12, example2 => 772, 436 );
+day_test!( 12, example3 => 1930, 1206 );
+day_test!( 12, example4 => 692, 236 );
+day_test!( 12, example5 => 1184, 368 );
+day_test!( 12 => 1489582, 914966);

@@ -2,11 +2,11 @@
 
 use std::collections::VecDeque;
 
-use advent_lib::day_main;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::key::Key;
 use advent_lib::lines::LineSegment;
 use advent_lib::parsing::{parsable_pair, separated_lines1};
+use advent_lib::*;
 use fxhash::{FxHashMap, FxHashSet};
 use nom_parse_macros::parse_from;
 
@@ -180,11 +180,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 22, example => 5, 7 );
-    day_test!( 22 => 457, 79122 );
-}
+day_test!( 22, example => 5, 7 );
+day_test!( 22 => 457, 79122 );

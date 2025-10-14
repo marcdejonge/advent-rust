@@ -1,11 +1,10 @@
 #![feature(test)]
-#![feature(map_try_insert)]
 
-use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_lib::search::{
     breadth_first_search, depth_first_search, find_max_nonoverlapping_combination,
 };
+use advent_lib::*;
 use fxhash::{FxBuildHasher, FxHashMap};
 use nom_parse_macros::parse_from;
 use std::collections::HashMap;
@@ -57,7 +56,7 @@ fn find_all_neighbours(
                 &valves.get(&current_place).expect("Pointed to a place that doesn't exist").to;
             next_places.iter().map(move |next_place| (*next_place, current_dist + 1))
         },
-        |(next_place, new_dist)| distances.try_insert(next_place, new_dist).is_ok(),
+        |(next_place, new_dist)| distances.entry(next_place).or_insert(new_dist) == &new_dist,
     );
 
     // Optimization: you don't need to travel to any valve that has no flow rate
@@ -191,11 +190,5 @@ impl<'a> State<'a> {
 }
 
 day_main!( generate_sewer => calculate_part1, calculate_part2 );
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 16, example => 1651, 1707 ; generate_sewer );
-    day_test!( 16 => 1923, 2594 ; generate_sewer );
-}
+day_test!( 16, example => 1651, 1707 ; crate::generate_sewer );
+day_test!( 16 => 1923, 2594 ; crate::generate_sewer );

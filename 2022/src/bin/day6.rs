@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(map(alpha1, |bs: I| bs.as_bytes().iter().map(|b| b - b'a').collect()))]
@@ -39,15 +39,9 @@ impl Input {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 6, example1 => 7, 19 );
-    day_test!( 6, example2 => 5, 23 );
-    day_test!( 6, example3 => 6, 23 );
-    day_test!( 6, example4 => 10, 29 );
-    day_test!( 6, example5 => 11, 26 );
-    day_test!( 6 => 1235, 3051 );
-}
+day_test!( 6, example1 => 7, 19 );
+day_test!( 6, example2 => 5, 23 );
+day_test!( 6, example3 => 6, 23 );
+day_test!( 6, example4 => 10, 29 );
+day_test!( 6, example5 => 11, 26 );
+day_test!( 6 => 1235, 3051 );

@@ -1,8 +1,8 @@
 #![feature(test)]
 #![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::cell::RefCell;
 
@@ -122,11 +122,5 @@ fn calculate(monkeys: &[Monkey], rounds: u32, div: u64) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 11, example => 10605, 2713310158 );
-    day_test!( 11 => 108240, 25712998901 );
-}
+day_test!( 11, example => 10605, 2713310158 );
+day_test!( 11 => 108240, 25712998901 );

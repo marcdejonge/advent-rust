@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::parsing::single_match;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(map(single_match(AsChar::is_alpha), |value: u8| (value, match value {
@@ -110,11 +110,5 @@ fn calculate_part2(grid: &Grid<Node>) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 12, example => 31, 29 );
-    day_test!( 12 => 383, 377 );
-}
+day_test!( 12, example => 31, 29 );
+day_test!( 12 => 383, 377 );

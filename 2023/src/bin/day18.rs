@@ -2,9 +2,9 @@
 
 extern crate core;
 
-use advent_lib::day_main;
 use advent_lib::direction::*;
 use advent_lib::rgb::*;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use Direction::*;
 
@@ -70,11 +70,5 @@ fn calculate_part1(input: &Input) -> i64 { calculate_area(&dig_command_1(input))
 fn calculate_part2(input: &Input) -> i64 { calculate_area(&dig_command_2(input)) }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 18, example => 62, 952408144115 );
-    day_test!( 18 => 53300, 64294334780659 );
-}
+day_test!( 18, example => 62, 952408144115 );
+day_test!( 18 => 53300, 64294334780659 );

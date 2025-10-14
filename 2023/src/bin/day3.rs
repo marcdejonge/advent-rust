@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::grid::{Grid, Location};
+use advent_lib::*;
 use rayon::prelude::*;
 
 struct Input {
@@ -90,11 +90,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!(prepare_input => calculate_part1, calculate_part2);
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 3, example => 4361, 467835 ; prepare_input );
-    day_test!( 3 => 536576, 75741499 ; prepare_input );
-}
+day_test!( 3, example => 4361, 467835 ; crate::prepare_input );
+day_test!( 3 => 536576, 75741499 ; crate::prepare_input );

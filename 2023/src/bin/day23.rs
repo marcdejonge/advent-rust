@@ -5,12 +5,12 @@ use nom_parse_macros::parse_from;
 use petgraph::algo::all_simple_paths;
 use petgraph::prelude::*;
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use advent_macros::FromRepr;
 
 use crate::Cell::*;
@@ -163,11 +163,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 23, example => 94, 154 );
-    day_test!( 23 => 2394 ); // Second part is 6554, but is way too slow in testing
-}
+day_test!( 23, example => 94, 154 );
+day_test!( 23 => 2394 ); // Second part is 6554, but is way too slow in testing

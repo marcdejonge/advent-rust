@@ -1,10 +1,10 @@
 #![feature(test)]
 
 use crate::Block::*;
-use advent_lib::day_main;
 use advent_lib::direction::Direction::*;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::grid::{Grid, Location};
+use advent_lib::*;
 use advent_macros::FromRepr;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
@@ -112,12 +112,6 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 16, example1 => 7036, 45 );
-    day_test!( 16, example2 => 11048, 64 );
-    day_test!( 16 => 88416, 442);
-}
+day_test!( 16, example1 => 7036, 45 );
+day_test!( 16, example2 => 11048, 64 );
+day_test!( 16 => 88416, 442);

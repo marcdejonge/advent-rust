@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, vector2};
+use advent_lib::*;
 use fxhash::FxBuildHasher;
 use nom_parse_macros::parse_from;
 use std::collections::HashMap;
@@ -149,11 +149,5 @@ fn calculate_part2(moves: &Moves) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 17, example => 3068, 1514285714288 );
-    day_test!( 17 => 3098, 1525364431487 );
-}
+day_test!( 17, example => 3068, 1514285714288 );
+day_test!( 17 => 3098, 1525364431487 );

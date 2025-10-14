@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -67,12 +67,6 @@ fn calculate_part2(input: &Input) -> i32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 22, example1 => 37327623, 24 );
-    day_test!( 22, example2 => 37990510, 23 );
-    day_test!( 22 => 16619522798, 1854 );
-}
+day_test!( 22, example1 => 37327623, 24 );
+day_test!( 22, example2 => 37990510, 23 );
+day_test!( 22 => 16619522798, 1854 );

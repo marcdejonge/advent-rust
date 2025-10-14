@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::ops::RangeInclusive;
@@ -60,11 +60,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 2, example1 => 2, 4 );
-    day_test!( 2 => 314, 373);
-}
+day_test!( 2, example1 => 2, 4 );
+day_test!( 2 => 314, 373);

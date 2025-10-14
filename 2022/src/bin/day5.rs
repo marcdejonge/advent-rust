@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::{
     double_line_ending, in_brackets, separated_lines1, single_match, single_space,
 };
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[derive(Debug)]
@@ -103,10 +103,5 @@ impl Input {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 5, example => "CMZ".to_owned(), "MCD".to_owned());
-    day_test!( 5 => "QPJPLMNNR".to_owned(), "BQDNWJPVJ".to_owned());
-}
+day_test!( 5, example => "CMZ".to_owned(), "MCD".to_owned());
+day_test!( 5 => "QPJPLMNNR".to_owned(), "BQDNWJPVJ".to_owned());

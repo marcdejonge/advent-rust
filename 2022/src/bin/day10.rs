@@ -1,6 +1,7 @@
 #![feature(test)]
+#![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from]
@@ -49,23 +50,17 @@ fn calculate_part2(additions: &Vec<i32>) -> String {
 }
 
 day_main!( additions => calculate_part1, calculate_part2 );
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 10, example => "13140".to_owned(), "
+day_test!( 10, example => "13140".to_owned(), "
 ##..##..##..##..##..##..##..##..##..##..
 ###...###...###...###...###...###...###.
 ####....####....####....####....####....
 #####.....#####.....#####.....#####.....
 ######......######......######......####
-#######.......#######.......#######.....".to_owned() ; additions );
-    day_test!( 10 => "15260".to_owned(), "
+#######.......#######.......#######.....".to_owned() ; crate::additions );
+day_test!( 10 => "15260".to_owned(), "
 ###...##..#..#.####..##..#....#..#..##..
 #..#.#..#.#..#.#....#..#.#....#..#.#..#.
 #..#.#....####.###..#....#....#..#.#....
 ###..#.##.#..#.#....#.##.#....#..#.#.##.
 #....#..#.#..#.#....#..#.#....#..#.#..#.
-#.....###.#..#.#.....###.####..##...###.".to_owned() ; additions );
-}
+#.....###.#..#.#.....###.####..##...###.".to_owned() ; crate::additions );

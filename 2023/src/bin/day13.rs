@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
 use advent_lib::parsing::double_line_ending;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
@@ -75,37 +75,32 @@ fn calculate_part2(grids: &Grids) -> i32 {
 }
 
 day_main!();
+day_test!( 13, example => 405, 400 );
+day_test!( 13 => 37025, 32854 );
 
 #[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
+mod find_reflection_tests {
+    use crate::find_reflection;
+    use advent_lib::grid::Grid;
+    use nom::IResult;
+    use nom_parse_trait::ParseFrom;
 
-    day_test!( 13, example => 405, 400 );
-    day_test!( 13 => 37025, 32854 );
+    #[test]
+    fn single() {
+        let text = b"#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
+        let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
+        let grid = grid.unwrap().1;
+        assert_eq!(6, find_reflection(&grid, 0));
+        assert_eq!(12, find_reflection(&grid, 1));
+    }
 
-    mod find_reflection_tests {
-        use crate::find_reflection;
-        use advent_lib::grid::Grid;
-        use nom::IResult;
-        use nom_parse_trait::ParseFrom;
-
-        #[test]
-        fn single() {
-            let text = b"#####..########\n##.######.####.\n.#.#.##.#.#..#.\n..###..###....#\n...##..##.....#\n####....#######\n#.#..##..#.##.#\n#...#..#...##..\n...######......\n.#.#....#.#..#.\n.###.##.###..##\n...######......\n###.####.######\n#.###..###.##.#\n#....##....##..\n.#........#..#.\n.#.#.##.#.#..#.";
-            let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
-            let grid = grid.unwrap().1;
-            assert_eq!(6, find_reflection(&grid, 0));
-            assert_eq!(12, find_reflection(&grid, 1));
-        }
-
-        #[test]
-        fn test2() {
-            let text =
+    #[test]
+    fn test2() {
+        let text =
                 b".##.##.##..\n#.######.##\n.#..##..#..\n#.#.##.#.##\n#.#....#.##\n.#..##..###\n##..##..###\n##..##..###\n.#.####.#..\n#..####..##\n.#.#..#.#..\n.##.##.##..\n.##....##..";
-            let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
-            let grid = grid.unwrap().1;
-            assert_eq!(10, find_reflection(&grid, 0));
-            assert_eq!(5, find_reflection(&grid, 1));
-        }
+        let grid: IResult<_, Grid<_>> = Grid::parse(text.as_ref());
+        let grid = grid.unwrap().1;
+        assert_eq!(10, find_reflection(&grid, 0));
+        assert_eq!(5, find_reflection(&grid, 1));
     }
 }

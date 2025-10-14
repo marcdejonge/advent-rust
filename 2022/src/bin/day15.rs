@@ -1,8 +1,8 @@
 #![feature(test)]
 #![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
 use advent_lib::geometry::point2;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::ops::RangeInclusive;
 
@@ -77,11 +77,5 @@ fn calculate_part2(sensors: &Vec<Sensor>) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 15, example => 26, 56000011 );
-    day_test!( 15 => 4725496, 12051287042458 );
-}
+day_test!( 15, example => 26, 56000011 );
+day_test!( 15 => 4725496, 12051287042458 );

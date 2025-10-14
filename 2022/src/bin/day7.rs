@@ -1,6 +1,7 @@
 #![feature(test)]
+#![allow(clippy::ptr_arg)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::str::FromStr;
 
@@ -96,11 +97,5 @@ where
 }
 
 day_main!( precompute => calculate_part1, calculate_part2 );
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 7, example => 95437, 24933642 ; precompute );
-    day_test!( 7 => 1086293, 366028 ; precompute );
-}
+day_test!( 7, example => 95437, 24933642 ; crate::precompute );
+day_test!( 7 => 1086293, 366028 ; crate::precompute );

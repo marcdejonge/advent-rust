@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::ALL_DIRECTIONS;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Location;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use advent_lib::*;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 use std::ops::Range;
@@ -82,11 +82,5 @@ fn calculate_part2(input: &Input) -> i32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 18, example1 => 22, 601 );
-    day_test!( 18 => 348, 5444 );
-}
+day_test!( 18, example1 => 22, 601 );
+day_test!( 18 => 348, 5444 );

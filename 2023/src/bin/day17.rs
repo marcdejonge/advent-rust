@@ -1,12 +1,12 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::parsing::single_digit;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 #[parse_from(map(single_digit(), |b: u8| b - b'0'))]
@@ -94,11 +94,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 17, example => 102, 94 );
-    day_test!( 17 => 866, 1010 );
-}
+day_test!( 17, example => 102, 94 );
+day_test!( 17 => 866, 1010 );

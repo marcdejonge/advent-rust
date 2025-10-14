@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::{double_line_ending, separated_array};
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use smallvec::SmallVec;
@@ -160,12 +160,6 @@ fn calculate_part2(machine_start: &MachineStart) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 17, example => 4635635210 );
-    day_test!( 17, example2 => 5730, 117440 );
-    day_test!( 17 => 167430506, 216148338630253 );
-}
+day_test!( 17, example => 4635635210 );
+day_test!( 17, example2 => 5730, 117440 );
+day_test!( 17 => 167430506, 216148338630253 );

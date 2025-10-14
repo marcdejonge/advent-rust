@@ -1,8 +1,8 @@
 #![feature(test)]
 #![feature(iter_array_chunks)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::{double_line_ending, separated_lines1};
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::ops::Range;
@@ -135,11 +135,5 @@ fn calculate_part2(input: &Input) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 5, example => 35, 46 );
-    day_test!( 5 => 910845529, 77435348);
-}
+day_test!( 5, example => 35, 46 );
+day_test!( 5 => 910845529, 77435348);

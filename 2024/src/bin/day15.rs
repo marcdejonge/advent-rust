@@ -1,11 +1,11 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::point2;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::parsing::double_line_ending;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use std::cmp::PartialEq;
@@ -82,7 +82,7 @@ impl Input {
         for &command in &self.commands {
             if can_move(grid, pos, command) {
                 move_block(grid, pos, command);
-                pos = pos + command;
+                pos += command;
             }
         }
 
@@ -119,13 +119,7 @@ fn calculate_part2(input: &Input) -> u32 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 15, example_small => 2028, 1751 );
-    day_test!( 15, example_small2 => 908, 618 );
-    day_test!( 15, example_bigger => 10092, 9021 );
-    day_test!( 15 => 1421727, 1463160 );
-}
+day_test!( 15, example_small => 2028, 1751 );
+day_test!( 15, example_small2 => 908, 618 );
+day_test!( 15, example_bigger => 10092, 9021 );
+day_test!( 15 => 1421727, 1463160 );

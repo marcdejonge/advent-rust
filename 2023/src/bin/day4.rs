@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::separated_lines1;
+use advent_lib::*;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 use std::ops::Shl;
@@ -55,19 +55,14 @@ fn calculate_part2(input: &Input) -> usize {
 
     input.cards.iter().enumerate().for_each(|(ix, c)| {
         let curr_count = counts[ix];
-        for next_ix in ix + 1..=ix + c.winning_count() {
-            counts[next_ix] += curr_count;
-        }
+
+        counts.as_mut_slice()[ix + 1..=ix + c.winning_count()]
+            .iter_mut()
+            .for_each(|c| *c += curr_count);
     });
     counts.iter().sum()
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 4, example => 13, 30 );
-    day_test!( 4 => 18519, 11787590);
-}
+day_test!( 4, example => 13, 30 );
+day_test!( 4 => 18519, 11787590);

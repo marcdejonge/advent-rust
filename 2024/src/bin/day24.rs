@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::key::Key;
 use advent_lib::parsing::{double_line_ending, separated_map1};
+use advent_lib::*;
 use fxhash::FxHashMap;
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
@@ -258,12 +258,6 @@ fn calculate_part2(computer: &Computer) -> String {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 24, example1 => 4 );
-    day_test!( 24, example2 => 2024 );
-    day_test!( 24 => 48508229772400, "cqr,ncd,nfj,qnw,vkg,z15,z20,z37".to_string() );
-}
+day_test!( 24, example1 => 4 );
+day_test!( 24, example2 => 2024 );
+day_test!( 24 => 48508229772400, "cqr,ncd,nfj,qnw,vkg,z15,z20,z37".to_string() );

@@ -1,8 +1,8 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::parsing::separated_double_lines1;
+use advent_lib::*;
 use nom_parse_macros::parse_from;
 
 type Move = Vector<2, i64>;
@@ -62,11 +62,5 @@ fn calculate_part2(input: &Input) -> i64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 13, example1 => 480, 875318608908 );
-    day_test!( 13 => 31897, 87596249540359);
-}
+day_test!( 13, example1 => 480, 875318608908 );
+day_test!( 13 => 31897, 87596249540359);

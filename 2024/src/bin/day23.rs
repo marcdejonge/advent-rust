@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::key::Key;
 use advent_lib::parsing::parsable_pair;
+use advent_lib::*;
 use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
 use nom_parse_macros::parse_from;
@@ -94,11 +94,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 23, example1 => 7, 4 );
-    day_test!( 23 => 1230, 13 );
-}
+day_test!( 23, example1 => 7, 4 );
+day_test!( 23 => 1230, 13 );

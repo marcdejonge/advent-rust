@@ -3,7 +3,7 @@
 use std::ops::Add;
 
 use crate::Spring::{Broken, Operational, Unknown};
-use advent_lib::day_main;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
@@ -101,11 +101,5 @@ fn calculate_part2(input: &Input) -> u64 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 12, example => 21, 525152 );
-    day_test!( 12 => 7633, 23903579139437);
-}
+day_test!( 12, example => 21, 525152 );
+day_test!( 12 => 7633, 23903579139437);

@@ -1,9 +1,9 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, Point, Vector};
 use advent_lib::parsing::single_space;
+use advent_lib::*;
 use fxhash::FxBuildHasher;
 use nom_parse_macros::parse_from;
 use std::collections::HashSet;
@@ -55,12 +55,6 @@ impl Steps {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 9, example => 13, 1 );
-    day_test!( 9, bigger => 88, 36 );
-    day_test!( 9 => 5710, 2259 );
-}
+day_test!( 9, example => 13, 1 );
+day_test!( 9, bigger => 88, 36 );
+day_test!( 9 => 5710, 2259 );

@@ -1,7 +1,7 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::parsing::single;
+use advent_lib::*;
 use nom::combinator::map;
 use nom::error::ParseError;
 use nom::multi::separated_list0;
@@ -125,11 +125,5 @@ impl Ord for Packet {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 13, example => 13, 140 );
-    day_test!( 13 => 5843, 26289 );
-}
+day_test!( 13, example => 13, 140 );
+day_test!( 13 => 5843, 26289 );

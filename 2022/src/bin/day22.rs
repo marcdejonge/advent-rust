@@ -1,10 +1,10 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, vector2, Point, Vector};
 use advent_lib::grid::{uneven_grid_parser, Grid};
 use advent_lib::parsing::double_line_ending;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
@@ -120,13 +120,7 @@ fn preprocess(input: GridAndCommands) -> Input {
     let block_jump_2d = calc_block_jumps_2d(&blocks);
     let block_jump_3d = calc_block_jumps_3d(&blocks);
 
-    Input {
-        commands: input.commands,
-        block_size,
-        blocks: blocks,
-        block_jump_2d,
-        block_jump_3d,
-    }
+    Input { commands: input.commands, block_size, blocks, block_jump_2d, block_jump_3d }
 }
 
 type BlockJumps = FxHashMap<(usize, Direction), (usize, Turn)>;
@@ -154,7 +148,7 @@ fn calc_block_jumps_2d(blocks: &[Block; 6]) -> BlockJumps {
         }
     }
 
-    return jumps;
+    jumps
 }
 
 fn calc_block_jumps_3d(blocks: &[Block; 6]) -> BlockJumps {
@@ -223,19 +217,16 @@ fn calc_block_jumps_3d(blocks: &[Block; 6]) -> BlockJumps {
         jumps.insert((5, West), (0, Turn::Left));
     }
 
-    return jumps;
+    jumps
 }
 
 fn handle_command(
     input: &Input,
     block_jump: &BlockJumps,
     command: &Command,
-    index: &usize,
-    person: &Person,
+    mut index: usize,
+    mut person: Person,
 ) -> (usize, Person) {
-    let mut person = person.clone();
-    let mut index = *index;
-
     match command {
         Command::Forward(steps) => {
             for _ in 0..*steps {
@@ -269,10 +260,10 @@ fn calculate(input: &Input, block_jump: &BlockJumps) -> i32 {
     let mut person = Person { pos: point2(0, 0), dir: East };
 
     for command in &input.commands {
-        (index, person) = handle_command(input, block_jump, command, &mut index, &mut person);
+        (index, person) = handle_command(input, block_jump, command, index, person);
     }
 
-    person.pos = person.pos + input.blocks[index].offset;
+    person.pos += input.blocks[index].offset;
     person.score()
 }
 
@@ -281,18 +272,16 @@ fn calculate_part1(input: &Input) -> i32 { calculate(input, &input.block_jump_2d
 fn calculate_part2(input: &Input) -> i32 { calculate(input, &input.block_jump_3d) }
 
 day_main!( preprocess => calculate_part1, calculate_part2 );
+day_test!( 22, example => 6032, 5031 ; crate::preprocess );
+day_test!( 22 => 197160, 145065 ; crate::preprocess );
 
 #[cfg(test)]
 mod tests {
     use crate::Command;
-    use advent_lib::day_test;
     use nom::multi::many1;
     use nom::IResult;
     use nom::Parser;
     use nom_parse_trait::ParseFrom;
-
-    day_test!( 22, example => 6032, 5031 ; preprocess );
-    day_test!( 22 => 197160, 145065 ; preprocess );
 
     #[test]
     fn test_command_parsing() {

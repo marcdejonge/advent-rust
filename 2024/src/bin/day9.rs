@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::day_main;
+use advent_lib::*;
 use nom::AsBytes;
 use nom_parse_macros::parse_from;
 use std::cmp::max;
@@ -122,11 +122,5 @@ fn calculate_part2(fs: &FileSystem) -> u128 {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 9, example1 => 1928, 2858 );
-    day_test!( 9 => 6258319840548, 6286182965311);
-}
+day_test!( 9, example1 => 1928, 2858 );
+day_test!( 9 => 6258319840548, 6286182965311);

@@ -1,11 +1,11 @@
 #![feature(test)]
 
-use advent_lib::day_main;
 use advent_lib::direction::Direction;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
 use advent_lib::lines::LineSegment;
+use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use std::ops::Add;
@@ -55,10 +55,10 @@ fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
     }
 }
 
-fn calculate_part1(grid: &Grid<Place>) -> usize { SandDroppingGrid::new(&grid).count() }
+fn calculate_part1(grid: &Grid<Place>) -> usize { SandDroppingGrid::new(grid).count() }
 
 fn calculate_part2(grid: &Grid<Place>) -> usize {
-    let mut grid = SandDroppingGrid::new(&grid);
+    let mut grid = SandDroppingGrid::new(grid);
     let y = grid.grid.height() - 1;
     for x in grid.grid.x_range() {
         let place = grid.grid.get_mut(point2(x, y)).unwrap();
@@ -125,11 +125,5 @@ enum Place {
 }
 
 day_main!( generate_grid => calculate_part1, calculate_part2 );
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 14, example => 24, 93 ; generate_grid );
-    day_test!( 14 => 843, 27625 ; generate_grid );
-}
+day_test!( 14, example => 24, 93 ; crate::generate_grid );
+day_test!( 14 => 843, 27625 ; crate::generate_grid );

@@ -2,10 +2,10 @@
 #![feature(iter_map_windows)]
 
 use advent_lib::builder::with_default;
-use advent_lib::day_main;
 use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::small_string::SmallString;
+use advent_lib::*;
 use fxhash::FxHashMap;
 use nom::IResult;
 use nom_parse_macros::parse_from;
@@ -117,11 +117,5 @@ fn calculate_part2(input: &Input) -> usize {
 }
 
 day_main!();
-
-#[cfg(test)]
-mod tests {
-    use advent_lib::day_test;
-
-    day_test!( 21, example1 => 126384 );
-    day_test!( 21 => 242484, 294209504640384 );
-}
+day_test!( 21, example1 => 126384 );
+day_test!( 21 => 242484, 294209504640384 );
