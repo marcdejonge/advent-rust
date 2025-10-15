@@ -3,7 +3,6 @@
 use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, vector2, Vector};
 use advent_lib::{
-    direction::CardinalDirection,
     grid::{Grid, Location},
     *,
 };
@@ -39,10 +38,10 @@ const DIRECTIONS: [(Direction, [usize; 3]); 4] = [
     (Direction::East, [1, 2, 3]),
 ];
 
-fn find_possible_move(round: usize, has_elfs: [bool; 8]) -> Option<Direction> {
+fn find_possible_move(round: usize, has_elfs: [&Ground; 8]) -> Option<Direction> {
     for ix in 0..4 {
         let (dir, ixs) = DIRECTIONS[(round + ix) % 4];
-        if ixs.iter().all(|&ix| !has_elfs[ix]) {
+        if ixs.iter().all(|&ix| has_elfs[ix] == &Ground::Empty) {
             return Some(dir);
         }
     }
@@ -52,16 +51,16 @@ fn find_possible_move(round: usize, has_elfs: [bool; 8]) -> Option<Direction> {
 fn step(elfs: &mut Elfs, round: usize) -> bool {
     let mut proposals = Vec::<(Location, Location)>::with_capacity(elfs.len());
     let mut proposal_count = FxHashMap::with_capacity_and_hasher(elfs.len(), Default::default());
-    elfs.entries().filter(|&(_, g)| g == &Ground::Elf).for_each(|(loc, _)| {
-        let has_elfs = CardinalDirection::ALL.map(|dir| elfs.get(loc + dir) == Some(&Ground::Elf));
-        if has_elfs.iter().any(|&has_elf| has_elf) {
-            if let Some(dir) = find_possible_move(round, has_elfs) {
+    for (loc, _) in elfs.entries().filter(|&(_, g)| g == &Ground::Elf) {
+        let neighbours = elfs.cardinal_neighbours(loc).unwrap();
+        if neighbours.contains(&&Ground::Elf) {
+            if let Some(dir) = find_possible_move(round, neighbours) {
                 let target = loc + dir;
                 proposals.push((loc, target));
                 *proposal_count.entry(target).or_default() += 1;
             }
         }
-    });
+    }
 
     let mut some_change = false;
     for &(current, target) in proposals.iter() {
@@ -126,4 +125,4 @@ fn calculate_part2(elfs: &Elfs) -> usize {
 
 day_main!(prepare => calculate_part1, calculate_part2);
 day_test!(23, example => 110, 20 ; crate::prepare );
-day_test!(23 => 3762 ; crate::prepare ); // Part 2 is 997 but takes 5 seconds in test mode
+day_test!(23 => 3762, 997 ; crate::prepare );

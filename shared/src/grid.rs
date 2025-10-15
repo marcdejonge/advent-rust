@@ -132,6 +132,37 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn cardinal_neighbours(&self, location: Location) -> Option<[&T; 8]>
+    where
+        T: Default + Copy,
+    {
+        // Check boundaries, we don't support fetching the neighbours at the edge
+        if location.x() <= 0
+            || location.x() >= self.width()
+            || location.y() <= 0
+            || location.y() >= self.height()
+        {
+            return None;
+        }
+
+        let ix = (location.x() + location.y() * self.width()) as usize;
+        let y_step = self.width() as usize;
+
+        // We've checked the bounds
+        unsafe {
+            Some([
+                self.items.get_unchecked(ix - y_step),
+                self.items.get_unchecked(ix - y_step + 1),
+                self.items.get_unchecked(ix + 1),
+                self.items.get_unchecked(ix + y_step + 1),
+                self.items.get_unchecked(ix + y_step),
+                self.items.get_unchecked(ix + y_step - 1),
+                self.items.get_unchecked(ix - 1),
+                self.items.get_unchecked(ix - y_step - 1),
+            ])
+        }
+    }
+
     pub fn get(&self, location: Location) -> Option<&T> {
         let ix = self.index_from_location(location)?;
         self.items.get(ix)
@@ -172,17 +203,12 @@ impl<T> Grid<T> {
     }
 
     pub fn entries(&self) -> impl Iterator<Item = (Location, &T)> {
-        self.items
-            .iter()
-            .enumerate()
-            .map(|(index, value)| ((self.size, index).into(), value))
+        Indexed::new(self.items.iter(), self.width())
     }
 
     pub fn entries_mut(&mut self) -> impl Iterator<Item = (Location, &mut T)> {
-        self.items
-            .iter_mut()
-            .enumerate()
-            .map(|(index, value)| ((self.size, index).into(), value))
+        let width = self.width();
+        Indexed::new(self.items.iter_mut(), width)
     }
 
     pub fn values(&self) -> impl Iterator<Item = &T> { self.items.iter() }
@@ -657,4 +683,38 @@ mod tests {
             grid.items
         );
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Indexed<I> {
+    iter: I,
+    x: i32,
+    y: i32,
+    width: i32,
+}
+
+impl<I> Indexed<I> {
+    fn new(iter: I, width: i32) -> Indexed<I> { Indexed { iter, x: 0, y: 0, width } }
+}
+
+impl<I> Iterator for Indexed<I>
+where
+    I: Iterator,
+{
+    type Item = (Location, <I as Iterator>::Item);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.iter.next()?;
+        let location = point2(self.x, self.y);
+        self.x += 1;
+        if self.x >= self.width {
+            self.x = 0;
+            self.y += 1;
+        }
+        Some((location, item))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) { self.iter.size_hint() }
 }
