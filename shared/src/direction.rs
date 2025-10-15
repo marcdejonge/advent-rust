@@ -1,3 +1,4 @@
+use crate::direction::CardinalDirection::*;
 use crate::direction::Direction::*;
 use crate::geometry::{vector2, Vector};
 use nom::character::complete::one_of;
@@ -136,7 +137,7 @@ where
 }
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum CardinalDirections {
+pub enum CardinalDirection {
     N,
     NE,
     E,
@@ -147,33 +148,39 @@ pub enum CardinalDirections {
     NW,
 }
 
-impl CardinalDirections {
-    pub const ALL: [CardinalDirections; 8] = [
-        CardinalDirections::N,
-        CardinalDirections::NE,
-        CardinalDirections::E,
-        CardinalDirections::SE,
-        CardinalDirections::S,
-        CardinalDirections::SW,
-        CardinalDirections::W,
-        CardinalDirections::NW,
-    ];
+impl CardinalDirection {
+    pub const ALL: [CardinalDirection; 8] = [N, NE, E, SE, S, SW, W, NW];
 }
 
-impl<T> From<CardinalDirections> for Vector<2, T>
+impl<T> From<CardinalDirection> for Vector<2, T>
 where
     T: Zero + One + Neg<Output = T>,
 {
-    fn from(value: CardinalDirections) -> Self {
+    fn from(value: CardinalDirection) -> Self {
         match value {
-            CardinalDirections::N => vector2(T::zero(), T::one().neg()),
-            CardinalDirections::NE => vector2(T::one(), T::one().neg()),
-            CardinalDirections::E => vector2(T::one(), T::zero()),
-            CardinalDirections::SE => vector2(T::one(), T::one()),
-            CardinalDirections::S => vector2(T::zero(), T::one()),
-            CardinalDirections::SW => vector2(T::one().neg(), T::one()),
-            CardinalDirections::W => vector2(T::one().neg(), T::zero()),
-            CardinalDirections::NW => vector2(T::one().neg(), T::one().neg()),
+            N => vector2(T::zero(), T::one().neg()),
+            NE => vector2(T::one(), T::one().neg()),
+            E => vector2(T::one(), T::zero()),
+            SE => vector2(T::one(), T::one()),
+            S => vector2(T::zero(), T::one()),
+            SW => vector2(T::one().neg(), T::one()),
+            W => vector2(T::one().neg(), T::zero()),
+            NW => vector2(T::one().neg(), T::one().neg()),
+        }
+    }
+}
+
+impl From<CardinalDirection> for usize {
+    fn from(value: CardinalDirection) -> Self {
+        match value {
+            N => 0,
+            NE => 1,
+            E => 2,
+            SE => 3,
+            S => 4,
+            SW => 5,
+            W => 6,
+            NW => 7,
         }
     }
 }

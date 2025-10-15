@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::CardinalDirections::*;
+use advent_lib::direction::CardinalDirection::*;
 use advent_lib::direction::Direction::*;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::iter_utils::{CountIf, SumWith};

@@ -13,6 +13,7 @@ where
     );
 }
 
+#[allow(clippy::crate_in_macro_def)] // This is the whole point, to use the call-site's crate
 #[macro_export]
 macro_rules! day_test {
     ( $day: tt, $name: tt => $part1_result: expr) => {

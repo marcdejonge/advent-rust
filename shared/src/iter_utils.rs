@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::Sum;
-use std::mem;
 
 use fxhash::FxHashMap;
 
@@ -22,10 +21,9 @@ pub trait IteratorUtils: Iterator {
         Self::Item: Default + Copy,
     {
         let mut window: [Self::Item; D] = [Default::default(); D];
-        for ix in 1..D {
-            let value = self.next();
-            if let Some(value) = value {
-                window[ix] = value;
+        for item in window.iter_mut() {
+            if let Some(value) = self.next() {
+                *item = value;
             } else {
                 break;
             }
@@ -72,9 +70,7 @@ pub trait IteratorUtils: Iterator {
         Self::Item: Default + Copy,
     {
         let mut result: [Self::Item; N] = [Default::default(); N];
-        for ix in 0..N {
-            result[ix] = self.next().unwrap();
-        }
+        result.iter_mut().for_each(|item| *item = self.next().unwrap());
         result
     }
 
@@ -243,10 +239,7 @@ where
             next = self.iter.next()?;
         }
 
-        Some((
-            mem::replace(&mut self.last_result, Some(next.clone())).unwrap(),
-            next,
-        ))
+        Some((self.last_result.replace(next.clone()).unwrap(), next))
     }
 }
 

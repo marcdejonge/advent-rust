@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn back_and_forth() {
-        for test_string in [&"aaa"[..], &"zzz"[..], &"hello"[..], &"world"[..]] {
+        for test_string in ["aaa", "zzz", "hello", "world"] {
             let key = parse(test_string).unwrap();
             assert_eq!(test_string, key.to_string())
         }
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn parse_maximum_of_12_characters() {
         assert_eq!(
-            Ok::<_, Error<_>>((&"mno"[..], Key::fixed(b"abcdefghijkl"))),
+            Ok::<_, Error<_>>(("mno", Key::fixed(b"abcdefghijkl"))),
             Key::parse("abcdefghijklmno").finish()
         );
     }

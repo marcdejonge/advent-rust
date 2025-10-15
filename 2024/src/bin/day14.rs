@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::CardinalDirections;
+use advent_lib::direction::CardinalDirection;
 use advent_lib::geometry::{vector2, vector4, Point, Vector};
 use advent_lib::grid::Grid;
 use advent_lib::*;
@@ -62,7 +62,7 @@ fn calculate_part2(input: &Input) -> i32 {
                 .entries()
                 .filter(|&(_, &c)| c == b'#')
                 .map(|(p, _)| {
-                    CardinalDirections::ALL
+                    CardinalDirection::ALL
                         .map(|d| p + d)
                         .iter()
                         .filter(|&&p| grid.get(p) == Some(&b'#'))
