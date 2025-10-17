@@ -5,7 +5,6 @@ use advent_lib::{
     direction::Direction::{self, *},
     geometry::point2,
     grid::{Grid, Location},
-    iter_utils::CountIf,
     math::greatest_common_divisor,
     search::{a_star_search, SearchGraph, SearchGraphWithGoal},
     *,
@@ -25,14 +24,14 @@ enum InputBlock {
 }
 
 #[derive(Default, Copy, Clone, PartialEq)]
-struct Storm([bool; 4]);
+struct Storm(u8);
 
 impl Storm {
-    const EMPTY: Storm = Storm([false; 4]);
+    const EMPTY: Storm = Storm(0);
 
-    fn set_blow(&mut self, dir: Direction) { self.0[usize::from(dir)] = true }
+    fn set_blow(&mut self, dir: Direction) { self.0 |= 1 << usize::from(dir) }
 
-    fn get_blow(&self, dir: Direction) -> bool { self.0[usize::from(dir)] }
+    fn get_blow(&self, dir: Direction) -> bool { self.0 & (1 << usize::from(dir)) != 0 }
 }
 
 impl From<Direction> for Storm {
@@ -54,19 +53,13 @@ impl From<InputBlock> for Storm {
 
 impl From<Storm> for char {
     fn from(value: Storm) -> Self {
-        let count = value.0.count_if(|b| *b) as u32;
-        if count == 0 {
-            '.'
-        } else if count == 1 {
-            match value.0 {
-                [true, false, false, false] => '>',
-                [false, true, false, false] => 'v',
-                [false, false, true, false] => '<',
-                [false, false, false, true] => '^',
-                _ => 'X',
-            }
-        } else {
-            char::from_digit(count, 10).unwrap()
+        match value.0 {
+            0 => '.',
+            1 => '>',
+            2 => 'v',
+            4 => '<',
+            8 => '^',
+            _ => char::from_digit(value.0.count_ones(), 10).unwrap(),
         }
     }
 }
