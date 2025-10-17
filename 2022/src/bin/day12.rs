@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction;
 use advent_lib::grid::{Grid, Location};
 use advent_lib::parsing::single_match;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
@@ -44,7 +44,7 @@ fn calculate_part1(grid: &Grid<Node>) -> usize {
 
         fn neighbours(&self, location: Location) -> Vec<(Location, u32)> {
             let current_height = self.grid.get(location).unwrap().height;
-            ALL_DIRECTIONS
+            Direction::ALL
                 .iter()
                 .filter_map(|&dir| {
                     let next = location + dir;
@@ -81,7 +81,7 @@ fn calculate_part2(grid: &Grid<Node>) -> usize {
 
         fn neighbours(&self, location: Location) -> Vec<(Location, u32)> {
             let current_height = self.grid.get(location).unwrap().height;
-            ALL_DIRECTIONS
+            Direction::ALL
                 .iter()
                 .filter_map(|&dir| {
                     let next = location + dir;

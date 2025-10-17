@@ -56,9 +56,9 @@ where
     }
 }
 
-pub const ALL_DIRECTIONS: [Direction; 4] = [North, East, South, West];
-
 impl Direction {
+    pub const ALL: [Direction; 4] = [North, East, South, West];
+
     pub const fn turn_left(self) -> Direction {
         match self {
             North => West,

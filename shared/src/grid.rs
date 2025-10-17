@@ -1,4 +1,4 @@
-use crate::direction::ALL_DIRECTIONS;
+use crate::direction::Direction;
 use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
 use bit_vec::BitVec;
 use image::{Rgba, RgbaImage};
@@ -433,7 +433,7 @@ impl<T> Grid<T> {
                 }
                 visited.set(location_ix, true);
                 region.push(location);
-                for d in ALL_DIRECTIONS {
+                for d in Direction::ALL {
                     let neighbour = location + d;
                     if let Some(neighbour_ix) = self.index_from_location(neighbour) {
                         unsafe {

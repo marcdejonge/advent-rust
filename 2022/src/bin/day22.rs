@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::{Direction, ALL_DIRECTIONS};
+use advent_lib::direction::Direction;
 use advent_lib::geometry::{point2, vector2, Point, Vector};
 use advent_lib::grid::{uneven_grid_parser, Grid};
 use advent_lib::parsing::double_line_ending;
@@ -131,7 +131,7 @@ fn calc_block_jumps_2d(blocks: &[Block; 6]) -> BlockJumps {
 
     for start_ix in 0..6 {
         let start_offset = blocks[start_ix].offset;
-        for direction in ALL_DIRECTIONS {
+        for direction in Direction::ALL {
             let step = direction.as_vec() * block_size;
             let modulus = 4 * block_size;
             let mut next_offset = start_offset;
