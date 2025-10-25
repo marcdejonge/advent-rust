@@ -1,8 +1,8 @@
 #![feature(test)]
 
 use crate::Block::*;
+use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
-use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::*;
 use advent_macros::FromRepr;
@@ -86,7 +86,7 @@ impl Input {
     fn fill_seat_grid(step: Step, seat_grid: &mut Grid<Block>, visited: &FxHashMap<Step, u32>) {
         seat_grid[step.loc] = Seat;
         let current_score = visited[&step];
-        for dir in ALL_DIRECTIONS {
+        for dir in Direction::ALL {
             let next_pos = Step::new(step.loc + dir, dir.neg());
             if let Some(next_score) = visited.get(&next_pos) {
                 if *next_score < current_score {
@@ -103,11 +103,14 @@ fn calculate_part2(input: &Input) -> usize {
     let visited = input.find_all_paths().1;
 
     let mut seat_grid = input.grid.clone();
-    ALL_DIRECTIONS.iter().map(|&dir| Step::new(input.end, dir)).for_each(|step| {
-        if visited.contains_key(&step) {
-            Input::fill_seat_grid(step, &mut seat_grid, &visited);
-        }
-    });
+    Direction::ALL
+        .into_iter()
+        .map(|dir| Step::new(input.end, dir))
+        .for_each(|step| {
+            if visited.contains_key(&step) {
+                Input::fill_seat_grid(step, &mut seat_grid, &visited);
+            }
+        });
     seat_grid.values().filter(|&&b| b == Seat).count()
 }
 

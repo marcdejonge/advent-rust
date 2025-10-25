@@ -42,20 +42,17 @@ fn calculate_part1(grid: &Grid<Node>) -> usize {
         type Node = Location;
         type Score = u32;
 
-        fn neighbours(&self, location: Location) -> Vec<(Location, u32)> {
+        fn neighbours(&self, location: Location) -> impl Iterator<Item = (Location, u32)> {
             let current_height = self.grid.get(location).unwrap().height;
-            Direction::ALL
-                .iter()
-                .filter_map(|&dir| {
-                    let next = location + dir;
-                    let next_height = self.grid.get(next)?.height;
-                    if next_height - current_height <= 1 {
-                        Some((next, 1))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+            Direction::ALL.into_iter().filter_map(move |dir| {
+                let next = location + dir;
+                let next_height = self.grid.get(next)?.height;
+                if next_height - current_height <= 1 {
+                    Some((next, 1))
+                } else {
+                    None
+                }
+            })
         }
     }
 
@@ -79,20 +76,17 @@ fn calculate_part2(grid: &Grid<Node>) -> usize {
         type Node = Location;
         type Score = u32;
 
-        fn neighbours(&self, location: Location) -> Vec<(Location, u32)> {
+        fn neighbours(&self, location: Location) -> impl Iterator<Item = (Location, u32)> {
             let current_height = self.grid.get(location).unwrap().height;
-            Direction::ALL
-                .iter()
-                .filter_map(|&dir| {
-                    let next = location + dir;
-                    let next_height = self.grid.get(next)?.height;
-                    if next_height - current_height >= -1 {
-                        Some((next, 1))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+            Direction::ALL.into_iter().filter_map(move |dir| {
+                let next = location + dir;
+                let next_height = self.grid.get(next)?.height;
+                if next_height - current_height >= -1 {
+                    Some((next, 1))
+                } else {
+                    None
+                }
+            })
         }
     }
 

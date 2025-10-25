@@ -10,7 +10,7 @@ pub trait SearchGraph {
     type Node: Copy + PartialEq + Eq + Hash;
     type Score: Copy + Default + Eq + Add<Self::Score, Output = Self::Score> + Ord;
 
-    fn neighbours(&self, node: Self::Node) -> Vec<(Self::Node, Self::Score)>;
+    fn neighbours(&self, node: Self::Node) -> impl Iterator<Item = (Self::Node, Self::Score)>;
 }
 
 pub trait SearchGraphWithGoal: SearchGraph {

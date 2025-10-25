@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction;
 use advent_lib::grid::Location;
 use advent_lib::parsing::single_digit;
 use advent_lib::*;
@@ -49,8 +49,8 @@ fn neighbours(
     loc: Location,
     next: Height,
 ) -> impl Iterator<Item = Location> + use<'_> {
-    ALL_DIRECTIONS
-        .iter()
+    Direction::ALL
+        .into_iter()
         .map(move |d| loc + d.as_vec())
         .filter(move |&loc| grid.get(loc) == Some(&next))
 }

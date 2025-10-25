@@ -5,8 +5,8 @@ use nom_parse_macros::parse_from;
 use petgraph::algo::all_simple_paths;
 use petgraph::prelude::*;
 
+use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
-use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
 use advent_lib::iter_utils::IteratorUtils;
@@ -40,7 +40,7 @@ impl Input {
             node_map.insert(curr_pos, curr_index);
             searched.insert(curr_pos);
 
-            for dir in ALL_DIRECTIONS {
+            for dir in Direction::ALL {
                 if let Some((next_pos, dist)) = self.find_next_split(curr_pos, dir, &can_move) {
                     let next_index =
                         *node_map.entry(next_pos).or_insert_with(|| g.add_node(next_pos));

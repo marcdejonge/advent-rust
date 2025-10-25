@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction;
 use advent_lib::geometry::{vector2, Vector};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::*;
@@ -30,7 +30,7 @@ enum Block {
 }
 
 fn walk_grid(grid: &Grid<Block>, start: Location) -> impl Iterator<Item = Location> + '_ {
-    let start_dir = *ALL_DIRECTIONS.iter().find(|&&d| grid[start + d] != Wall).unwrap();
+    let start_dir = Direction::ALL.into_iter().find(|&d| grid[start + d] != Wall).unwrap();
     successors(Some((start, start_dir)), move |&(last_loc, last_dir)| {
         let next_dir = *[last_dir, last_dir.turn_left(), last_dir.turn_right()]
             .iter()

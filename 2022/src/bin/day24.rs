@@ -1,5 +1,7 @@
 #![feature(test)]
 
+use std::iter::successors;
+
 use advent_lib::{
     builder::with_default,
     direction::Direction::{self, *},
@@ -34,19 +36,15 @@ impl Storm {
     fn get_blow(&self, dir: Direction) -> bool { self.0 & (1 << usize::from(dir)) != 0 }
 }
 
-impl From<Direction> for Storm {
-    fn from(value: Direction) -> Self { with_default::<Self, _>(|it| it.set_blow(value)) }
-}
-
 impl From<InputBlock> for Storm {
     fn from(value: InputBlock) -> Self {
         match value {
             InputBlock::Blocked => panic!("Unsupported"),
             InputBlock::Empty => Storm::default(),
-            InputBlock::StormUp => North.into(),
-            InputBlock::StormDown => South.into(),
-            InputBlock::StormLeft => West.into(),
-            InputBlock::StormRight => East.into(),
+            InputBlock::StormUp => with_default(|storm: &mut Storm| storm.set_blow(North)),
+            InputBlock::StormDown => with_default(|storm: &mut Storm| storm.set_blow(South)),
+            InputBlock::StormLeft => with_default(|storm: &mut Storm| storm.set_blow(West)),
+            InputBlock::StormRight => with_default(|storm: &mut Storm| storm.set_blow(East)),
         }
     }
 }
@@ -86,26 +84,23 @@ impl StormTimeline {
     }
 
     fn new(grid: Grid<InputBlock>) -> StormTimeline {
-        let grid = grid
+        let initial_grid = grid
             .sub_grid(1..grid.width() - 1, 1..grid.height() - 1)
             .map(|&b| Storm::from(b));
-        let repeat = ((grid.width() * grid.height())
-            / greatest_common_divisor(grid.width(), grid.height())) as usize;
-        let mut grids = Vec::with_capacity(repeat);
-        grids.push(grid.clone());
-        for _ in 1..repeat {
-            grids.push(Self::step_storm(grids.last().unwrap()));
-        }
-
-        StormTimeline { grids, start: point2(0, -1), end: point2(grid.width() - 1, grid.height()) }
+        let (width, height) = initial_grid.size().into();
+        let grids = successors(Some(initial_grid), |grid| Some(Self::step_storm(grid)))
+            .take(((width * height) / greatest_common_divisor(width, height)) as usize)
+            .collect();
+        StormTimeline { grids, start: point2(0, -1), end: point2(width - 1, height) }
     }
 
     fn get(&self, time: usize) -> &Grid<Storm> { self.grids.get(time % self.grids.len()).unwrap() }
-    fn to_graph<'a>(&'a self, goal: Location) -> StormGraph<'a> {
-        StormGraph { timeline: self, goal }
+    fn graph_to_start<'a>(&'a self) -> StormGraph<'a> {
+        StormGraph { timeline: self, goal: self.start }
     }
-    fn graph_to_start<'a>(&'a self) -> StormGraph<'a> { self.to_graph(self.start) }
-    fn graph_to_end<'a>(&'a self) -> StormGraph<'a> { self.to_graph(self.end) }
+    fn graph_to_end<'a>(&'a self) -> StormGraph<'a> {
+        StormGraph { timeline: self, goal: self.end }
+    }
 }
 
 struct StormGraph<'a> {
@@ -118,18 +113,19 @@ impl SearchGraph for StormGraph<'_> {
 
     type Score = i32;
 
-    fn neighbours(&self, (loc, time): Self::Node) -> Vec<(Self::Node, Self::Score)> {
-        // self.timeline.get(time).draw_with_overlay([&loc], 'E');
-        let grid = self.timeline.get(time + 1);
+    fn neighbours(
+        &self,
+        (loc, time): Self::Node,
+    ) -> impl Iterator<Item = (Self::Node, Self::Score)> {
+        let next_grid = self.timeline.get(time + 1);
         [loc, loc + North, loc + East, loc + South, loc + West]
-            .iter()
-            .filter(|&&loc| {
-                grid.get(loc) == Some(&Storm::EMPTY)
+            .into_iter()
+            .filter(move |&loc| {
+                next_grid.get(loc) == Some(&Storm::EMPTY)
                     || loc == self.timeline.start
                     || loc == self.timeline.end
             })
-            .map(|&loc| ((loc, time + 1), 1))
-            .collect::<Vec<_>>()
+            .map(move |loc| ((loc, time + 1), 1))
     }
 }
 

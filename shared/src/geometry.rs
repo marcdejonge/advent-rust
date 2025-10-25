@@ -197,29 +197,29 @@ pub const fn vector2<T>(x: T, y: T) -> Vector<2, T> { Vector { coords: [x, y] } 
 pub const fn vector3<T>(x: T, y: T, z: T) -> Vector<3, T> { Vector { coords: [x, y, z] } }
 pub const fn vector4<T>(w: T, x: T, y: T, z: T) -> Vector<4, T> { Vector { coords: [w, x, y, z] } }
 
-impl<T> From<(T, T)> for Vector<2, T> {
-    fn from(value: (T, T)) -> Self { Vector { coords: [value.0, value.1] } }
+macro_rules! from_impl {
+    ($tuple:tt; $count:expr) => {
+        impl<T> From<$tuple> for Vector<$count, T> {
+            fn from(value: $tuple) -> Self { Vector { coords: value.into() } }
+        }
+
+        impl<T> From<$tuple> for Point<$count, T> {
+            fn from(value: $tuple) -> Self { Point { coords: value.into() } }
+        }
+
+        impl<T> From<Vector<$count, T>> for $tuple {
+            fn from(value: Vector<$count, T>) -> Self { value.coords.into() }
+        }
+
+        impl<T> From<Point<$count, T>> for $tuple {
+            fn from(value: Point<$count, T>) -> Self { value.coords.into() }
+        }
+    };
 }
 
-impl<T> From<(T, T, T)> for Vector<3, T> {
-    fn from(value: (T, T, T)) -> Self { Vector { coords: [value.0, value.1, value.2] } }
-}
-
-impl<T> From<(T, T, T, T)> for Vector<4, T> {
-    fn from(value: (T, T, T, T)) -> Self { Vector { coords: [value.0, value.1, value.2, value.3] } }
-}
-
-impl<T> From<(T, T)> for Point<2, T> {
-    fn from(value: (T, T)) -> Self { Point { coords: [value.0, value.1] } }
-}
-
-impl<T> From<(T, T, T)> for Point<3, T> {
-    fn from(value: (T, T, T)) -> Self { Point { coords: [value.0, value.1, value.2] } }
-}
-
-impl<T> From<(T, T, T, T)> for Point<4, T> {
-    fn from(value: (T, T, T, T)) -> Self { Point { coords: [value.0, value.1, value.2, value.3] } }
-}
+from_impl!( (T, T); 2 );
+from_impl!( (T, T, T); 3 );
+from_impl!( (T, T, T, T); 4 );
 
 pub fn unit_vector<const D: usize, T: Copy + One>() -> Vector<D, T> {
     Vector { coords: [T::one(); D] }

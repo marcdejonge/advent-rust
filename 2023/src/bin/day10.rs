@@ -3,8 +3,8 @@
 extern crate core;
 
 use crate::PipeCell::*;
+use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
-use advent_lib::direction::{Direction, ALL_DIRECTIONS};
 use advent_lib::geometry::{point2, Point};
 use advent_lib::grid::Grid;
 use advent_lib::*;
@@ -70,7 +70,7 @@ impl PipeCell {
     }
 
     fn detect_pipe(grid: &Grid<PipeCell>, location: Point<2, i32>) -> Option<PipeCell> {
-        let connected = ALL_DIRECTIONS
+        let connected = Direction::ALL
             .map(|d| grid.get(location.add(d.as_vec())).unwrap_or(&Ground).points_to(d.neg()));
 
         match connected {
@@ -100,7 +100,7 @@ impl<'a> GridWalker<'a> {
             start,
             started: false,
             location: start,
-            direction: *ALL_DIRECTIONS.iter().find(|&&d| grid[start].points_to(d)).unwrap(),
+            direction: Direction::ALL.into_iter().find(|&d| grid[start].points_to(d)).unwrap(),
         }
     }
 }

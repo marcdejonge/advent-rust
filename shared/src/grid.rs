@@ -12,7 +12,7 @@ use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Index, IndexMut, Range};
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq)]
 pub struct Grid<T> {
     items: Vec<T>,
     size: Size,
@@ -111,6 +111,8 @@ impl<T> Grid<T> {
     pub fn height(&self) -> i32 { self.size.y() }
 
     pub fn width(&self) -> i32 { self.size.x() }
+
+    pub fn size(&self) -> Vector<2, i32> { self.size }
 
     pub fn len(&self) -> usize { self.items.len() }
 

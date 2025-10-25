@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction;
 use advent_lib::geometry::point2;
 use advent_lib::grid::Location;
 use advent_lib::search::{a_star_search, SearchGraph, SearchGraphWithGoal};
@@ -28,18 +28,16 @@ impl SearchGraph for Memory {
     type Node = Location;
     type Score = i32;
 
-    fn neighbours(&self, loc: Location) -> Vec<(Location, i32)> {
-        let mut neighbours = Vec::new();
-        for direction in ALL_DIRECTIONS.iter() {
-            let neighbour = loc + *direction;
-            if self.valid_range.contains(&neighbour.x())
-                && self.valid_range.contains(&neighbour.y())
-                && !self.blocked.contains(&neighbour)
-            {
-                neighbours.push((neighbour, 1));
-            }
-        }
-        neighbours
+    fn neighbours(&self, loc: Location) -> impl Iterator<Item = (Location, i32)> {
+        Direction::ALL
+            .map(|dir| loc + dir)
+            .into_iter()
+            .filter(|neighbour| {
+                self.valid_range.contains(&neighbour.x())
+                    && self.valid_range.contains(&neighbour.y())
+                    && !self.blocked.contains(neighbour)
+            })
+            .map(|neighbour| (neighbour, 1))
     }
 }
 

@@ -41,8 +41,10 @@ impl SearchGraph for Target<'_> {
     type Node = (Point<2, i32>, Direction, i32);
     type Score = i32;
 
-    fn neighbours(&self, node: Self::Node) -> Vec<(Self::Node, Self::Score)> {
-        let (curr_loc, curr_dir, straight_steps) = node;
+    fn neighbours(
+        &self,
+        (curr_loc, curr_dir, straight_steps): Self::Node,
+    ) -> impl Iterator<Item = (Self::Node, Self::Score)> {
         let mut neighbours = Vec::with_capacity(3);
 
         if straight_steps >= self.min_steps || straight_steps == 0 {
@@ -69,7 +71,7 @@ impl SearchGraph for Target<'_> {
             }
         }
 
-        neighbours
+        neighbours.into_iter()
     }
 }
 

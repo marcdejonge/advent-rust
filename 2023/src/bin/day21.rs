@@ -2,7 +2,7 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_collect_into)]
 
-use advent_lib::direction::ALL_DIRECTIONS;
+use advent_lib::direction::Direction;
 use advent_lib::geometry::Point;
 use advent_lib::grid::Grid;
 use advent_lib::*;
@@ -104,7 +104,7 @@ impl Iterator for ExploreIterator<'_> {
 
         let mut next_round = Vec::with_capacity(self.visited_last_round.len() * 2);
         while let Some(loc) = self.visited_last_round.pop() {
-            ALL_DIRECTIONS
+            Direction::ALL
                 .into_iter()
                 .map(|dir| loc + dir.as_vec())
                 .filter(|new_loc| {
