@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Update Rust to nightly
-        run: rustup toolchain install nightly --profile minimal --no-self-update
+        run: rustup toolchain install nightly --profile minimal --no-self-update && rustup default nightly
       - name: Setup Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
