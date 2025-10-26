@@ -20,7 +20,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.projects }}
-          workspaces: code -> ./${{ matrix.projects }}
+          workspaces: ${{ matrix.projects }} -> ./${{ matrix.projects }}
       - name: Run tests
         working-directory: ./${{ matrix.projects }}
         run: ../.github/cargo-test.sh
