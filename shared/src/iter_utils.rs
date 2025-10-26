@@ -21,9 +21,9 @@ pub trait IteratorUtils: Iterator {
         Self::Item: Default + Copy,
     {
         let mut window: [Self::Item; D] = [Default::default(); D];
-        for item in window.iter_mut() {
+        for ix in 1..D {
             if let Some(value) = self.next() {
-                *item = value;
+                window[ix] = value;
             } else {
                 break;
             }
