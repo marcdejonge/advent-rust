@@ -84,10 +84,20 @@ where
 }
 
 pub fn separated_array<I: Input, E: ParseError<I>, const D: usize, T, S>(
-    mut separator: impl Parser<I, Output = S, Error = E>,
+    separator: impl Parser<I, Output = S, Error = E>,
 ) -> impl Parser<I, Output = [T; D], Error = E>
 where
     T: ParseFrom<I, E> + Default + Copy,
+{
+    separated_array_with(separator, T::parse)
+}
+
+pub fn separated_array_with<I: Input, E: ParseError<I>, const D: usize, T, S>(
+    mut separator: impl Parser<I, Output = S, Error = E>,
+    mut parser: impl Parser<I, Output = T, Error = E>,
+) -> impl Parser<I, Output = [T; D], Error = E>
+where
+    T: Default + Copy,
 {
     move |input: I| {
         let mut input = input;
@@ -101,7 +111,7 @@ where
                 first = false;
             }
 
-            let (rest, next_value) = T::parse(input)?;
+            let (rest, next_value) = parser.parse(input)?;
             *value = next_value;
             input = rest;
         }
