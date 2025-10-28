@@ -4,6 +4,7 @@ use nom::character::complete::space0;
 use nom::combinator::map;
 use nom::error::ParseError;
 use nom::{AsChar, Compare, IResult, Input, Parser};
+use nom_parse_macros::parse_from;
 use nom_parse_trait::ParseFrom;
 use num_traits::{abs, One, Signed};
 use std::cmp::min;
@@ -12,6 +13,7 @@ use std::iter::Sum;
 use std::ops::{Add, AddAssign, Div, Index, Mul, Neg, Rem, Sub};
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[parse_from(separated_array((space0, ",", space0)) where T: Default + Copy)]
 pub struct Point<const D: usize, T> {
     pub coords: [T; D],
 }
@@ -28,23 +30,6 @@ where
     T: Default + Copy,
 {
     fn default() -> Self { Point { coords: [T::default(); D] } }
-}
-
-impl<I, E, const D: usize, T> ParseFrom<I, E> for Point<D, T>
-where
-    T: Default + Copy + ParseFrom<I, E>,
-    I: Input,
-    <I as Input>::Item: AsChar + Clone,
-    I: for<'a> Compare<&'a [u8]>,
-    E: ParseError<I>,
-{
-    fn parse(input: I) -> IResult<I, Self, E> {
-        map(
-            separated_array((space0, tag(b",".as_ref()), space0)),
-            |coords| Point { coords },
-        )
-        .parse(input)
-    }
 }
 
 impl<T> Point<2, T>

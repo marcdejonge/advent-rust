@@ -1,9 +1,10 @@
+use crate::geometry::{Point, Vector};
+use nom_parse_macros::parse_from;
 use std::cmp::{max, min};
 use std::ops::Add;
 
-use crate::geometry::{Point, Vector};
-
 #[derive(Copy, Clone, Debug)]
+#[parse_from(separated_pair({}, (space0, "->", space0), {}) where N: Default + Copy)]
 pub struct LineSegment<const D: usize, N> {
     pub start: Point<D, N>,
     pub end: Point<D, N>,
