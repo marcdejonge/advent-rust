@@ -1,5 +1,4 @@
 #![feature(test)]
-
 use advent_lib::{day_main, day_test};
 use nom_parse_macros::parse_from;
 
@@ -26,6 +25,7 @@ impl Position {
     }
 }
 
+#[allow(clippy::ptr_arg)]
 fn calculate_part1(commands: &Vec<Command>) -> i32 {
     commands
         .iter()
@@ -40,6 +40,7 @@ fn calculate_part1(commands: &Vec<Command>) -> i32 {
         .get_result()
 }
 
+#[allow(clippy::ptr_arg)]
 fn calculate_part2(commands: &Vec<Command>) -> i32 {
     commands
         .iter()

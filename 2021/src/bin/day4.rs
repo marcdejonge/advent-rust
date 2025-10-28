@@ -28,7 +28,7 @@ impl Board {
                 }
             }
         }
-        return None;
+        None
     }
 
     fn has_bingo(&self, row: usize, col: usize) -> bool {

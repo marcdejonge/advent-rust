@@ -32,7 +32,7 @@ impl<'a> ParseFrom<&'a [u8]> for Input {
     }
 }
 
-fn has_majority_ones(numbers: &Vec<u32>, mask: u32) -> bool {
+fn has_majority_ones(numbers: &[u32], mask: u32) -> bool {
     numbers.iter().filter(|&&nr| (nr & mask) != 0).count() * 2 >= numbers.len()
 }
 

@@ -81,6 +81,19 @@ pub struct Vector<const D: usize, T> {
     pub coords: [T; D],
 }
 
+macro_rules! number_ops {
+    () => {};
+    ($type:tt $($types:tt )*) => {
+        impl<const D: usize> Vector<D, $type> {
+            pub fn abs(self) -> Self { Self { coords: self.coords.map(|nr| nr.abs()) } }
+            pub fn signum(self) -> Self { Self { coords: self.coords.map(|nr| nr.signum()) } }
+        }
+        number_ops!($($types )*);
+    };
+}
+
+number_ops!(i8 i16 i32 i64);
+
 impl<I, E, const D: usize, T> ParseFrom<I, E> for Vector<D, T>
 where
     T: Default + Copy + ParseFrom<I, E>,
