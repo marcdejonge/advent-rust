@@ -8,6 +8,7 @@ advent-lib = { path = "../shared" }
 advent-macros = { path = "../macros" }
 bit-set = "0.8.0"
 fxhash = "0.2.1"
+memoize = "0.5"
 nom = "8"
 nom-parse-trait = "0.4.0"
 nom-parse-macros = "0.4.0"

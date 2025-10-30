@@ -134,6 +134,12 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn direct_neighbours(&self, location: Location) -> impl Iterator<Item = (Direction, &T)> {
+        Direction::ALL
+            .into_iter()
+            .flat_map(move |dir| self.get(location + dir).map(|p| (dir, p)))
+    }
+
     pub fn cardinal_neighbours(&self, location: Location) -> Option<[&T; 8]>
     where
         T: Default + Copy,

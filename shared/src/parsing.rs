@@ -13,7 +13,7 @@ pub fn handle_parser_error<T>(input: &[u8]) -> T
 where
     T: for<'a> ParseFrom<&'a [u8]>,
 {
-    match all_consuming(T::parse).parse(input).finish() {
+    match all_consuming(T::parse).parse_complete(input).finish() {
         Ok((_, day)) => day,
         Err(e) => {
             panic!(
