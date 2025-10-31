@@ -128,6 +128,6 @@ fn calculate_part2(monkeys: &Monkeys) -> i64 {
     }
 }
 
-day_main!();
+day_main!(Monkeys);
 day_test!( 21, example => 152, 301 );
 day_test!( 21 => 21208142603224, 3882224466191 );

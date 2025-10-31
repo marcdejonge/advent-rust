@@ -134,6 +134,6 @@ fn calculate_part2(input: &Input) -> i64 {
         .unwrap()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 5, example => 35, 46 );
 day_test!( 5 => 910845529, 77435348);

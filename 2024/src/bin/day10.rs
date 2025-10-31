@@ -74,6 +74,6 @@ fn calculate_part2(grid: &Grid) -> u32 {
     start_nodes(grid).par_bridge().map(|loc| find_all_trails(grid, loc)).sum()
 }
 
-day_main!();
+day_main!(Grid);
 day_test!( 10, example1 => 36, 81 );
 day_test!( 10 => 737, 1619);

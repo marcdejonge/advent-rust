@@ -38,7 +38,7 @@ impl Input {
     }
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 6, example1 => 7, 19 );
 day_test!( 6, example2 => 5, 23 );
 day_test!( 6, example3 => 6, 23 );

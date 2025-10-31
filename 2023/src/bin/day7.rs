@@ -163,7 +163,7 @@ fn calculate_part2(input: &Input) -> u64 {
     end_score(input.bets.par_iter().map(|&(c, bet)| (Hand::new(jokers(c)), bet)).collect())
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 7, example => 6440, 5905 );
 day_test!( 7 => 250602641, 251037509 );
 

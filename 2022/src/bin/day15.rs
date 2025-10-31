@@ -44,14 +44,14 @@ impl Sensor {
     fn contains(&self, place: Point) -> bool { (self.sensor - place).euler() <= self.distance }
 }
 
-fn calculate_part1(sensors: &Vec<Sensor>) -> i64 {
+fn calculate_part1(sensors: &[Sensor]) -> i64 {
     let check_row: i64 = if sensors.len() < 20 { 10 } else { 2000000 };
     let ranges: Vec<_> = sensors.iter().map(|sensor| sensor.get_overlap(check_row)).collect();
     ranges.iter().map(|range| range.end()).max().unwrap()
         - ranges.iter().map(|range| range.start()).min().unwrap()
 }
 
-fn calculate_part2(sensors: &Vec<Sensor>) -> i64 {
+fn calculate_part2(sensors: &[Sensor]) -> i64 {
     let valid_range = if sensors.len() < 20 { 0..20 } else { 0..4000000 };
     let down_lines = find_all_lines(sensors, |v| v.x() - v.y());
     let up_lines = find_all_lines(sensors, |v| v.x() + v.y());
@@ -76,6 +76,6 @@ fn calculate_part2(sensors: &Vec<Sensor>) -> i64 {
     panic!("No solution has been found")
 }
 
-day_main!();
+day_main!(Vec<Sensor>);
 day_test!( 15, example => 26, 56000011 );
 day_test!( 15 => 4725496, 12051287042458 );

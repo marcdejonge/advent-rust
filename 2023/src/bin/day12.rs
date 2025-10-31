@@ -11,7 +11,7 @@ use rayon::prelude::*;
 
 #[parse_from(separated_list1(
     line_ending,
-    separated_pair(many1(Spring::parse), space1, separated_list1(",", u64),),
+    separated_pair(many1({}), space1, separated_list1(",", u64),),
 ))]
 struct Input {
     lines: Vec<(Vec<Spring>, Vec<u64>)>,
@@ -100,6 +100,6 @@ fn calculate_part2(input: &Input) -> u64 {
         .reduce(|| 0, u64::add)
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 12, example => 21, 525152 );
 day_test!( 12 => 7633, 23903579139437);

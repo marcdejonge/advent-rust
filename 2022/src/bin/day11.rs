@@ -6,9 +6,9 @@ use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::cell::RefCell;
 
-fn calculate_part1(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 20, 3) }
+fn calculate_part1(monkeys: &[Monkey]) -> u64 { calculate(monkeys, 20, 3) }
 
-fn calculate_part2(monkeys: &Vec<Monkey>) -> u64 { calculate(monkeys, 10000, 1) }
+fn calculate_part2(monkeys: &[Monkey]) -> u64 { calculate(monkeys, 10000, 1) }
 
 #[parse_from]
 #[derive(Debug, Clone, Copy)]
@@ -121,6 +121,6 @@ fn calculate(monkeys: &[Monkey], rounds: u32, div: u64) -> u64 {
     first * second
 }
 
-day_main!();
+day_main!(Vec<Monkey>);
 day_test!( 11, example => 10605, 2713310158 );
 day_test!( 11 => 108240, 25712998901 );

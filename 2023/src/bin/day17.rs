@@ -12,11 +12,6 @@ use nom_parse_macros::parse_from;
 #[parse_from(map(single_digit(), |b: u8| b - b'0'))]
 struct Digit(u8);
 
-#[parse_from(Grid::parse)]
-struct Input {
-    grid: Grid<Digit>,
-}
-
 struct Target<'a> {
     grid: &'a Grid<Digit>,
     min_steps: i32,
@@ -83,18 +78,18 @@ impl SearchGraphWithGoal for Target<'_> {
     fn heuristic(&self, node: Self::Node) -> Self::Score { (self.goal() - node.0).euler() }
 }
 
-fn calculate_part1(input: &Input) -> usize {
-    let target = &Target { grid: &input.grid, min_steps: 1, max_steps: 3 };
+fn calculate_part1(grid: &Grid<Digit>) -> usize {
+    let target = &Target { grid, min_steps: 1, max_steps: 3 };
     let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
     target.calc_path_cost(&path)
 }
 
-fn calculate_part2(input: &Input) -> usize {
-    let target = &Target { grid: &input.grid, min_steps: 4, max_steps: 10 };
+fn calculate_part2(grid: &Grid<Digit>) -> usize {
+    let target = &Target { grid, min_steps: 4, max_steps: 10 };
     let path = a_star_search(target, (point2(0, 0), East, 0)).unwrap();
     target.calc_path_cost(&path)
 }
 
-day_main!();
+day_main!(Grid<Digit>);
 day_test!( 17, example => 102, 94 );
 day_test!( 17 => 866, 1010 );

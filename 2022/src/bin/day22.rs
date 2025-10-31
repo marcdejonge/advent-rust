@@ -61,12 +61,37 @@ struct Block {
 }
 
 #[derive(Debug)]
+#[parse_from(map({}, |input: GridAndCommands| {
+    let mut blocks = vec![];
+    let block_size = min(input.grid.x_range().end, input.grid.y_range().end) / 3;
+
+    for y in input.grid.y_range().step_by(block_size as usize) {
+        for x in input.grid.x_range().step_by(block_size as usize) {
+            if input.grid.get(point2(x, y)).cloned().unwrap_or_default() != Outside {
+                blocks.push(Block {
+                    grid: input.grid.sub_grid(x..(x + block_size), y..(y + block_size)),
+                    offset: vector2(x, y),
+                });
+            }
+        }
+    }
+
+    let blocks = blocks.try_into().expect("Expected 6 blocks as input");
+
+    (
+        input.commands,
+        block_size,
+        calc_block_jumps_2d(&blocks),
+        calc_block_jumps_3d(&blocks),
+        blocks,
+    )
+}))]
 struct Input {
     commands: Vec<Command>,
     block_size: i32,
-    blocks: [Block; 6],
     block_jump_2d: BlockJumps,
     block_jump_3d: BlockJumps,
+    blocks: [Block; 6],
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -99,28 +124,6 @@ impl Turn {
             },
         }
     }
-}
-
-fn preprocess(input: GridAndCommands) -> Input {
-    let mut blocks = vec![];
-    let block_size = min(input.grid.x_range().end, input.grid.y_range().end) / 3;
-
-    for y in input.grid.y_range().step_by(block_size as usize) {
-        for x in input.grid.x_range().step_by(block_size as usize) {
-            if input.grid.get(point2(x, y)).cloned().unwrap_or_default() != Outside {
-                blocks.push(Block {
-                    grid: input.grid.sub_grid(x..(x + block_size), y..(y + block_size)),
-                    offset: vector2(x, y),
-                });
-            }
-        }
-    }
-
-    let blocks = blocks.try_into().expect("Expected 6 blocks as input");
-    let block_jump_2d = calc_block_jumps_2d(&blocks);
-    let block_jump_3d = calc_block_jumps_3d(&blocks);
-
-    Input { commands: input.commands, block_size, blocks, block_jump_2d, block_jump_3d }
 }
 
 type BlockJumps = FxHashMap<(usize, Direction), (usize, Turn)>;
@@ -271,9 +274,9 @@ fn calculate_part1(input: &Input) -> i32 { calculate(input, &input.block_jump_2d
 
 fn calculate_part2(input: &Input) -> i32 { calculate(input, &input.block_jump_3d) }
 
-day_main!( preprocess => calculate_part1, calculate_part2 );
-day_test!( 22, example => 6032, 5031 ; crate::preprocess );
-day_test!( 22 => 197160, 145065 ; crate::preprocess );
+day_main!(Input);
+day_test!( 22, example => 6032, 5031 );
+day_test!( 22 => 197160, 145065 );
 
 #[cfg(test)]
 mod tests {

@@ -30,7 +30,7 @@ where
     )
 }
 
-struct DigitFinder<'a>(&'a Vec<u32>);
+struct DigitFinder<'a>(&'a [u32]);
 
 impl<'a> DigitFinder<'a> {
     fn find_digit(&self, segments: u32) -> u32 {
@@ -51,7 +51,7 @@ impl<'a> DigitFinder<'a> {
     }
 }
 
-fn detect_digits(wires: &Vec<u32>) -> FxHashMap<u32, u32> {
+fn detect_digits(wires: &[u32]) -> FxHashMap<u32, u32> {
     let finder = DigitFinder(wires);
     let n1 = finder.find_digit(2);
     let n7 = finder.find_digit(3);
@@ -79,8 +79,7 @@ fn detect_digits(wires: &Vec<u32>) -> FxHashMap<u32, u32> {
     .collect()
 }
 
-#[allow(clippy::ptr_arg)]
-fn calculate_part1(input: &Vec<Line>) -> usize {
+fn calculate_part1(input: &[Line]) -> usize {
     input
         .iter()
         .map(|Line { wires: _, digits }| {
@@ -92,8 +91,7 @@ fn calculate_part1(input: &Vec<Line>) -> usize {
         .sum()
 }
 
-#[allow(clippy::ptr_arg)]
-fn calculate_part2(input: &Vec<Line>) -> u64 {
+fn calculate_part2(input: &[Line]) -> u64 {
     input
         .iter()
         .map(|Line { wires, digits }| {
@@ -106,7 +104,7 @@ fn calculate_part2(input: &Vec<Line>) -> u64 {
         .sum()
 }
 
-day_main!();
+day_main!(Vec<Line>);
 
 day_test!( 8, example => 26, 61229 );
 day_test!( 8 => 479, 1041746 );

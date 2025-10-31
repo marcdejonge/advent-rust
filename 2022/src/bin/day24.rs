@@ -12,6 +12,7 @@ use advent_lib::{
     *,
 };
 use advent_macros::FromRepr;
+use nom_parse_macros::parse_from;
 
 #[repr(u8)]
 #[derive(FromRepr, Default, Copy, Clone)]
@@ -62,6 +63,16 @@ impl From<Storm> for char {
     }
 }
 
+#[parse_from(map({}, |grid: Grid<InputBlock>| {
+    let initial_grid = grid
+        .sub_grid(1..grid.width() - 1, 1..grid.height() - 1)
+        .map(|&b| Storm::from(b));
+    let (width, height) = initial_grid.size().into();
+    let grids = successors(Some(initial_grid), |grid| Some(Self::step_storm(grid)))
+        .take(((width * height) / greatest_common_divisor(width, height)) as usize)
+        .collect();
+    (grids, point2(0, -1), point2(width - 1, height))
+}))]
 struct StormTimeline {
     grids: Vec<Grid<Storm>>,
     start: Location,
@@ -81,17 +92,6 @@ impl StormTimeline {
         }
 
         result
-    }
-
-    fn new(grid: Grid<InputBlock>) -> StormTimeline {
-        let initial_grid = grid
-            .sub_grid(1..grid.width() - 1, 1..grid.height() - 1)
-            .map(|&b| Storm::from(b));
-        let (width, height) = initial_grid.size().into();
-        let grids = successors(Some(initial_grid), |grid| Some(Self::step_storm(grid)))
-            .take(((width * height) / greatest_common_divisor(width, height)) as usize)
-            .collect();
-        StormTimeline { grids, start: point2(0, -1), end: point2(width - 1, height) }
     }
 
     fn get(&self, time: usize) -> &Grid<Storm> { self.grids.get(time % self.grids.len()).unwrap() }
@@ -146,7 +146,7 @@ fn calculate_part2(tl: &StormTimeline) -> usize {
     last_time(a_star_search(&tl.graph_to_end(), (tl.start, time)))
 }
 
-day_main!( StormTimeline::new => calculate_part1, calculate_part2 );
+day_main!(StormTimeline);
 
-day_test!( 24, example => 18, 54 ; crate::StormTimeline::new );
-day_test!( 24 => 297, 856 ; crate::StormTimeline::new );
+day_test!( 24, example => 18, 54 );
+day_test!( 24 => 297, 856 );

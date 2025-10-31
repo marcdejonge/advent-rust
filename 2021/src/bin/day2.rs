@@ -26,7 +26,7 @@ impl Position {
 }
 
 #[allow(clippy::ptr_arg)]
-fn calculate_part1(commands: &Vec<Command>) -> i32 {
+fn calculate_part1(commands: &[Command]) -> i32 {
     commands
         .iter()
         .fold(Position::default(), |mut pos, command| {
@@ -41,7 +41,7 @@ fn calculate_part1(commands: &Vec<Command>) -> i32 {
 }
 
 #[allow(clippy::ptr_arg)]
-fn calculate_part2(commands: &Vec<Command>) -> i32 {
+fn calculate_part2(commands: &[Command]) -> i32 {
     commands
         .iter()
         .fold(Position::default(), |mut pos, command| {
@@ -58,7 +58,7 @@ fn calculate_part2(commands: &Vec<Command>) -> i32 {
         .get_result()
 }
 
-day_main!();
+day_main!(Vec<Command>);
 
 day_test!( 2, example => 150, 900 );
 day_test!( 2 => 1938402, 1947878632 );

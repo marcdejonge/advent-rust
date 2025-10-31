@@ -48,6 +48,6 @@ fn calculate_part2(input: &Input) -> u64 {
     input.starting_numbers.iter().map(|&n| memoized.how_many_splits(n, 75)).sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 11, example1 => 55312, 65601038650482 );
 day_test!( 11 => 217443, 257246536026785);

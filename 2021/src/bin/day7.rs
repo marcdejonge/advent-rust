@@ -30,7 +30,7 @@ fn calculate_part2(input: &Input) -> i32 {
     input.calc(|nr| (nr.abs() * (nr.abs() + 1)) / 2)
 }
 
-day_main!();
+day_main!(Input);
 
 day_test!( 7, example => 37, 168 );
 day_test!( 7 => 351901, 101079875 );

@@ -40,7 +40,7 @@ fn calculate_part2(input: &Input) -> usize {
     input.sum_regions(&corners_grid)
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 12, example1 => 140, 80 );
 day_test!( 12, example2 => 772, 436 );
 day_test!( 12, example3 => 1930, 1206 );

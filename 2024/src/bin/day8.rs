@@ -51,6 +51,6 @@ impl Field {
 fn calculate_part1(field: &Field) -> usize { field.count_dips([1]) }
 fn calculate_part2(field: &Field) -> usize { field.count_dips(0..) }
 
-day_main!();
+day_main!(Field);
 day_test!( 8, example1 => 14, 34 );
 day_test!( 8 => 299, 1032);

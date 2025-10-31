@@ -13,9 +13,9 @@ struct NumberNode {
     prev: usize,
 }
 
-fn calculate_part1(numbers: &Vec<i64>) -> i64 { calculate(create_nodes(numbers, 1), 1) }
+fn calculate_part1(numbers: &[i64]) -> i64 { calculate(create_nodes(numbers, 1), 1) }
 
-fn calculate_part2(numbers: &Vec<i64>) -> i64 { calculate(create_nodes(numbers, 811589153), 10) }
+fn calculate_part2(numbers: &[i64]) -> i64 { calculate(create_nodes(numbers, 811589153), 10) }
 
 fn create_nodes(numbers: &[i64], multiply: i64) -> Vec<NumberNode> {
     let mut result = Vec::with_capacity(5000);
@@ -102,6 +102,6 @@ fn calculate(mut nodes: Vec<NumberNode>, repeat: u32) -> i64 {
     node_iterate(&nodes).map(|n| n.number).step_by(1000).take(4).sum()
 }
 
-day_main!();
+day_main!(Vec<i64>);
 day_test!( 20, example => 3, 1623178306 );
 day_test!( 20 => 18257, 4148032160983 );

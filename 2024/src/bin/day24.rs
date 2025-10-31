@@ -257,7 +257,7 @@ fn calculate_part2(computer: &Computer) -> String {
     swapped_names.iter().map(|n| n.to_string()).join(",")
 }
 
-day_main!();
+day_main!(Computer);
 day_test!( 24, example1 => 4 );
 day_test!( 24, example2 => 2024 );
 day_test!( 24 => 48508229772400, "cqr,ncd,nfj,qnw,vkg,z15,z20,z37".to_string() );

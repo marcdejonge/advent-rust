@@ -179,6 +179,6 @@ fn calculate_part2(input: &Input) -> usize {
         .sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 22, example => 5, 7 );
 day_test!( 22 => 457, 79122 );

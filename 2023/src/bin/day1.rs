@@ -64,7 +64,7 @@ fn parse_prefix(line: &[u8], check_text: bool) -> Option<u32> {
     None
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 1, example1 => 142, 142 );
 day_test!( 1, example2 => 209, 281 );
 day_test!( 1 => 54338, 53389);

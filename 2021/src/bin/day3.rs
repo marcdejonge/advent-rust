@@ -12,12 +12,12 @@ struct Input {
     all_bits: Vec<u32>,
 }
 
-impl<'a> ParseFrom<&'a [u8]> for Input {
-    fn parse(input: &'a [u8]) -> nom::IResult<&'a [u8], Self, nom::error::Error<&'a [u8]>> {
+impl ParseFrom<&[u8]> for Input {
+    fn parse(input: &[u8]) -> nom::IResult<&[u8], Self> {
         map(
             separated_list0(
                 line_ending,
-                map(is_a("01"), |s: &'a [u8]| {
+                map(is_a("01"), |s: &[u8]| {
                     s.iter()
                         .fold(0u32, |acc, &b| (acc << 1) | ((b - b'0') as u32))
                 }),
@@ -70,7 +70,7 @@ fn calculate_part2(input: &Input) -> u32 {
     oxygen * co2
 }
 
-day_main!(calculate_part1, calculate_part2);
+day_main!(Input);
 
 day_test!( 3, example => 198, 230 );
 day_test!( 3 => 2261546, 6775520 );

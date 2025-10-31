@@ -8,6 +8,7 @@ use advent_lib::{
 };
 use advent_macros::FromRepr;
 use fxhash::FxHashMap;
+use nom_parse_macros::parse_from;
 use std::cmp::{max, min};
 
 #[repr(u8)]
@@ -18,9 +19,7 @@ enum Ground {
     Elf = b'#',
 }
 
-type Elfs = Grid<Ground>;
-
-fn prepare(grid: Grid<Ground>) -> Elfs {
+#[parse_from(map({}, |grid: Grid<Ground>| {
     let mut elfs = Grid::new_empty(grid.width() * 3, grid.height() * 3);
     let offset = vector2(grid.width(), grid.height());
     for (loc, ground) in grid.entries() {
@@ -29,7 +28,9 @@ fn prepare(grid: Grid<Ground>) -> Elfs {
         }
     }
     elfs
-}
+}))]
+#[derive(Clone)]
+struct Elfs(Grid<Ground>);
 
 const DIRECTIONS: [(Direction, [usize; 3]); 4] = [
     (Direction::North, [7, 0, 1]),
@@ -49,10 +50,10 @@ fn find_possible_move(round: usize, has_elfs: [&Ground; 8]) -> Option<Direction>
 }
 
 fn step(elfs: &mut Elfs, round: usize) -> bool {
-    let mut proposals = Vec::<(Location, Location)>::with_capacity(elfs.len());
-    let mut proposal_count = FxHashMap::with_capacity_and_hasher(elfs.len(), Default::default());
-    for (loc, _) in elfs.entries().filter(|&(_, g)| g == &Ground::Elf) {
-        let neighbours = elfs.cardinal_neighbours(loc).unwrap();
+    let mut proposals = Vec::<(Location, Location)>::with_capacity(elfs.0.len());
+    let mut proposal_count = FxHashMap::with_capacity_and_hasher(elfs.0.len(), Default::default());
+    for (loc, _) in elfs.0.entries().filter(|&(_, g)| g == &Ground::Elf) {
+        let neighbours = elfs.0.cardinal_neighbours(loc).unwrap();
         if neighbours.contains(&&Ground::Elf) {
             if let Some(dir) = find_possible_move(round, neighbours) {
                 let target = loc + dir;
@@ -65,10 +66,10 @@ fn step(elfs: &mut Elfs, round: usize) -> bool {
     let mut some_change = false;
     for &(current, target) in proposals.iter() {
         if proposal_count.get(&target) == Some(&1) {
-            if let Some(ground) = elfs.get_mut(current) {
+            if let Some(ground) = elfs.0.get_mut(current) {
                 *ground = Ground::Empty
             }
-            if let Some(ground) = elfs.get_mut(target) {
+            if let Some(ground) = elfs.0.get_mut(target) {
                 *ground = Ground::Elf
             }
             some_change = true;
@@ -79,8 +80,8 @@ fn step(elfs: &mut Elfs, round: usize) -> bool {
 }
 
 fn get_range(elfs: &Elfs) -> (Vector<2, i32>, Vector<2, i32>) {
-    let middle = vector2(elfs.width() / 2, elfs.height() / 2);
-    elfs.entries().filter(|&(_, ground)| ground == &Ground::Elf).fold(
+    let middle = vector2(elfs.0.width() / 2, elfs.0.height() / 2);
+    elfs.0.entries().filter(|&(_, ground)| ground == &Ground::Elf).fold(
         (middle, middle),
         |(low, high), (curr, _)| {
             (
@@ -96,7 +97,7 @@ fn empty_fields(elfs: &Elfs) -> i32 {
     let mut count = 0;
     for y in min.y()..=max.y() {
         for x in min.x()..=max.x() {
-            if elfs.get(point2(x, y)) == Some(&Ground::Empty) {
+            if elfs.0.get(point2(x, y)) == Some(&Ground::Empty) {
                 count += 1;
             }
         }
@@ -123,6 +124,6 @@ fn calculate_part2(elfs: &Elfs) -> usize {
     0
 }
 
-day_main!(prepare => calculate_part1, calculate_part2);
-day_test!(23, example => 110, 20 ; crate::prepare );
-day_test!(23 => 3762, 997 ; crate::prepare );
+day_main!(Elfs);
+day_test!( 23, example => 110, 20 );
+day_test!( 23 => 3762, 997 );

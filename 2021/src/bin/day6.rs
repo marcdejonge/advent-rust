@@ -26,7 +26,7 @@ fn calculate_part2(input: &Input) -> u64 {
     input.count_all_fishes(256)
 }
 
-day_main!();
+day_main!(Input);
 
 day_test!( 6, example => 5934, 26984457539 );
 day_test!( 6 => 379414, 1705008653296 );

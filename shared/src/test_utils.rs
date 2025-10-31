@@ -4,6 +4,7 @@ use std::fmt::Debug;
 pub fn assert_day<Input, O>(input: &Input, calc: fn(&Input) -> O, expected: O)
 where
     O: PartialEq + Debug,
+    Input: ?Sized,
 {
     let result = calc(input);
     assert_eq!(
@@ -17,83 +18,144 @@ where
 #[macro_export]
 macro_rules! day_test {
     ( $day: tt, $name: tt => $part1_result: expr) => {
-        day_test!( $day, $name => $part1_result ; std::convert::identity );
-    };
-    ( $day: tt, $name: tt => $part1_result: expr ; $prepare: path ) => {
         #[cfg(test)]
         mod $name {
-            const INPUT: &[u8] = include_bytes!(concat!("../../input/day", stringify!($day), "_", stringify!($name), ".txt"));
+            const INPUT: &[u8] = include_bytes!(concat!(
+                "../../input/day",
+                stringify!($day),
+                "_",
+                stringify!($name),
+                ".txt"
+            ));
 
             #[test]
             fn part1() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
-                advent_lib::test_utils::assert_day(&parsed, crate::calculate_part1, $part1_result);
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
+                let result = crate::calculate_part1(&parsed);
+                assert_eq!(
+                    result, $part1_result,
+                    concat!(
+                        "Expected output of ",
+                        stringify!($part1_result),
+                        " but was {:?}"
+                    ),
+                    result
+                );
             }
         }
     };
     ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr) => {
-        advent_lib::day_test!( $day, $name => $part1_result, $part2_result ; std::convert::identity );
-    };
-    ( $day: tt, $name: tt => $part1_result: expr, $part2_result: expr ; $prepare: path ) => {
         #[cfg(test)]
         mod $name {
-            const INPUT: &[u8] = include_bytes!(concat!("../../input/day", stringify!($day), "_", stringify!($name), ".txt"));
+            const INPUT: &[u8] = include_bytes!(concat!(
+                "../../input/day",
+                stringify!($day),
+                "_",
+                stringify!($name),
+                ".txt"
+            ));
 
             #[test]
             fn part1() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
-                advent_lib::test_utils::assert_day(&parsed, crate::calculate_part1, $part1_result);
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
+                let result = crate::calculate_part1(&parsed);
+                assert_eq!(
+                    result, $part1_result,
+                    concat!(
+                        "Expected output of ",
+                        stringify!($part1_result),
+                        " but was {:?}"
+                    ),
+                    result
+                );
             }
 
             #[test]
             fn part2() {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
-                advent_lib::test_utils::assert_day(&parsed, crate::calculate_part2, $part2_result);
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
+                let result = crate::calculate_part2(&parsed);
+                assert_eq!(
+                    result, $part2_result,
+                    concat!(
+                        "Expected output of ",
+                        stringify!($part2_result),
+                        " but was {:?}"
+                    ),
+                    result
+                );
             }
         }
     };
     ( $day: expr => $part1_result: expr ) => {
-        advent_lib::day_test!( $day => $part1_result ; std::convert::identity );
-    };
-    ( $day: expr => $part1_result: expr ; $prepare: path ) => {
         mod full {
             extern crate test;
             use test::Bencher;
 
-            const INPUT: &[u8] = include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
+            const INPUT: &[u8] =
+                include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
 
             #[bench]
             fn part1(b: &mut Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&parsed, crate::calculate_part1, $part1_result);
+                    let result = crate::calculate_part1(&parsed);
+                    assert_eq!(
+                        result, $part1_result,
+                        concat!(
+                            "Expected output of ",
+                            stringify!($part1_result),
+                            " but was {:?}"
+                        ),
+                        result
+                    );
                 })
             }
         }
     };
     ( $day: expr => $part1_result: expr, $part2_result: expr ) => {
-        advent_lib::day_test!( $day => $part1_result, $part2_result ; std::convert::identity );
-    };
-    ( $day: expr => $part1_result: expr, $part2_result: expr ; $prepare: path ) => {
         #[cfg(test)]
         mod full {
             extern crate test;
 
-            const INPUT: &[u8] = include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
+            const INPUT: &[u8] =
+                include_bytes!(concat!("../../input/day", stringify!($day), ".txt"));
+
+            #[bench]
+            fn parse(b: &mut test::Bencher) {
+                b.iter(|| advent_lib::parsing::handle_parser_error::<crate::ParsedInput>(INPUT));
+            }
 
             #[bench]
             fn part1(b: &mut test::Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&parsed, crate::calculate_part1, $part1_result);
+                    let result = crate::calculate_part1(&parsed);
+                    assert_eq!(
+                        result, $part1_result,
+                        concat!(
+                            "Expected output of ",
+                            stringify!($part1_result),
+                            " but was {:?}"
+                        ),
+                        result
+                    );
                 })
             }
 
             #[bench]
             fn part2(b: &mut test::Bencher) {
-                let parsed = $prepare(advent_lib::parsing::handle_parser_error(INPUT));
+                let parsed: crate::ParsedInput = advent_lib::parsing::handle_parser_error(INPUT);
                 b.iter(|| {
-                    advent_lib::test_utils::assert_day(&parsed, crate::calculate_part2, $part2_result);
+                    let result = crate::calculate_part2(&parsed);
+                    assert_eq!(
+                        result, $part2_result,
+                        concat!(
+                            "Expected output of ",
+                            stringify!($part2_result),
+                            " but was {:?}"
+                        ),
+                        result
+                    );
                 })
             }
         }

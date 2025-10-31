@@ -66,7 +66,7 @@ fn calculate_part2(input: &Input) -> i32 {
         .unwrap()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 22, example1 => 37327623, 24 );
 day_test!( 22, example2 => 37990510, 23 );
 day_test!( 22 => 16619522798, 1854 );

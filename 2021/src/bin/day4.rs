@@ -82,7 +82,7 @@ fn calculate_part2(input: &Input) -> u32 {
     unreachable!()
 }
 
-day_main!();
+day_main!(Input);
 
 day_test!( 4, example => 4512, 1924 );
 day_test!( 4 => 46920, 12635 );

@@ -84,6 +84,6 @@ fn calculate_part1(input: &Input) -> usize {
         .expect("A result could not be found")
 }
 
-day_main!(calculate_part1);
+day_main_half!(Input);
 day_test!( 25, example => 54 );
 day_test!( 25 => 571753 );

@@ -23,6 +23,6 @@ fn calculate_part1(input: &Input) -> i32 { sums(input).iter().rev().take(1).sum(
 
 fn calculate_part2(input: &Input) -> i32 { sums(input).iter().rev().take(3).sum() }
 
-day_main!();
+day_main!(Input);
 day_test!( 1, example => 24000, 45000 );
 day_test!( 1 => 68292, 203203 );

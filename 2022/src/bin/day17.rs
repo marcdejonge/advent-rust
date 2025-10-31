@@ -148,6 +148,6 @@ fn calculate_part2(moves: &Moves) -> usize {
     panic!("Not determined")
 }
 
-day_main!();
+day_main!(Moves);
 day_test!( 17, example => 3068, 1514285714288 );
 day_test!( 17 => 3098, 1525364431487 );

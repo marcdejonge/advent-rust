@@ -118,7 +118,7 @@ fn calculate_part2(input: &Input) -> u32 {
     input.execute_commands(&mut grid)
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 15, example_small => 2028, 1751 );
 day_test!( 15, example_small2 => 908, 618 );
 day_test!( 15, example_bigger => 10092, 9021 );

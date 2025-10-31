@@ -2,14 +2,10 @@
 
 use advent_lib::grid::{Grid, Location};
 use advent_lib::*;
+use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 
-struct Input {
-    symbols: Vec<Symbol>,
-    numbers: Vec<GridNumber>,
-}
-
-fn prepare_input(grid: Grid<char>) -> Input {
+#[parse_from(map({}, |grid: Grid<char>| {
     let mut numbers = Vec::<GridNumber>::new();
     let mut saved_number = GridNumber::default();
     let mut symbols = Vec::<Symbol>::new();
@@ -29,7 +25,11 @@ fn prepare_input(grid: Grid<char>) -> Input {
         });
         saved_number.save(&mut numbers);
     });
-    Input { symbols, numbers }
+    (symbols, numbers)
+}))]
+struct Input {
+    symbols: Vec<Symbol>,
+    numbers: Vec<GridNumber>,
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -89,6 +89,6 @@ fn calculate_part2(input: &Input) -> usize {
         .sum()
 }
 
-day_main!(prepare_input => calculate_part1, calculate_part2);
-day_test!( 3, example => 4361, 467835 ; crate::prepare_input );
-day_test!( 3 => 536576, 75741499 ; crate::prepare_input );
+day_main!(Input);
+day_test!( 3, example => 4361, 467835 );
+day_test!( 3 => 536576, 75741499 );

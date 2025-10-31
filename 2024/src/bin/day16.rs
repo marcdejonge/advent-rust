@@ -114,7 +114,7 @@ fn calculate_part2(input: &Input) -> usize {
     seat_grid.values().filter(|&&b| b == Seat).count()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 16, example1 => 7036, 45 );
 day_test!( 16, example2 => 11048, 64 );
 day_test!( 16 => 88416, 442);

@@ -101,6 +101,6 @@ fn calculate_part2(grid: &Grid<Mirror>) -> usize {
     .unwrap()
 }
 
-day_main!();
+day_main!(Grid<Mirror>);
 day_test!( 16, example => 46, 51 );
 day_test!( 16 => 7482, 7896 );

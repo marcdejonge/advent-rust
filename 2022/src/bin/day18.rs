@@ -58,6 +58,6 @@ fn calculate_part2(points: &FxHashSet<Point>) -> usize {
         .sum()
 }
 
-day_main!();
+day_main!(FxHashSet<Point>);
 day_test!( 18, example => 64, 58 );
 day_test!( 18 => 4320, 2456 );

@@ -74,7 +74,7 @@ fn calculate_part2(grids: &Grids) -> i32 {
     grids.0.par_iter().map(|g| find_reflection(g, 1)).reduce(|| 0, i32::add)
 }
 
-day_main!();
+day_main!(Grids);
 day_test!( 13, example => 405, 400 );
 day_test!( 13 => 37025, 32854 );
 

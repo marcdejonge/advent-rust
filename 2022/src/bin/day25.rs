@@ -1,14 +1,15 @@
 #![feature(test)]
 
-use advent_lib::{day_main, day_test};
+use advent_lib::{day_main_half, day_test};
 use nom::bytes::take_while;
 use nom::combinator::map;
 use nom::{IResult, Parser};
 use nom_parse_trait::ParseFrom;
+use std::fmt::Display;
 
 struct SnafuNumber(u64);
 
-impl<'a> ParseFrom<&'a [u8]> for SnafuNumber {
+impl ParseFrom<&[u8]> for SnafuNumber {
     fn parse(input: &[u8]) -> IResult<&[u8], Self, nom::error::Error<&[u8]>> {
         map(take_while(|b| b"210-=".contains(&b)), |bytes: &[u8]| {
             SnafuNumber(bytes.iter().fold(0u64, |curr, next| match next {
@@ -24,8 +25,8 @@ impl<'a> ParseFrom<&'a [u8]> for SnafuNumber {
     }
 }
 
-impl ToString for SnafuNumber {
-    fn to_string(&self) -> String {
+impl Display for SnafuNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut buffer = [b'0'; 28]; // 28 digits are enough to represent u64 in base 5 with snafu encoding
         let mut index = buffer.len(); // start from the end of the buffer and write backwards
         let mut value = self.0;
@@ -48,15 +49,16 @@ impl ToString for SnafuNumber {
                 _ => unreachable!(),
             }
         }
-        String::from_utf8_lossy(&buffer[index..]).to_string()
+        // SAFETY: We've only generates ASCII bytes
+        f.write_str(unsafe { str::from_utf8_unchecked(&buffer[index..]) })
     }
 }
 
-fn calculate_part1(numbers: &Vec<SnafuNumber>) -> String {
+fn calculate_part1(numbers: &[SnafuNumber]) -> String {
     SnafuNumber(numbers.iter().fold(0, |curr, next| curr + next.0)).to_string()
 }
 
-day_main!(calculate_part1);
+day_main_half!(Vec<SnafuNumber>);
 
 day_test!( 25, example => "2=-1=0".to_string() );
 day_test!( 25 => "2-2=12=1-=-1=000=222".to_string() );

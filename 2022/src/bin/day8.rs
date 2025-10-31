@@ -93,6 +93,6 @@ fn calculate_part2(tree_heights: &Grid<Height>) -> usize {
     .unwrap()
 }
 
-day_main!();
+day_main!(Grid<Height>);
 day_test!( 8, example => 21, 8 );
 day_test!( 8 => 1700, 470596 );

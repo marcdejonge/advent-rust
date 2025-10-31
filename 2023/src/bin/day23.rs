@@ -162,6 +162,6 @@ fn calculate_part2(input: &Input) -> usize {
         .unwrap()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 23, example => 94, 154 );
 day_test!( 23 => 2394 ); // Second part is 6554, but is way too slow in testing

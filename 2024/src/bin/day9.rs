@@ -121,6 +121,6 @@ fn calculate_part2(fs: &FileSystem) -> u128 {
     fs.checksum()
 }
 
-day_main!();
+day_main!(FileSystem);
 day_test!( 9, example1 => 1928, 2858 );
 day_test!( 9 => 6258319840548, 6286182965311);

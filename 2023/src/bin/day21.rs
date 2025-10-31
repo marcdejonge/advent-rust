@@ -10,16 +10,14 @@ use advent_macros::FromRepr;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 
-#[parse_from(Grid::parse)]
+#[parse_from(map({}, |mut grid: Grid<Space>| {
+    let start = grid.find(|&space| space == Space::Start).expect("Could not find starting location");
+    grid[start] = Space::Ground;
+    (grid, start)
+}))]
 struct Input {
     grid: Grid<Space>,
-    #[derived(grid.find(|&space| space == Space::Start).expect("Could not find starting location"))]
     start: Point<2, i32>,
-}
-
-fn prepare_grid(mut input: Input) -> Input {
-    input.grid[input.start] = Space::Ground;
-    input
 }
 
 impl Input {
@@ -129,6 +127,6 @@ fn calculate_part1(input: &Input) -> usize { input.into_iter().within_bounds().n
 
 fn calculate_part2(input: &Input) -> usize { input.calculate_far(26_501_365) }
 
-day_main!( prepare_grid => calculate_part1, calculate_part2 );
-day_test!( 21, example => 42 ; crate::prepare_grid );
-day_test!( 21 => 3847, 637537341306357 ; crate::prepare_grid );
+day_main!(Input);
+day_test!( 21, example => 42 );
+day_test!( 21 => 3847, 637537341306357 );

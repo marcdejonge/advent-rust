@@ -9,29 +9,31 @@ use nom_parse_macros::parse_from;
 struct Grids(Vec<Grid<char>>);
 
 #[derive(Debug)]
+#[parse_from(map({}, parse_grid))]
 struct LocksAndKeys {
     locks: Vec<Vec<usize>>,
     keys: Vec<Vec<usize>>,
 }
 
-fn parse_grid(grids: Grids) -> LocksAndKeys {
-    let mut result = LocksAndKeys { locks: Vec::new(), keys: Vec::new() };
+fn parse_grid(grids: Grids) -> (Vec<Vec<usize>>, Vec<Vec<usize>>) {
+    let mut locks = vec![];
+    let mut keys = vec![];
     for grid in grids.0 {
         if grid.east_line(0).all(|(_, &c)| c == '#') {
-            result.locks.push(
+            locks.push(
                 grid.x_range()
                     .map(|x| grid.south_line(x).take_while(|(_, &c)| c == '#').count())
                     .collect(),
             )
         } else if grid.east_line(grid.height() - 1).all(|(_, &c)| c == '#') {
-            result.keys.push(
+            keys.push(
                 grid.x_range()
                     .map(|x| grid.north_line(x).take_while(|(_, &c)| c == '#').count())
                     .collect(),
             )
         }
     }
-    result
+    (locks, keys)
 }
 
 fn calculate_part1(input: &LocksAndKeys) -> usize {
@@ -43,6 +45,6 @@ fn calculate_part1(input: &LocksAndKeys) -> usize {
         .count()
 }
 
-day_main!(parse_grid => calculate_part1);
-day_test!( 25, example1 => 3 ; crate::parse_grid );
-day_test!( 25 => 3021 ; crate::parse_grid );
+day_main_half!(LocksAndKeys);
+day_test!( 25, example1 => 3 );
+day_test!( 25 => 3021 );

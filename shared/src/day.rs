@@ -3,12 +3,15 @@ use memmap2::Mmap;
 use nom_parse_trait::ParseFrom;
 use num_format::{Locale, ToFormattedString};
 use std::env;
-use std::fmt::Display;
 use std::time::Instant;
 
 const FORMAT: Locale = Locale::en;
 
-fn parse_input<Input>() -> Input
+pub fn format_time(instant: Instant) -> String {
+    instant.elapsed().as_micros().to_formatted_string(&FORMAT)
+}
+
+pub fn parse_input<Input>() -> Input
 where
     Input: for<'a> ParseFrom<&'a [u8]>,
 {
@@ -29,92 +32,70 @@ where
 
     println!(
         " ├── Input parsed \x1b[3min {}µs\x1b[0m",
-        parse_file_start_time.elapsed().as_micros().to_formatted_string(&FORMAT)
+        format_time(parse_file_start_time)
     );
 
     input
 }
 
-fn execute_part<Input, Output, F>(name: &str, function: F, input: &Input)
-where
-    F: Fn(&Input) -> Output,
-    Output: Display,
-{
-    let part1_calc_start_time = Instant::now();
-    let part1 = function(input);
-    println!(
-        " ├── {} calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
-        name,
-        part1_calc_start_time.elapsed().as_micros().to_formatted_string(&FORMAT),
-        part1
-    );
+#[allow(clippy::crate_in_macro_def)] // This is the whole point, to use the call-site's crate
+#[macro_export]
+macro_rules! day_main_half {
+    ($type:ty) => {
+        type ParsedInput = $type;
+
+        fn main() {
+            let before = std::time::Instant::now();
+            let input: ParsedInput = advent_lib::day::parse_input();
+
+            let part1_start = std::time::Instant::now();
+            let part1_output = crate::calculate_part1(&input);
+            println!(
+                " ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+                advent_lib::day::format_time(part1_start),
+                part1_output
+            );
+
+            println!(
+                " └── Total time: \x1b[3m{}µs\x1b[0m",
+                advent_lib::day::format_time(before)
+            );
+            println!();
+        }
+    };
 }
 
-pub fn execute_half_day<ParseInput, FunctionInput, O1, PF, F1>(prepare: PF, part1: F1)
-where
-    ParseInput: for<'a> ParseFrom<&'a [u8]>,
-    PF: Fn(ParseInput) -> FunctionInput,
-    F1: Fn(&FunctionInput) -> O1,
-    O1: Display,
-{
-    let before = Instant::now();
-    let input = prepare(parse_input());
-    execute_part("Part 1", part1, &input);
-
-    println!(
-        " └── Total time: \x1b[3m{}µs\x1b[0m",
-        before.elapsed().as_micros().to_formatted_string(&FORMAT)
-    );
-    println!();
-}
-
-pub fn execute_day<ParseInput, FunctionInput, O1, O2, PF, F1, F2>(prepare: PF, part1: F1, part2: F2)
-where
-    ParseInput: for<'a> ParseFrom<&'a [u8]>,
-    PF: Fn(ParseInput) -> FunctionInput,
-    F1: Fn(&FunctionInput) -> O1,
-    F2: Fn(&FunctionInput) -> O2,
-    O1: Display,
-    O2: Display,
-{
-    let before = Instant::now();
-    let parsed_input = parse_input();
-
-    let before_prepare = Instant::now();
-    let input = prepare(parsed_input);
-    let prepare_time = before_prepare.elapsed().as_micros();
-    if prepare_time > 0 {
-        println!(
-            " ├── Preprocessed data \x1b[3min {}µs\x1b[0m",
-            prepare_time.to_formatted_string(&FORMAT)
-        );
-    }
-
-    execute_part("Part 1", part1, &input);
-    execute_part("Part 2", part2, &input);
-
-    println!(
-        " └── Total time: \x1b[3m{}µs\x1b[0m",
-        before.elapsed().as_micros().to_formatted_string(&FORMAT)
-    );
-    println!();
-}
-
+#[allow(clippy::crate_in_macro_def)] // This is the whole point, to use the call-site's crate
 #[macro_export]
 macro_rules! day_main {
-    () => {
-        day_main!(calculate_part1, calculate_part2);
-    };
-    ($part1:ident) => {
-        fn main() { advent_lib::day::execute_half_day(std::convert::identity, $part1) }
-    };
-    ($prepare:path => $part1:ident) => {
-        fn main() { advent_lib::day::execute_half_day($prepare, $part1) }
-    };
-    ($part1:ident, $part2:ident) => {
-        fn main() { advent_lib::day::execute_day(std::convert::identity, $part1, $part2) }
-    };
-    ($prepare:path => $part1:ident, $part2:ident) => {
-        fn main() { advent_lib::day::execute_day($prepare, $part1, $part2) }
+    ($type:ty) => {
+        type ParsedInput = $type;
+
+        fn main() {
+            let before = std::time::Instant::now();
+            let input: ParsedInput = advent_lib::day::parse_input();
+
+            let part1_start = std::time::Instant::now();
+            let part1_output = crate::calculate_part1(&input);
+            println!(
+                " ├── Part 1 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+                advent_lib::day::format_time(part1_start),
+                part1_output
+            );
+
+            let part2_start = std::time::Instant::now();
+            let part2_output = crate::calculate_part2(&input);
+            println!(
+                " ├── Part 2 calculated \x1b[3min {}µs\x1b[0m: \x1b[1m{}\x1b[0m",
+                advent_lib::day::format_time(part2_start),
+                part2_output
+            );
+
+            println!(
+                " └── Total time: \x1b[3m{}µs\x1b[0m",
+                advent_lib::day::format_time(before)
+            );
+            println!();
+        }
     };
 }

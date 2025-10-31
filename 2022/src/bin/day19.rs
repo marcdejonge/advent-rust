@@ -234,18 +234,18 @@ fn calculate(blueprint: &Blueprint, start_time: Count) -> u32 {
     max_geodes as u32
 }
 
-fn calculate_part1(blueprints: &Vec<Blueprint>) -> u32 {
+fn calculate_part1(blueprints: &[Blueprint]) -> u32 {
     blueprints.iter().map(|blueprint| blueprint.ix * calculate(blueprint, 24)).sum()
 }
 
-fn calculate_part2(blueprints: &Vec<Blueprint>) -> u32 {
+fn calculate_part2(blueprints: &[Blueprint]) -> u32 {
     blueprints
         .iter()
         .take(3)
         .fold(1, |acc, blueprint| acc * calculate(blueprint, 32))
 }
 
-day_main!();
+day_main!(Vec<Blueprint>);
 day_test!( 19, example => 33, 3472 );
 day_test!( 19 => 1147, 3080 );
 

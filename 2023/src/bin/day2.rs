@@ -1,14 +1,8 @@
 #![feature(test)]
 
-use advent_lib::parsing::separated_lines1;
 use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::cmp::max;
-
-#[parse_from(separated_lines1())]
-struct Input {
-    games: Vec<Game>,
-}
 
 #[parse_from(separated_pair(preceded("Game ", u64), ": ", separated_list1("; ", Draw::parse)))]
 #[derive(Debug)]
@@ -47,9 +41,8 @@ impl Draw {
     fn blue(count: u64) -> Self { Draw { red: 0, green: 0, blue: count } }
 }
 
-fn calculate_part1(input: &Input) -> u64 {
-    input
-        .games
+fn calculate_part1(games: &[Game]) -> u64 {
+    games
         .iter()
         .filter(|game| {
             game.draws
@@ -60,9 +53,8 @@ fn calculate_part1(input: &Input) -> u64 {
         .sum()
 }
 
-fn calculate_part2(input: &Input) -> u64 {
-    input
-        .games
+fn calculate_part2(games: &[Game]) -> u64 {
+    games
         .iter()
         .map(|game| {
             game.draws
@@ -77,6 +69,6 @@ fn calculate_part2(input: &Input) -> u64 {
         .sum()
 }
 
-day_main!();
+day_main!(Vec<Game>);
 day_test!( 2, example => 8, 2286 );
 day_test!( 2 => 2716, 72227 );

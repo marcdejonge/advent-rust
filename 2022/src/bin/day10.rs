@@ -28,8 +28,12 @@ fn additions(commands: Vec<Command>) -> Vec<i32> {
     additions
 }
 
-fn calculate_part1(additions: &Vec<i32>) -> String {
+#[parse_from(map({}, additions))]
+struct Additions(Vec<i32>);
+
+fn calculate_part1(additions: &Additions) -> String {
     additions
+        .0
         .iter()
         .enumerate()
         .filter(|(time, _)| time % 40 == 19)
@@ -38,9 +42,9 @@ fn calculate_part1(additions: &Vec<i32>) -> String {
         .to_string()
 }
 
-fn calculate_part2(additions: &Vec<i32>) -> String {
+fn calculate_part2(additions: &Additions) -> String {
     let mut screen = String::with_capacity(256);
-    additions.iter().enumerate().for_each(|(time, x)| {
+    additions.0.iter().enumerate().for_each(|(time, x)| {
         if (time % 40) == 0 {
             screen.push('\n');
         }
@@ -49,18 +53,18 @@ fn calculate_part2(additions: &Vec<i32>) -> String {
     screen
 }
 
-day_main!( additions => calculate_part1, calculate_part2 );
+day_main!(Additions);
 day_test!( 10, example => "13140".to_owned(), "
 ##..##..##..##..##..##..##..##..##..##..
 ###...###...###...###...###...###...###.
 ####....####....####....####....####....
 #####.....#####.....#####.....#####.....
 ######......######......######......####
-#######.......#######.......#######.....".to_owned() ; crate::additions );
+#######.......#######.......#######.....".to_owned() );
 day_test!( 10 => "15260".to_owned(), "
 ###...##..#..#.####..##..#....#..#..##..
 #..#.#..#.#..#.#....#..#.#....#..#.#..#.
 #..#.#....####.###..#....#....#..#.#....
 ###..#.##.#..#.#....#.##.#....#..#.#.##.
 #....#..#.#..#.#....#..#.#....#..#.#..#.
-#.....###.#..#.#.....###.####..##...###.".to_owned() ; crate::additions );
+#.....###.#..#.#.....###.####..##...###.".to_owned() );

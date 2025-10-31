@@ -212,7 +212,7 @@ fn calculate_part2(input: &Input) -> usize {
     }
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 20, simple => 32000000 );
 day_test!( 20, example => 11687500 );
 day_test!( 20 => 791120136, 215252378794009 );

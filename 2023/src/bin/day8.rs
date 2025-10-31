@@ -89,7 +89,7 @@ fn calculate_part2(input: &Input) -> usize {
     end_steps.iter().fold(1, |curr, next| lcm(curr, *next))
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 8, example1 => 2, 2);
 day_test!( 8, example2 => 6, 6);
 day_test!( 8, example3 => 1, 6);

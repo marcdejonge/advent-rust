@@ -54,6 +54,6 @@ fn calculate_part2(input: &Input) -> u64 {
     input.races.iter().fold(Default::default(), Race::combine).solve()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 6, example => 288, 71503);
 day_test!( 6 => 1731600, 40087680 );

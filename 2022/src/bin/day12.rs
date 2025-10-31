@@ -103,6 +103,6 @@ fn calculate_part2(grid: &Grid<Node>) -> usize {
         - 1
 }
 
-day_main!();
+day_main!(Grid<Node>);
 day_test!( 12, example => 31, 29 );
 day_test!( 12 => 383, 377 );

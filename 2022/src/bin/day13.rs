@@ -124,6 +124,6 @@ impl Ord for Packet {
     }
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 13, example => 13, 140 );
 day_test!( 13 => 5843, 26289 );

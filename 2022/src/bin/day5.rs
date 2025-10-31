@@ -34,7 +34,7 @@ fn calculate_part1(input: &Input) -> String { input.calculate(true) }
 
 fn calculate_part2(input: &Input) -> String { input.calculate(false) }
 
-day_main!();
+day_main!(Input);
 
 fn parse_stacks(lines: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     let stack_count = lines.last().expect("Could not find stacks").len();

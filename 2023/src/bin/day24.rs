@@ -139,6 +139,6 @@ fn calculate_part2(weather: &Weather) -> i128 {
     start.coords.iter().sum()
 }
 
-day_main!();
+day_main!(Weather);
 day_test!( 24, example => 2, 47 );
 day_test!( 24 => 19523, 566373506408017 );

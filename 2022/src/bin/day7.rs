@@ -5,17 +5,17 @@ use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::str::FromStr;
 
-fn precompute(commands: Vec<Command>) -> Vec<u32> {
-    TraverseWithStack { iter: commands.iter(), stack: vec![0] }.collect()
+#[parse_from(map({}, |commands: Vec<Command>| TraverseWithStack::from(&commands).collect() ))]
+struct Input(Vec<u32>);
+
+fn calculate_part1(dir_sizes: &Input) -> u32 {
+    dir_sizes.0.iter().filter(|&&size| size < 100000).sum()
 }
 
-fn calculate_part1(dir_sizes: &Vec<u32>) -> u32 {
-    dir_sizes.iter().filter(|&&size| size < 100000).sum()
-}
-
-fn calculate_part2(dir_sizes: &Vec<u32>) -> u32 {
-    let min_size = dir_sizes.last().unwrap_or(&0) - 40000000;
+fn calculate_part2(dir_sizes: &Input) -> u32 {
+    let min_size = dir_sizes.0.last().unwrap_or(&0) - 40000000;
     dir_sizes
+        .0
         .iter()
         .cloned()
         .filter(|&size| size >= min_size)
@@ -60,6 +60,12 @@ struct TraverseWithStack<I, S> {
     stack: Vec<S>,
 }
 
+impl<'a> From<&'a Vec<Command>> for TraverseWithStack<std::slice::Iter<'a, Command>, u32> {
+    fn from(commands: &'a Vec<Command>) -> Self {
+        TraverseWithStack { iter: commands.iter(), stack: vec![] }
+    }
+}
+
 impl<I> TraverseWithStack<I, u32> {
     fn pop(&mut self) -> Option<u32> {
         let current = self.stack.pop()?;
@@ -96,6 +102,6 @@ where
     }
 }
 
-day_main!( precompute => calculate_part1, calculate_part2 );
-day_test!( 7, example => 95437, 24933642 ; crate::precompute );
-day_test!( 7 => 1086293, 366028 ; crate::precompute );
+day_main!(Input);
+day_test!( 7, example => 95437, 24933642 );
+day_test!( 7 => 1086293, 366028 );

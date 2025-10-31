@@ -4,7 +4,7 @@ use advent_lib::*;
 use nom_parse_macros::parse_from;
 use std::hash::Hasher;
 
-#[parse_from(separated_list1(",", Operation::parse))]
+#[parse_from(separated_list1(",", {}))]
 struct Input {
     words: Vec<Operation>,
 }
@@ -96,6 +96,6 @@ fn calculate_part2(input: &Input) -> u64 {
         .sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 15, example => 1320, 145 );
 day_test!( 15 => 505379, 263211 );

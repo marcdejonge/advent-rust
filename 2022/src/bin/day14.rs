@@ -26,14 +26,15 @@ type Point = advent_lib::geometry::Point<2, i32>;
 ))]
 struct Lines(Vec<Line>);
 
-fn generate_grid(lines: Lines) -> Grid<Place> {
+#[parse_from(map({}, |lines: Lines| {
     let max_height = lines.0.iter().map(|line| line.max_y()).max().unwrap() + 2;
     let mut grid = Grid::new_empty(1000, max_height + 1);
     for line in lines.0 {
         draw_line(&mut grid, line, Place::Line);
     }
     grid
-}
+}))]
+struct PlaceGrid(Grid<Place>);
 
 fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
     if line.start.x() == line.end.x() {
@@ -55,10 +56,10 @@ fn draw_line(grid: &mut Grid<Place>, line: Line, value: Place) {
     }
 }
 
-fn calculate_part1(grid: &Grid<Place>) -> usize { SandDroppingGrid::new(grid).count() }
+fn calculate_part1(grid: &PlaceGrid) -> usize { SandDroppingGrid::new(&grid.0).count() }
 
-fn calculate_part2(grid: &Grid<Place>) -> usize {
-    let mut grid = SandDroppingGrid::new(grid);
+fn calculate_part2(grid: &PlaceGrid) -> usize {
+    let mut grid = SandDroppingGrid::new(&grid.0);
     let y = grid.grid.height() - 1;
     for x in grid.grid.x_range() {
         let place = grid.grid.get_mut(point2(x, y)).unwrap();
@@ -124,6 +125,6 @@ enum Place {
     Line = b'#',
 }
 
-day_main!( generate_grid => calculate_part1, calculate_part2 );
-day_test!( 14, example => 24, 93 ; crate::generate_grid );
-day_test!( 14 => 843, 27625 ; crate::generate_grid );
+day_main!(PlaceGrid);
+day_test!( 14, example => 24, 93 );
+day_test!( 14 => 843, 27625 );

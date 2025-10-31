@@ -19,14 +19,14 @@ impl Range {
     fn wraps(&self, other: &Range) -> bool { self.from <= other.from && self.to >= other.to }
 }
 
-fn calculate_part1(range_pair: &Vec<RangePair>) -> usize {
+fn calculate_part1(range_pair: &[RangePair]) -> usize {
     range_pair
         .iter()
         .filter(|RangePair(first, second)| first.wraps(second) || second.wraps(first))
         .count()
 }
 
-fn calculate_part2(range_pair: &Vec<RangePair>) -> usize {
+fn calculate_part2(range_pair: &[RangePair]) -> usize {
     range_pair
         .iter()
         .filter(|RangePair(first, second)| {
@@ -38,6 +38,6 @@ fn calculate_part2(range_pair: &Vec<RangePair>) -> usize {
         .count()
 }
 
-day_main!();
+day_main!(Vec<RangePair>);
 day_test!( 4, example => 2, 4 );
 day_test!( 4 => 580, 895 );

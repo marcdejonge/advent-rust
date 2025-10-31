@@ -31,7 +31,7 @@ fn calculate_part2(grid: &Grid<Height>) -> usize {
     biggest.iter().product()
 }
 
-day_main!();
+day_main!(Grid<Height>);
 
 day_test!( 9, example => 15, 1134 );
 day_test!( 9 => 532, 1110780 );

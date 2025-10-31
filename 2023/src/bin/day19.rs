@@ -128,6 +128,6 @@ fn calculate_part2(input: &Input) -> i64 {
     input.calculate_range(IN, [1..=4000, 1..=4000, 1..=4000, 1..=4000])
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 19, example => 19114, 167409079868000 );
 day_test!( 19 => 425811, 131796824371749 );

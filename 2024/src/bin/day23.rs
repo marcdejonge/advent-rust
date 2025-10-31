@@ -93,6 +93,6 @@ fn calculate_part2(input: &Input) -> usize {
     max_set.len()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 23, example1 => 7, 4 );
 day_test!( 23 => 1230, 13 );

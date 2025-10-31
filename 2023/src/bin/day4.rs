@@ -1,15 +1,9 @@
 #![feature(test)]
 
-use advent_lib::parsing::separated_lines1;
 use advent_lib::*;
 use fxhash::FxHashSet;
 use nom_parse_macros::parse_from;
 use std::ops::Shl;
-
-#[parse_from(separated_lines1())]
-struct Input {
-    cards: Vec<Card>,
-}
 
 #[parse_from(
     preceded(
@@ -32,9 +26,8 @@ impl Card {
     }
 }
 
-fn calculate_part1(input: &Input) -> usize {
-    input
-        .cards
+fn calculate_part1(cards: &[Card]) -> usize {
+    cards
         .iter()
         .map(|c| {
             let count = c.winning_count();
@@ -47,13 +40,13 @@ fn calculate_part1(input: &Input) -> usize {
         .sum()
 }
 
-fn calculate_part2(input: &Input) -> usize {
-    let mut counts = Vec::with_capacity(input.cards.len());
-    for _ in 0..input.cards.len() {
+fn calculate_part2(cards: &[Card]) -> usize {
+    let mut counts = Vec::with_capacity(cards.len());
+    for _ in 0..cards.len() {
         counts.push(1usize)
     }
 
-    input.cards.iter().enumerate().for_each(|(ix, c)| {
+    cards.iter().enumerate().for_each(|(ix, c)| {
         let curr_count = counts[ix];
 
         counts.as_mut_slice()[ix + 1..=ix + c.winning_count()]
@@ -63,6 +56,6 @@ fn calculate_part2(input: &Input) -> usize {
     counts.iter().sum()
 }
 
-day_main!();
+day_main!(Vec<Card>);
 day_test!( 4, example => 13, 30 );
 day_test!( 4 => 18519, 11787590);

@@ -82,6 +82,6 @@ fn calculate_part2(input: &Input) -> u64 {
     input.determine_galaxy_distance_sum(input.create_distance_grid(1000000))
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 11, example => 374, 82000210);
 day_test!( 11 => 10490062, 382979724122 );

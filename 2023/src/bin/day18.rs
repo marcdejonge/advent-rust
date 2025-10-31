@@ -69,6 +69,6 @@ fn calculate_part1(input: &Input) -> i64 { calculate_area(&dig_command_1(input))
 
 fn calculate_part2(input: &Input) -> i64 { calculate_area(&dig_command_2(input)) }
 
-day_main!();
+day_main!(Input);
 day_test!( 18, example => 62, 952408144115 );
 day_test!( 18 => 53300, 64294334780659 );

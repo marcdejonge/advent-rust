@@ -14,6 +14,7 @@ type FlowRate = i32;
 
 const START_KEY: Key = Key::fixed(b"AA");
 
+#[parse_from(map({}, generate_sewer))]
 struct SewerSystem {
     total_flow_rate: FlowRate,
     valves: FxHashMap<Key, Valve>,
@@ -96,7 +97,7 @@ impl SewerSystem {
     }
 }
 
-fn generate_sewer(parsed_valves: Vec<ParsedValve>) -> SewerSystem {
+fn generate_sewer(parsed_valves: Vec<ParsedValve>) -> (FlowRate, FxHashMap<Key, Valve>) {
     let valve_map = parsed_valves.iter().map(|pv| (pv.name, pv.clone())).collect();
     let valves: FxHashMap<_, _> = parsed_valves
         .iter()
@@ -117,7 +118,7 @@ fn generate_sewer(parsed_valves: Vec<ParsedValve>) -> SewerSystem {
         .collect();
 
     let total_flow_rate: FlowRate = valves.values().map(|v| v.rate).sum();
-    SewerSystem { total_flow_rate, valves }
+    (total_flow_rate, valves)
 }
 
 fn calculate_part1(sewer: &SewerSystem) -> FlowRate {
@@ -189,6 +190,6 @@ impl<'a> State<'a> {
     }
 }
 
-day_main!( generate_sewer => calculate_part1, calculate_part2 );
-day_test!( 16, example => 1651, 1707 ; crate::generate_sewer );
-day_test!( 16 => 1923, 2594 ; crate::generate_sewer );
+day_main!(SewerSystem);
+day_test!( 16, example => 1651, 1707 );
+day_test!( 16 => 1923, 2594 );

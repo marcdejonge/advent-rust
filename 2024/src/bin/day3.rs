@@ -43,7 +43,7 @@ fn calculate_part2(memory: &Memory) -> i64 {
         .0
 }
 
-day_main!();
+day_main!(Memory);
 day_test!( 3, example1 => 161, 161 );
 day_test!( 3, example2 => 161, 48 );
 day_test!( 3 => 171183089, 63866497);

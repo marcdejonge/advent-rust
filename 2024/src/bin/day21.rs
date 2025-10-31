@@ -116,6 +116,6 @@ fn calculate_part2(input: &Input) -> usize {
     input.lines.iter().map(|line| moves.score(line.clone(), 25)).sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 21, example1 => 126384 );
 day_test!( 21 => 242484, 294209504640384 );

@@ -106,6 +106,6 @@ fn calculate_part2(grid: &Grid<Stone>) -> i32 {
         .unwrap()
 }
 
-day_main!();
+day_main!(Grid<Stone>);
 day_test!( 14, example => 136, 64);
 day_test!( 14 => 110407, 87273);

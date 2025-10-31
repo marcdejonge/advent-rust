@@ -50,6 +50,6 @@ fn calculate_part1(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_n
 
 fn calculate_part2(input: &Input) -> i64 { input.input.par_iter().map(|v| calc_prev(v)).sum() }
 
-day_main!();
+day_main!(Input);
 day_test!( 9, example => 114, 2);
 day_test!( 9 => 1995001648, 988 );

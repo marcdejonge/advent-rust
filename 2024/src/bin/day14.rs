@@ -78,6 +78,6 @@ fn calculate_part2(input: &Input) -> i32 {
     time
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 14, example1 => 12, 0 );
 day_test!( 14 => 218619120, 7055);

@@ -184,7 +184,7 @@ fn calculate_part2(grid: &Grid<PipeCell>) -> usize {
     pipe_grid.values().filter(|t| **t == LocationType::Inside).count()
 }
 
-day_main!();
+day_main!(Grid<PipeCell>);
 day_test!( 10, example1 => 4, 1 );
 day_test!( 10, example2 => 8, 1 );
 day_test!( 10, example3 => 23, 4 );

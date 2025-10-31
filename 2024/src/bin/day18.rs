@@ -79,6 +79,6 @@ fn calculate_part2(input: &Input) -> i32 {
     found.x() * 100 + found.y()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 18, example1 => 22, 601 );
 day_test!( 18 => 348, 5444 );

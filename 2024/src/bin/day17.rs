@@ -159,7 +159,7 @@ fn calculate_part2(machine_start: &MachineStart) -> u64 {
     a
 }
 
-day_main!();
+day_main!(MachineStart);
 day_test!( 17, example => 4635635210 );
 day_test!( 17, example2 => 5730, 117440 );
 day_test!( 17 => 167430506, 216148338630253 );

@@ -114,6 +114,6 @@ fn calculate_part2(input: &Input) -> usize {
     input.towels.par_iter().map(|towel| input.can_make(towel)).sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 19, example1 => 6, 16 );
 day_test!( 19 => 272, 1041529704688380 );

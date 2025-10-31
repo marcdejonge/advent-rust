@@ -69,6 +69,6 @@ fn calculate_part2(input: &Input) -> i32 {
         .sum()
 }
 
-day_main!();
+day_main!(Input);
 day_test!( 2, example => 15, 12 );
 day_test!( 2 => 13565, 12424 );

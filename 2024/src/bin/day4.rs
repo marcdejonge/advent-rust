@@ -66,6 +66,6 @@ fn calculate_part2(grid: &Grid<Block>) -> usize {
         .count()
 }
 
-day_main!();
+day_main!(Grid<Block>);
 day_test!( 4, example1 => 18, 9 );
 day_test!( 4 => 2530, 1921);

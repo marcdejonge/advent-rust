@@ -44,6 +44,6 @@ fn calculate_part1(almanac: &Almanac) -> u32 { almanac.calculate_middle(false) }
 
 fn calculate_part2(almanac: &Almanac) -> u32 { almanac.calculate_middle(true) }
 
-day_main!();
+day_main!(Almanac);
 day_test!( 5, example1 => 143, 123 );
 day_test!( 5 => 5955, 4030);

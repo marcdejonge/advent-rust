@@ -54,7 +54,7 @@ impl Steps {
     }
 }
 
-day_main!();
+day_main!(Steps);
 day_test!( 9, example => 13, 1 );
 day_test!( 9, bigger => 88, 36 );
 day_test!( 9 => 5710, 2259 );

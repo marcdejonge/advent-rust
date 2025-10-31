@@ -31,6 +31,6 @@ fn calculate_part2(numbers: &Numbers) -> i64 {
     numbers.left.par_iter().map(|l| *map.get(l).unwrap_or(&0) as i64 * l).sum()
 }
 
-day_main!();
+day_main!(Numbers);
 day_test!( 1, example1 => 11, 31 );
 day_test!( 1 => 1889772, 23228917);

@@ -49,7 +49,7 @@ fn write_line_to(grid: &mut Grid<u8>, line: &LineSegment<2, i32>) {
     }
 }
 
-fn calculate_part1(input: &Vec<Line>) -> u64 {
+fn calculate_part1(input: &[Line]) -> u64 {
     let mut grid = Grid::<u8>::new_empty(
         input.iter().map(|l| l.max_x()).max().unwrap() + 1,
         input.iter().map(|l| l.max_y()).max().unwrap() + 1,
@@ -62,7 +62,7 @@ fn calculate_part1(input: &Vec<Line>) -> u64 {
     grid.entries().filter(|(_, &value)| value >= 2).count() as u64
 }
 
-fn calculate_part2(input: &Vec<Line>) -> u64 {
+fn calculate_part2(input: &[Line]) -> u64 {
     let mut grid = Grid::<u8>::new_empty(
         input.iter().map(|l| l.max_x()).max().unwrap() + 1,
         input.iter().map(|l| l.max_y()).max().unwrap() + 1,
@@ -73,7 +73,7 @@ fn calculate_part2(input: &Vec<Line>) -> u64 {
     grid.entries().filter(|(_, &value)| value >= 2).count() as u64
 }
 
-day_main!();
+day_main!(Vec<Line>);
 
 day_test!( 5, example => 5, 12 );
 day_test!( 5 => 4728, 17717 );

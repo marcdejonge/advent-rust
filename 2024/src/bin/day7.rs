@@ -62,6 +62,6 @@ fn can_make_target_multiply(target: u64, nr: u64, input: &[u64], allow_concat: b
 fn calculate_part1(input: &Input) -> u64 { input.sum_of_targets(false) }
 fn calculate_part2(input: &Input) -> u64 { input.sum_of_targets(true) }
 
-day_main!();
+day_main!(Input);
 day_test!( 7, example1 => 3749, 11387 );
 day_test!( 7 => 945512582195, 271691107779347);
