@@ -59,7 +59,7 @@ fn calculate_part2(input: &Input) -> u64 {
     todo!()
 }
 
-day_main!();
+day_main!(Input);
 
 day_test!( $DAY_NUM, example => 0 );
 day_test!( $DAY_NUM => 0 );
