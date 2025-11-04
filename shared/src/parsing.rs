@@ -1,4 +1,6 @@
+use crate::builder::with;
 use fxhash::{FxHashMap, FxHashSet};
+use nom::bytes::take_while;
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming, map};
 use nom::error::{ErrorKind, ParseError};
@@ -200,6 +202,11 @@ pub fn single_digit<I: AsBytes + Input, E: ParseError<I>>() -> impl Parser<I, Ou
     single_match(|b| b.is_ascii_digit())
 }
 
+pub fn single_ascii<I: AsBytes + Input, E: ParseError<I>>() -> impl Parser<I, Output = u8, Error = E>
+{
+    single_match(|b| b.is_ascii_alphabetic())
+}
+
 pub fn single_match<I: AsBytes + Input, E: ParseError<I>>(
     mut matcher: impl FnMut(u8) -> bool,
 ) -> impl Parser<I, Output = u8, Error = E> {
@@ -268,5 +275,50 @@ where
             .next()
             .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Eof)))?;
         Ok((input, transform(&first.as_char())))
+    }
+}
+
+pub fn chars_to_string<F, I: Input, E: ParseError<I>>(
+    condition: F,
+) -> impl Parser<I, Output = String, Error = E>
+where
+    F: Fn(<I as Input>::Item) -> bool,
+    <I as Input>::Item: AsChar,
+{
+    map(take_while(condition), |chars: I| {
+        with(String::new(), |it| {
+            for char in chars.iter_elements() {
+                it.push(char.as_char());
+            }
+        })
+    })
+}
+
+pub fn char_alpha<I: Input, E: ParseError<I>>() -> impl Parser<I, Output = char, Error = E>
+where
+    <I as Input>::Item: AsChar,
+{
+    single_char_match(|c| c.is_alpha())
+}
+
+pub fn single_char_match<I: Input, E: ParseError<I>>(
+    matcher: impl Fn(char) -> bool,
+) -> impl Parser<I, Output = char, Error = E>
+where
+    <I as Input>::Item: AsChar,
+{
+    move |input: I| match input.iter_elements().next() {
+        None => Err(Err::Error(E::from_error_kind(
+            input.clone(),
+            ErrorKind::Eof,
+        ))),
+        Some(item) => {
+            let char = item.as_char();
+            if matcher(char) {
+                Ok((input.take_from(1), char))
+            } else {
+                Err(Err::Error(E::from_error_kind(input, ErrorKind::Char)))
+            }
+        }
     }
 }
