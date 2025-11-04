@@ -13,6 +13,7 @@ nom = "8"
 nom-parse-trait = "0.4.0"
 nom-parse-macros = "0.4.0"
 rayon = "1.10.0"
+smallvec = "1"
 
 [profile.release]
 strip = true

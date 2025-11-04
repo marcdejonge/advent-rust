@@ -4,7 +4,7 @@ use nom::combinator::{all_consuming, map};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, separated_pair};
-use nom::{AsBytes, Compare, Err, Finish, IResult, Input, Parser};
+use nom::{AsBytes, AsChar, Compare, Err, Finish, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use smallvec::SmallVec;
 use std::hash::Hash;
@@ -253,4 +253,20 @@ pub fn separated_set1<I: Input, E: ParseError<I>, T: Eq + Hash, S>(
     map(separated_list1(separator, parser), |list| {
         list.into_iter().collect::<FxHashSet<T>>()
     })
+}
+
+pub fn peek_char_mapped<I: Input, E: ParseError<I>, T>(
+    transform: impl Fn(&char) -> T,
+) -> impl Parser<I, Output = T, Error = E>
+where
+    <I as Input>::Item: AsChar,
+{
+    move |input: I| {
+        let first = input
+            .clone()
+            .iter_elements()
+            .next()
+            .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Eof)))?;
+        Ok((input, transform(&first.as_char())))
+    }
 }
