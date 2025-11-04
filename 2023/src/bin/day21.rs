@@ -117,7 +117,7 @@ impl Iterator for ExploreIterator<'_> {
 
         self.visited_last_round = next_round;
 
-        // self.day.grid.draw_with_overlay(visited.iter(), 'O');
+        // println!("{}", self.day.grid.draw_with_overlay(visited.iter(), 'O'));
 
         Some(visited.len())
     }

@@ -404,7 +404,7 @@ impl<T> Grid<T> {
         count_cells
     }
 
-    pub fn draw_with_overlay<'a, I>(&self, locations: I, c: char)
+    pub fn draw_with_overlay<'a, I>(&self, locations: I, c: char) -> String
     where
         I: IntoIterator<Item = &'a Location>,
         T: Into<char> + Copy,
@@ -416,7 +416,7 @@ impl<T> Grid<T> {
             }
         }
 
-        println!("{char_grid:?}");
+        format!("{char_grid:?}")
     }
 
     pub fn detect_regions(&self) -> Vec<Vec<Location>>
