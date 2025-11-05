@@ -11,6 +11,8 @@ pub trait SearchGraph {
     type Score: Copy + Default + Eq + Add<Self::Score, Output = Self::Score> + Ord;
 
     fn neighbours(&self, node: Self::Node) -> impl Iterator<Item = (Self::Node, Self::Score)>;
+
+    fn expected_state_size(&self) -> usize { 1000 }
 }
 
 pub trait SearchGraphWithGoal: SearchGraph {
@@ -40,9 +42,13 @@ pub fn a_star_search<G: SearchGraphWithGoal>(
     graph: &G,
     start_node: G::Node,
 ) -> Option<Vec<G::Node>> {
-    let mut current_states = HashMap::with_capacity_and_hasher(1000, FxBuildHasher::default());
+    let mut current_states =
+        HashMap::with_capacity_and_hasher(graph.expected_state_size(), FxBuildHasher::default());
     current_states.insert(start_node, (G::Score::default(), None)); // the value is the score + where the node came from
-    let mut open_set = PriorityQueue::with_capacity_and_hasher(1000, FxBuildHasher::default());
+    let mut open_set = PriorityQueue::with_capacity_and_hasher(
+        graph.expected_state_size(),
+        FxBuildHasher::default(),
+    );
     open_set.push(start_node, Reverse(G::Score::default())); // open_set uses the f_score as priority
 
     while let Some((node, _)) = open_set.pop() {

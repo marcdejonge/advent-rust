@@ -10,7 +10,7 @@ use nom::Err::Error;
 use nom::{AsBytes, AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Index, IndexMut, Range};
+use std::ops::{Add, Index, IndexMut, Range};
 
 #[derive(Clone, Hash, PartialEq)]
 pub struct Grid<T> {
@@ -470,6 +470,20 @@ impl<T> Grid<T> {
             .save_with_format(filename, image::ImageFormat::Png)
             .expect("Expect saving to not be a problem");
     }
+
+    pub fn search_graph<'a, FS, FH, S>(
+        &'a self,
+        goal: Location,
+        score_step: FS,
+        heuristic_score: FH,
+    ) -> GridGraph<'a, T, FS, FH>
+    where
+        FS: Fn(Location, &T, &T) -> Option<S>,
+        S: Copy + Default + Eq + Add<S, Output = S> + Ord,
+        FH: Fn(Vector<2, i32>) -> S,
+    {
+        GridGraph::<'a, T, FS, FH> { grid: self, goal, score_step, heuristic_score }
+    }
 }
 
 impl<T: Copy + Into<char>> Debug for Grid<T> {
@@ -725,4 +739,42 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) { self.iter.size_hint() }
+}
+
+pub struct GridGraph<'a, T, FS, FH> {
+    grid: &'a Grid<T>,
+    goal: Location,
+    score_step: FS,
+    heuristic_score: FH,
+}
+
+impl<'a, T, S, FS, FH> crate::search::SearchGraph for GridGraph<'a, T, FS, FH>
+where
+    FS: Fn(Location, &T, &T) -> Option<S>,
+    S: Copy + Default + Eq + Add<S, Output = S> + Ord,
+    FH: Fn(Vector<2, i32>) -> S,
+{
+    type Node = Location;
+    type Score = S;
+
+    fn neighbours(&self, current_loc: Location) -> impl Iterator<Item = (Location, S)> {
+        let current_val = self.grid.get(current_loc).unwrap();
+        self.grid.direct_neighbours(current_loc).flat_map(move |(dir, val)| {
+            let next_loc = current_loc + dir;
+            (self.score_step)(next_loc, current_val, val).map(|score| (next_loc, score))
+        })
+    }
+
+    fn expected_state_size(&self) -> usize { (self.grid.width() * self.grid.height()) as usize }
+}
+
+impl<'a, T, S, FS, FH> crate::search::SearchGraphWithGoal for GridGraph<'a, T, FS, FH>
+where
+    FS: Fn(Location, &T, &T) -> Option<S>,
+    S: Copy + Default + Eq + Add<S, Output = S> + Ord,
+    FH: Fn(Vector<2, i32>) -> S,
+{
+    fn is_goal(&self, curr: Location) -> bool { curr == self.goal }
+
+    fn heuristic(&self, curr: Location) -> Self::Score { (self.heuristic_score)(self.goal - curr) }
 }

@@ -16,7 +16,8 @@ rayon = "1.10.0"
 smallvec = "1"
 
 [profile.release]
-strip = true
-lto = true
-panic = "abort"
-debug = "none"
+# strip = true
+# lto = true
+# panic = "abort"
+# debug = "none"
+debug = true
