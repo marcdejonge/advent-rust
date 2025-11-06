@@ -1,6 +1,5 @@
 use crate::builder::with;
 use fxhash::{FxHashMap, FxHashSet};
-use nom::bytes::take_while;
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming, map};
 use nom::error::{ErrorKind, ParseError};
@@ -278,14 +277,13 @@ where
     }
 }
 
-pub fn chars_to_string<F, I: Input, E: ParseError<I>>(
-    condition: F,
+pub fn parser_to_string<I: Input, E: ParseError<I>>(
+    parser: impl Parser<I, Output = I, Error = E>,
 ) -> impl Parser<I, Output = String, Error = E>
 where
-    F: Fn(<I as Input>::Item) -> bool,
     <I as Input>::Item: AsChar,
 {
-    map(take_while(condition), |chars: I| {
+    map(parser, |chars: I| {
         with(String::new(), |it| {
             for char in chars.iter_elements() {
                 it.push(char.as_char());
@@ -320,5 +318,40 @@ where
                 Err(Err::Error(E::from_error_kind(input, ErrorKind::Char)))
             }
         }
+    }
+}
+
+pub fn hex8<I: Input, E: ParseError<I>>(input: I) -> IResult<I, u8, E>
+where
+    <I as Input>::Item: AsChar,
+{
+    if input.input_len() < 2 {
+        return Err(Err::Error(E::from_error_kind(input, ErrorKind::Eof)));
+    }
+
+    let (rest, matches) = input.take_split(2);
+    let mut iter = matches.iter_elements();
+    let first = hex_decode(
+        iter.next()
+            .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Eof)))?
+            .as_char(),
+    )
+    .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Char)))?;
+    let second = hex_decode(
+        iter.next()
+            .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Eof)))?
+            .as_char(),
+    )
+    .ok_or_else(|| Err::Error(E::from_error_kind(input.clone(), ErrorKind::Char)))?;
+
+    Ok((rest, first << 4 | second))
+}
+
+fn hex_decode(c: char) -> Option<u8> {
+    match c {
+        '0'..='9' => Some(c as u8 - b'0'),
+        'A'..='F' => Some(c as u8 - b'A' + 10),
+        'a'..='f' => Some(c as u8 - b'a' + 10),
+        _ => None,
     }
 }

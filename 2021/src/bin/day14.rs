@@ -4,7 +4,7 @@
 use advent_lib::{
     builder::with_default,
     iter_utils::IteratorUtils,
-    parsing::{char_alpha, chars_to_string, double_line_ending},
+    parsing::{char_alpha, double_line_ending, parser_to_string},
     *,
 };
 use fxhash::FxHashMap;
@@ -12,7 +12,7 @@ use nom_parse_macros::parse_from;
 use std::ops::{Add, AddAssign};
 
 #[parse_from(separated_pair(
-    chars_to_string(AsChar::is_alpha),
+    parser_to_string(take_while(AsChar::is_alpha)),
     double_line_ending,
     map(
         separated_list1(line_ending, separated_pair((char_alpha(), char_alpha()), " -> ", char_alpha())),
