@@ -9,6 +9,7 @@ use nom::{AsBytes, AsChar, Compare, Err, Finish, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use smallvec::SmallVec;
 use std::hash::Hash;
+use std::ops::RangeInclusive;
 
 pub fn handle_parser_error<T>(input: &[u8]) -> T
 where
@@ -49,16 +50,16 @@ pub fn find_many_skipping_unknown<I: Input, E: ParseError<I>, T: ParseFrom<I, E>
     }
 }
 
-pub fn many_1_n<const MAX: usize, Input, Output, Error, ParserFunction>(
+pub fn many_1_n<const MAX: usize, I, Output, E, ParserFunction>(
     mut parser: ParserFunction,
-) -> impl FnMut(Input) -> IResult<Input, SmallVec<[Output; MAX]>, Error>
+) -> impl Parser<I, Output = SmallVec<[Output; MAX]>, Error = E>
 where
-    Input: nom::Input,
-    ParserFunction: Parser<Input, Output = Output, Error = Error>,
-    Error: ParseError<Input>,
+    I: Input,
+    ParserFunction: Parser<I, Output = Output, Error = E>,
+    E: ParseError<I>,
     [Output; MAX]: smallvec::Array<Item = Output>,
 {
-    move |mut input: Input| {
+    move |mut input: I| {
         let mut result = SmallVec::new();
         while result.len() < MAX {
             let input_len_before = input.input_len();
@@ -68,10 +69,10 @@ where
                 Ok((next_input, output)) => {
                     // infinite loop check: the parser must always consume
                     if next_input.input_len() == input_len_before {
-                        return Err(Err::Error(Error::from_error_kind(input, ErrorKind::Many1)));
+                        return Err(Err::Error(E::from_error_kind(input, ErrorKind::Many1)));
                     }
                     if result.len() == MAX {
-                        return Err(Err::Error(Error::from_error_kind(input, ErrorKind::ManyMN)));
+                        return Err(Err::Error(E::from_error_kind(input, ErrorKind::ManyMN)));
                     }
 
                     input = next_input;
@@ -354,4 +355,20 @@ fn hex_decode(c: char) -> Option<u8> {
         'a'..='f' => Some(c as u8 - b'a' + 10),
         _ => None,
     }
+}
+
+pub fn range_inclusive<I, E: ParseError<I>, T, F, G>(
+    value: F,
+    separator: G,
+) -> impl Parser<I, Output = RangeInclusive<T>, Error = E>
+where
+    F: Parser<I, Output = T, Error = E> + Clone,
+    G: Parser<I, Error = E>,
+    I: Input,
+    <I as Input>::Item: AsChar,
+    for<'a> I: Compare<&'a [u8]>,
+{
+    map(separated_pair(value.clone(), separator, value), |(l, r)| {
+        l..=r
+    })
 }
