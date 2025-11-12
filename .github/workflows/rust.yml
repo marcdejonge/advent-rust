@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        projects: ["2021", "2022", "2023", "2024"]
+        projects: ["2021", "2022", "2023", "2024", "2025"]
 
     steps:
       - uses: actions/checkout@v4

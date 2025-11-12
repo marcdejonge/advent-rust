@@ -47,8 +47,9 @@ cat <<EOF > "${YEAR}/src/bin/day${DAY_NUM}.rs"
 use advent_lib::*;
 use nom_parse_macros::parse_from;
 
-#[parse_from()]
+#[parse_from]
 struct Input {
+    dummy: Vec<u32>
 }
 
 fn calculate_part1(input: &Input) -> u64 {
