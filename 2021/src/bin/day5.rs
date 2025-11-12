@@ -59,7 +59,7 @@ fn calculate_part1(input: &[Line]) -> u64 {
             write_line_to(&mut grid, line);
         }
     }
-    grid.entries().filter(|(_, &value)| value >= 2).count() as u64
+    grid.entries().filter(|(_, value)| **value >= 2).count() as u64
 }
 
 fn calculate_part2(input: &[Line]) -> u64 {
@@ -70,7 +70,7 @@ fn calculate_part2(input: &[Line]) -> u64 {
     for line in input {
         write_line_to(&mut grid, line);
     }
-    grid.entries().filter(|(_, &value)| value >= 2).count() as u64
+    grid.entries().filter(|(_, value)| **value >= 2).count() as u64
 }
 
 day_main!(Vec<Line>);

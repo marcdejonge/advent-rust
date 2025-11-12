@@ -49,10 +49,10 @@ fn calculate_part1(input: &Input) -> u32 {
     let mut boards = input.boards.clone();
     for &number in &input.numbers {
         for board in &mut boards {
-            if let Some((row, col)) = board.mark_number(number) {
-                if board.has_bingo(row, col) {
-                    return board.unmarked_sum() * number;
-                }
+            if let Some((row, col)) = board.mark_number(number)
+                && board.has_bingo(row, col)
+            {
+                return board.unmarked_sum() * number;
             }
         }
     }
@@ -64,10 +64,10 @@ fn calculate_part2(input: &Input) -> u32 {
     for &number in &input.numbers {
         if boards.len() == 1 {
             let board = &mut boards[0];
-            if let Some((row, col)) = board.mark_number(number) {
-                if board.has_bingo(row, col) {
-                    return board.unmarked_sum() * number;
-                }
+            if let Some((row, col)) = board.mark_number(number)
+                && board.has_bingo(row, col)
+            {
+                return board.unmarked_sum() * number;
             }
         } else {
             boards.retain_mut(|board| {

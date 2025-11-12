@@ -9,13 +9,32 @@ struct Input(Vec<i32>);
 
 impl Input {
     fn count_all_fishes(&self, generation: i32) -> u64 {
-        self.0.iter().sum_with(|s| count_fishes(generation + 8 - s))
+        let mut memoize = Memoize::default();
+        self.0
+            .iter()
+            .sum_with(|s| memoize.count_fishes(generation + 8 - s))
     }
 }
 
-#[memoize::memoize(CustomHasher: FxHashMap, HasherInit: FxHashMap::default())]
-fn count_fishes(gen: i32) -> u64 {
-    1 + (0..=gen - 9).rev().step_by(7).sum_with(count_fishes)
+#[derive(Default)]
+struct Memoize {
+    count_fishes: FxHashMap<i32, u64>,
+}
+
+impl Memoize {
+    fn count_fishes(&mut self, generation: i32) -> u64 {
+        if let Some(result) = self.count_fishes.get(&generation) {
+            *result
+        } else {
+            let result = 1
+                + (0..=generation - 9)
+                    .rev()
+                    .step_by(7)
+                    .sum_with(|next_gen| self.count_fishes(next_gen));
+            self.count_fishes.insert(generation, result);
+            result
+        }
+    }
 }
 
 fn calculate_part1(input: &Input) -> u64 {
