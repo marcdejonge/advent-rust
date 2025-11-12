@@ -1,5 +1,6 @@
 #![feature(test)]
 
+use Block::*;
 use advent_lib::direction::Direction;
 use advent_lib::direction::Direction::*;
 use advent_lib::geometry::point2;
@@ -9,7 +10,6 @@ use advent_lib::*;
 use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 use std::cmp::PartialEq;
-use Block::*;
 
 #[parse_from(
     separated_pair(
@@ -87,7 +87,7 @@ impl Input {
         }
 
         grid.entries()
-            .filter(|(_, &b)| b == Box || b == LBox)
+            .filter(|&(_, b)| *b == Box || *b == LBox)
             .map(|(pos, _)| (pos.x() + pos.y() * 100) as u32)
             .sum()
     }

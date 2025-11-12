@@ -1,5 +1,6 @@
 #![feature(test)]
 
+use Operation::*;
 use advent_lib::key::Key;
 use advent_lib::parsing::{double_line_ending, separated_map1};
 use advent_lib::*;
@@ -9,7 +10,6 @@ use itertools::{Either, Itertools};
 use nom_parse_macros::parse_from;
 use std::fmt::{Debug, Formatter};
 use std::mem::swap;
-use Operation::*;
 
 #[parse_from]
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
@@ -213,10 +213,10 @@ fn calculate_part1(computer: &Computer) -> u64 {
             break;
         }
 
-        if let Some(value) = computer.evaluate(name) {
-            if value {
-                result |= 1 << ix;
-            }
+        if let Some(value) = computer.evaluate(name)
+            && value
+        {
+            result |= 1 << ix;
         }
     }
 

@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use crate::Block::*;
-use advent_lib::geometry::{vector2, Vector};
+use advent_lib::geometry::{Vector, vector2};
 use advent_lib::grid::{Grid, Location};
 use advent_lib::*;
 use nom_parse_macros::parse_from;
@@ -42,7 +42,7 @@ fn calculate_part1(grid: &Grid<Block>) -> usize {
     ];
 
     grid.entries()
-        .filter(|(_, &char)| char == X)
+        .filter(|&(_, char)| *char == X)
         .map(|(location, _)| {
             DIRECTIONS
                 .iter()
@@ -58,10 +58,10 @@ fn calculate_part1(grid: &Grid<Block>) -> usize {
 
 fn calculate_part2(grid: &Grid<Block>) -> usize {
     grid.entries()
-        .filter(|(location, &char)| {
-            char == A
-                && check_ms_around_a(grid, *location, vector2(1, -1), vector2(-1, 1))
-                && check_ms_around_a(grid, *location, vector2(1, 1), vector2(-1, -1))
+        .filter(|&(location, char)| {
+            *char == A
+                && check_ms_around_a(grid, location, vector2(1, -1), vector2(-1, 1))
+                && check_ms_around_a(grid, location, vector2(1, 1), vector2(-1, -1))
         })
         .count()
 }

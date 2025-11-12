@@ -22,13 +22,13 @@ fn parse_grid(grids: Grids) -> (Vec<Vec<usize>>, Vec<Vec<usize>>) {
         if grid.east_line(0).all(|(_, &c)| c == '#') {
             locks.push(
                 grid.x_range()
-                    .map(|x| grid.south_line(x).take_while(|(_, &c)| c == '#').count())
+                    .map(|x| grid.south_line(x).take_while(|&(_, c)| *c == '#').count())
                     .collect(),
             )
-        } else if grid.east_line(grid.height() - 1).all(|(_, &c)| c == '#') {
+        } else if grid.east_line(grid.height() - 1).all(|(_, c)| *c == '#') {
             keys.push(
                 grid.x_range()
-                    .map(|x| grid.north_line(x).take_while(|(_, &c)| c == '#').count())
+                    .map(|x| grid.north_line(x).take_while(|&(_, c)| *c == '#').count())
                     .collect(),
             )
         }

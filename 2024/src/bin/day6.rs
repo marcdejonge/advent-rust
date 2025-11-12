@@ -48,7 +48,7 @@ fn calculate_part2(grid: &Grid<Field>) -> usize {
     let start = get_start(grid);
     grid.entries()
         .par_bridge()
-        .filter(|(_, &f)| f != Field::Blocked)
+        .filter(|&(_, f)| *f != Field::Blocked)
         .filter(|(loc, _)| {
             let mut grid = grid.clone();
             grid[*loc] = Field::Blocked;

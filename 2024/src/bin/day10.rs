@@ -56,7 +56,7 @@ fn neighbours(
 }
 
 fn start_nodes(grid: &Grid) -> impl Iterator<Item = Location> + use<'_> {
-    grid.entries().filter(|(_, &c)| c == BOTTOM).map(|(loc, _)| loc)
+    grid.entries().filter(|&(_, c)| *c == BOTTOM).map(|(loc, _)| loc)
 }
 
 fn calculate_part1(grid: &Grid) -> usize {

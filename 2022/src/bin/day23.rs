@@ -1,7 +1,7 @@
 #![feature(test)]
 
 use advent_lib::direction::Direction;
-use advent_lib::geometry::{point2, vector2, Vector};
+use advent_lib::geometry::{Vector, point2, vector2};
 use advent_lib::{
     grid::{Grid, Location},
     *,
@@ -54,12 +54,12 @@ fn step(elfs: &mut Elfs, round: usize) -> bool {
     let mut proposal_count = FxHashMap::with_capacity_and_hasher(elfs.0.len(), Default::default());
     for (loc, _) in elfs.0.entries().filter(|&(_, g)| g == &Ground::Elf) {
         let neighbours = elfs.0.cardinal_neighbours(loc).unwrap();
-        if neighbours.contains(&&Ground::Elf) {
-            if let Some(dir) = find_possible_move(round, neighbours) {
-                let target = loc + dir;
-                proposals.push((loc, target));
-                *proposal_count.entry(target).or_default() += 1;
-            }
+        if neighbours.contains(&&Ground::Elf)
+            && let Some(dir) = find_possible_move(round, neighbours)
+        {
+            let target = loc + dir;
+            proposals.push((loc, target));
+            *proposal_count.entry(target).or_default() += 1;
         }
     }
 

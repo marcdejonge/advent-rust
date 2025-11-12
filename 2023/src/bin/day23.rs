@@ -131,14 +131,14 @@ fn determine_weight<NW>(graph: &DiGraph<NW, usize>, path: Vec<NodeIndex>) -> usi
 
 fn calculate_part1(input: &Input) -> usize {
     let (start, end, graph) = input.get_reachability_graph(|from, to, dir| {
-        if let Some(from_cell) = input.grid.get(from) {
-            if from_cell.allow_movement(dir) {
-                if let Some(to_cell) = input.grid.get(to) {
-                    return to_cell != &Wall;
-                }
-            }
+        if let Some(from_cell) = input.grid.get(from)
+            && from_cell.allow_movement(dir)
+            && let Some(to_cell) = input.grid.get(to)
+        {
+            to_cell != &Wall
+        } else {
+            false
         }
-        false
     });
 
     all_simple_paths(&graph, start, end, 0, None)
@@ -149,11 +149,7 @@ fn calculate_part1(input: &Input) -> usize {
 
 fn calculate_part2(input: &Input) -> usize {
     let (start, end, graph) = input.get_reachability_graph(|_, to, _| {
-        if let Some(cell) = input.grid.get(to) {
-            cell != &Wall
-        } else {
-            false
-        }
+        if let Some(cell) = input.grid.get(to) { cell != &Wall } else { false }
     });
 
     all_simple_paths(&graph, start, end, 0, None)

@@ -1,12 +1,12 @@
 use crate::direction::Direction;
-use crate::geometry::{point2, vector2, Point, PointIterator, Vector};
+use crate::geometry::{Point, PointIterator, Vector, point2, vector2};
 use bit_vec::BitVec;
 use image::{Rgba, RgbaImage};
+use nom::Err::Error;
 use nom::character::complete::{line_ending, not_line_ending};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::{many0, many1, separated_list1};
 use nom::sequence::preceded;
-use nom::Err::Error;
 use nom::{AsBytes, AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
@@ -196,10 +196,10 @@ impl<T> Grid<T> {
             return; // Nothing to swap
         }
 
-        if let Some(first_ix) = self.index_from_location(first) {
-            if let Some(second_ix) = self.index_from_location(second) {
-                self.items.swap(first_ix, second_ix);
-            }
+        if let Some(first_ix) = self.index_from_location(first)
+            && let Some(second_ix) = self.index_from_location(second)
+        {
+            self.items.swap(first_ix, second_ix);
         }
     }
 
@@ -257,7 +257,7 @@ impl<T> Grid<T> {
     /// This method does not do any boundary checks, so only use this if you already know that
     /// x and y are within boundary (e.g. coming directly from the x_range and y_range).
     pub unsafe fn get_unchecked(&self, x: i32, y: i32) -> &T {
-        self.items.get_unchecked((x + y * self.width()) as usize)
+        unsafe { self.items.get_unchecked((x + y * self.width()) as usize) }
     }
 
     /// # Safety
@@ -266,7 +266,7 @@ impl<T> Grid<T> {
     /// x and y are within boundary (e.g. coming directly from the x_range and y_range).
     pub unsafe fn get_unchecked_mut(&mut self, x: i32, y: i32) -> &mut T {
         let width = self.width();
-        self.items.get_unchecked_mut((x + y * width) as usize)
+        unsafe { self.items.get_unchecked_mut((x + y * width) as usize) }
     }
 
     pub fn north_line<'a>(&'a self, x: i32) -> LineIterator<'a, T> {

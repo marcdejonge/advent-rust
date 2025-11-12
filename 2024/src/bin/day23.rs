@@ -50,10 +50,10 @@ fn max_bron_kerbosh(graph: &Graph, r: Nodes, mut p: Nodes, mut x: Nodes) -> Opti
             p.intersection(&graph[&v]).copied().collect(),
             x.intersection(&graph[&v]).copied().collect(),
         );
-        if let Some(next) = next {
-            if next.len() > max.as_ref().map(|n: &Nodes| n.len()).unwrap_or_default() {
-                max = Some(next);
-            }
+        if let Some(next) = next
+            && next.len() > max.as_ref().map(|n: &Nodes| n.len()).unwrap_or_default()
+        {
+            max = Some(next);
         }
         p.remove(&v);
         x.insert(v);

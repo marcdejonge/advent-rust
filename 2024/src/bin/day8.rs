@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[parse_from(Grid::parse)]
 struct Field {
     grid: Grid<char>,
-    #[derived(grid.entries().filter(|(_, &c)| c != '.').map(|(l, &c)| (c, l)).into_group_map())]
+    #[derived(grid.entries().filter(|&(_, c)| *c != '.').map(|(l, &c)| (c, l)).into_group_map())]
     antenna_locations: HashMap<char, Vec<Location>>,
 }
 

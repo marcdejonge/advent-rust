@@ -9,7 +9,7 @@ use advent_macros::FromRepr;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use priority_queue::PriorityQueue;
-use std::cmp::{min, Reverse};
+use std::cmp::{Reverse, min};
 use std::collections::hash_map::Entry::Vacant;
 use std::ops::Neg;
 
@@ -88,10 +88,10 @@ impl Input {
         let current_score = visited[&step];
         for dir in Direction::ALL {
             let next_pos = Step::new(step.loc + dir, dir.neg());
-            if let Some(next_score) = visited.get(&next_pos) {
-                if *next_score < current_score {
-                    Self::fill_seat_grid(next_pos, seat_grid, visited);
-                }
+            if let Some(next_score) = visited.get(&next_pos)
+                && *next_score < current_score
+            {
+                Self::fill_seat_grid(next_pos, seat_grid, visited);
             }
         }
     }
