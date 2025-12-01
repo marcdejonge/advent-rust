@@ -1,6 +1,6 @@
 use crate::direction::CardinalDirection::*;
 use crate::direction::Direction::*;
-use crate::geometry::{vector2, Vector};
+use crate::geometry::{Vector, vector2};
 use nom::character::complete::one_of;
 use nom::error::{ErrorKind, ParseError};
 use nom::{AsChar, Compare, IResult, Input};
