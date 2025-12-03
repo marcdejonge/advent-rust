@@ -10,49 +10,57 @@ use nom_parse_macros::parse_from;
       _    => unreachable!(),
     }
 }))]
-struct Action(i64);
+struct Turn(i64);
 
-impl Action {
-    fn apply_to(&self, nr: &mut i64) -> u64 {
-        let mut clicks = (self.0 / 100).abs() as u64;
-        let steps = self.0 % 100;
-
-        if steps != 0 {
-            *nr += steps;
-            if *nr < 0 {
-                // Only count a click if we were not already at 0
-                if *nr != steps {
-                    clicks += 1;
-                }
-                *nr += 100;
-            } else if *nr >= 100 {
-                *nr -= 100;
-                clicks += 1;
-            } else if *nr == 0 {
-                clicks += 1; // Always count a click immediately reaching 0
-            }
-        }
-
-        clicks
-    }
-}
-
-fn calculate_part1(input: &[Action]) -> usize {
-    input
+fn calculate_part1(turns: &[Turn]) -> usize {
+    turns
         .iter()
-        .scan(50, |pos, action| {
-            action.apply_to(pos);
+        .scan(50, |pos, Turn(turn)| {
+            let steps = turn % 100;
+            if steps != 0 {
+                *pos = (*pos + steps).rem_euclid(100);
+                if *pos < 0 {
+                    *pos += 100;
+                } else if *pos >= 100 {
+                    *pos -= 100;
+                }
+            }
+
             Some(*pos)
         })
         .filter(|pos| *pos == 0)
         .count()
 }
 
-fn calculate_part2(input: &[Action]) -> u64 {
-    input.iter().scan(50, |pos, action| Some(action.apply_to(pos))).sum()
+fn calculate_part2(turns: &[Turn]) -> u64 {
+    turns
+        .iter()
+        .scan(50, |pos, Turn(turn)| {
+            let mut clicks = (turn / 100).unsigned_abs();
+            let steps = turn % 100;
+
+            if steps != 0 {
+                *pos += steps;
+                if *pos < 0 {
+                    // Only count a click if we were not already at 0
+                    if *pos != steps {
+                        clicks += 1;
+                    }
+                    *pos += 100;
+                } else if *pos >= 100 {
+                    *pos -= 100;
+                    clicks += 1;
+                } else if *pos == 0 {
+                    clicks += 1; // Always count a click immediately reaching 0
+                }
+            }
+
+            Some(clicks)
+        })
+        .sum()
 }
 
-day_main!(Vec<Action>);
+day_main!(Vec<Turn>);
 
 day_test!( 1, example => 3, 6 );
 day_test!( 1 => 1086, 6268 );
