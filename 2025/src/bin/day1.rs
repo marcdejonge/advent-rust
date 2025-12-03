@@ -16,16 +16,12 @@ fn calculate_part1(turns: &[Turn]) -> usize {
     turns
         .iter()
         .scan(50, |pos, Turn(turn)| {
-            let steps = turn % 100;
-            if steps != 0 {
-                *pos = (*pos + steps).rem_euclid(100);
-                if *pos < 0 {
-                    *pos += 100;
-                } else if *pos >= 100 {
-                    *pos -= 100;
-                }
+            *pos += turn % 100;
+            if *pos < 0 {
+                *pos += 100;
+            } else if *pos >= 100 {
+                *pos -= 100;
             }
-
             Some(*pos)
         })
         .filter(|pos| *pos == 0)
