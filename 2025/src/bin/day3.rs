@@ -12,22 +12,18 @@ impl Bank {
     fn largest_joltage(&self, digits: usize) -> u64 {
         let (mut curr_ix, mut value) = (0, 0);
         for left in (0..digits).rev() {
-            let (ix, v) = self.search_largest_joltage(curr_ix, left);
-            (curr_ix, value) = (ix + 1, value * 10 + v);
+            let (ix, &v) = self
+                .batteries
+                .iter()
+                .enumerate() // We need the index, such that we can search the next one starting from there
+                .skip(curr_ix) // Skip any we already had
+                .take(self.batteries.len() - left - curr_ix) // Also skip the last ones, otherwise we can't search further values
+                // HACK: max_by returns the last value, so I'm doing min_by with inverse comparison
+                .min_by(|(_, v1), (_, v2)| v2.cmp(v1))
+                .unwrap();
+            (curr_ix, value) = (ix + 1, value * 10 + (v as u64));
         }
         value
-    }
-
-    fn search_largest_joltage(&self, start_ix: usize, left: usize) -> (usize, u64) {
-        self.batteries
-            .iter()
-            .enumerate() // We need the index, such that we can search the next one starting from there
-            .skip(start_ix) // Skip any we already had
-            .take(self.batteries.len() - left - start_ix) // Also skip the last ones, otherwise we can't search further values
-            // HACK: max_by returns the last value, so I'm doing min_by with inverse comparison
-            .min_by(|(_, v1), (_, v2)| v2.cmp(v1))
-            .map(|(ix, v)| (ix, *v as u64))
-            .unwrap()
     }
 }
 
