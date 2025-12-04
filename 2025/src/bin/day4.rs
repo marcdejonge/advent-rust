@@ -51,4 +51,4 @@ fn calculate_part2(grid: &Grid<Place>) -> usize {
 day_main!(Grid<Place>);
 
 day_test!( 4, example => 13, 43 );
-day_test!( 4 => 1508, 0 );
+day_test!( 4 => 1508, 8538 );
