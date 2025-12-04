@@ -3,6 +3,7 @@ use memmap2::Mmap;
 use nom_parse_trait::ParseFrom;
 use num_format::{Locale, ToFormattedString};
 use std::env;
+use std::path::Path;
 use std::time::Instant;
 
 const FORMAT: Locale = Locale::en;
@@ -16,14 +17,17 @@ where
     Input: for<'a> ParseFrom<&'a [u8]>,
 {
     let args: Vec<_> = env::args().collect();
-    let file_name = args.get(1);
-    if file_name.is_none() {
-        println!("Please provide a file name as an argument");
-        std::process::exit(1);
-    }
-    let file_name = file_name.unwrap();
-    let file = std::fs::File::open(file_name).expect("Could not open file");
-    let contents = unsafe { Mmap::map(&file).expect("Could not read file") };
+    let file_name = args.get(1).map(String::to_owned).unwrap_or_else(|| {
+        let exec_path =
+            Path::new(args.first().expect("Expected at least the name of the executable"));
+        let file_name = exec_path.file_name().expect("Executable file can't be decoded");
+        format!(
+            "input/{}.txt",
+            file_name.to_str().expect("Invalid file name")
+        )
+    });
+    let file = std::fs::File::open(file_name).expect("Could not open input file");
+    let contents = unsafe { Mmap::map(&file).expect("Could not read input file") };
 
     println!("Executing");
 
