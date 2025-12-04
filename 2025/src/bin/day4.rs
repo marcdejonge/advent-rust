@@ -1,12 +1,9 @@
 #![feature(test)]
 
-use advent_lib::{
-    direction::CardinalDirection,
-    geometry::{Point, Vector},
-    grid::Grid,
-    *,
-};
+use advent_lib::{grid::Grid, iter_utils::CountIf, *};
 use advent_macros::FromRepr;
+use fxhash::FxHashMap;
+use std::collections::hash_map::Entry;
 
 #[repr(u8)]
 #[derive(FromRepr, Copy, Clone, Default, Eq, PartialEq, Debug)]
@@ -16,36 +13,45 @@ enum Place {
     Roll = b'@',
 }
 
-fn can_be_removed(grid: &Grid<Place>) -> impl Fn(&(Point<2, i32>, &Place)) -> bool {
-    move |&(loc, place)| {
-        place == &Place::Roll
-            && CardinalDirection::ALL
-                .into_iter()
-                .filter(|&dir| grid.get(loc + Vector::from(dir)) == Some(&Place::Roll))
-                .count()
-                < 4
-    }
-}
-
 fn calculate_part1(grid: &Grid<Place>) -> usize {
-    grid.entries().filter(can_be_removed(grid)).count()
+    grid.locations_where(|p| p == &Place::Roll)
+        .filter(|loc| {
+            loc.cardinal_neighbours().count_if(|&p| grid.get(p) == Some(&Place::Roll)) < 4
+        })
+        .count()
 }
 
 fn calculate_part2(grid: &Grid<Place>) -> usize {
-    let mut removed = 0;
-    let mut grid = grid.clone();
-    loop {
-        let remove_locs: Vec<_> =
-            grid.entries().filter(can_be_removed(&grid)).map(|(loc, _)| loc).collect();
-        if remove_locs.is_empty() {
-            break;
-        }
-        removed += remove_locs.len();
-        for loc in remove_locs {
-            *grid.get_mut(loc).unwrap() = Place::None;
+    let mut locations: FxHashMap<_, _> = grid
+        .locations_where(|p| p == &Place::Roll)
+        .map(|loc| {
+            (
+                loc,
+                loc.cardinal_neighbours().count_if(|&p| grid.get(p) == Some(&Place::Roll)),
+            )
+        })
+        .collect();
+
+    // Start by finding the first round of locations to remove
+    let mut locs_to_remove: Vec<_> =
+        locations.iter().filter(|&(_, count)| *count < 4).map(|(loc, _)| *loc).collect();
+
+    let before_count = locations.len();
+
+    while let Some(next) = locs_to_remove.pop() {
+        locations.remove(&next);
+        for nb in next.cardinal_neighbours() {
+            if let Entry::Occupied(mut entry) = locations.entry(nb) {
+                let count = entry.get_mut();
+                *count -= 1;
+                if *count == 3 {
+                    locs_to_remove.push(*entry.key());
+                }
+            }
         }
     }
-    removed
+
+    before_count - locations.len()
 }
 
 day_main!(Grid<Place>);

@@ -210,6 +210,13 @@ impl<T> Grid<T> {
         ys.flat_map(move |y| xs.clone().map(move |x| point2(x, y)))
     }
 
+    pub fn locations_where<F>(&self, predicate: F) -> impl Iterator<Item = Location>
+    where
+        F: Fn(&T) -> bool,
+    {
+        self.entries().filter(move |(_, field)| predicate(*field)).map(|(loc, _)| loc)
+    }
+
     pub fn entries(&self) -> impl Iterator<Item = (Location, &T)> {
         Indexed::new(self.items.iter(), self.width())
     }

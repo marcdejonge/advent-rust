@@ -1,3 +1,4 @@
+use crate::direction::CardinalDirection;
 use crate::parsing::separated_array;
 use nom::bytes::complete::tag;
 use nom::character::complete::space0;
@@ -6,7 +7,7 @@ use nom::error::ParseError;
 use nom::{AsChar, Compare, IResult, Input, Parser};
 use nom_parse_macros::parse_from;
 use nom_parse_trait::ParseFrom;
-use num_traits::{abs, One, Signed};
+use num_traits::{One, Signed, Zero, abs};
 use std::cmp::min;
 use std::fmt::{Debug, Formatter};
 use std::iter::Sum;
@@ -38,6 +39,15 @@ where
 {
     pub fn x(&self) -> T { self.coords[0] }
     pub fn y(&self) -> T { self.coords[1] }
+}
+
+impl<T> Point<2, T>
+where
+    T: Copy + Add + Neg<Output = T> + One + Zero,
+{
+    pub fn cardinal_neighbours(&self) -> [Self; 8] {
+        CardinalDirection::ALL.map(|step| *self + Vector::<2, T>::from(step))
+    }
 }
 
 impl<T> Point<3, T>
