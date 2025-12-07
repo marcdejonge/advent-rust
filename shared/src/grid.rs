@@ -11,6 +11,7 @@ use nom::{AsBytes, AsChar, Compare, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use std::fmt::{Debug, Formatter, Write};
 use std::ops::{Add, Index, IndexMut, Range};
+use std::slice::{Iter, IterMut};
 
 #[derive(Clone, Hash, PartialEq)]
 pub struct Grid<T> {
@@ -217,11 +218,9 @@ impl<T> Grid<T> {
         self.entries().filter(move |(_, field)| predicate(*field)).map(|(loc, _)| loc)
     }
 
-    pub fn entries(&self) -> impl Iterator<Item = (Location, &T)> {
-        Indexed::new(self.items.iter(), self.width())
-    }
+    pub fn entries(&self) -> Indexed<Iter<'_, T>> { Indexed::new(self.items.iter(), self.width()) }
 
-    pub fn entries_mut(&mut self) -> impl Iterator<Item = (Location, &mut T)> {
+    pub fn entries_mut(&mut self) -> Indexed<IterMut<'_, T>> {
         let width = self.width();
         Indexed::new(self.items.iter_mut(), width)
     }
@@ -648,6 +647,14 @@ impl<'a, T> Iterator for LinesIterator<'a, T> {
             }
         }
     }
+}
+
+impl<'a, T> IntoIterator for &'a Grid<T> {
+    type Item = (Location, &'a T);
+
+    type IntoIter = Indexed<Iter<'a, T>>;
+
+    fn into_iter(self) -> Self::IntoIter { self.entries() }
 }
 
 #[cfg(test)]
