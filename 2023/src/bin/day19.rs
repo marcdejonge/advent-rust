@@ -1,12 +1,12 @@
 #![feature(test)]
 
+use CheckType::*;
 use advent_lib::key::Key;
 use advent_lib::parsing::{double_line_ending, in_braces, separated_lines1, separated_map1};
 use advent_lib::*;
 use fxhash::FxHashMap;
 use nom_parse_macros::parse_from;
 use std::ops::RangeInclusive;
-use CheckType::*;
 
 #[parse_from(
     in_braces(map(
@@ -29,7 +29,7 @@ type PartsRange = [RangeInclusive<i64>; 4];
     separated_lines1(),
 ))]
 struct Input {
-    checks: FxHashMap<Key, (Vec<Check>, Key)>,
+    checks: FxHashMap<Key, (Vec<crate::Check>, Key)>,
     parts: Vec<Parts>,
 }
 
@@ -76,10 +76,10 @@ impl Input {
 
             match check.check_type {
                 LessThan if end < check.size => {
-                    return result + self.calculate_range(check.to, range_left)
+                    return result + self.calculate_range(check.to, range_left);
                 }
                 GreaterThan if start > check.size => {
-                    return result + self.calculate_range(check.to, range_left)
+                    return result + self.calculate_range(check.to, range_left);
                 }
                 LessThan if start < check.size => {
                     let mut split_range = range_left.clone();

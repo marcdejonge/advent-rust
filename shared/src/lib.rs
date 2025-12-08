@@ -2,6 +2,7 @@ pub mod builder;
 pub mod convert;
 pub mod day;
 pub mod direction;
+pub mod disjoint_set;
 pub mod geometry;
 pub mod graph_utils;
 pub mod grid;

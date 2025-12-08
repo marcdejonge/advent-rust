@@ -1,10 +1,10 @@
 use crate::builder::with;
 use fxhash::{FxHashMap, FxHashSet};
-use nom::character::complete::line_ending;
+use nom::character::complete::{line_ending, newline};
 use nom::combinator::{all_consuming, map};
 use nom::error::{ErrorKind, ParseError};
-use nom::multi::separated_list1;
-use nom::sequence::{delimited, separated_pair};
+use nom::multi::{many0, separated_list1};
+use nom::sequence::{delimited, separated_pair, terminated};
 use nom::{AsBytes, AsChar, Compare, Err, Finish, IResult, Input, Parser};
 use nom_parse_trait::ParseFrom;
 use smallvec::SmallVec;
@@ -15,7 +15,10 @@ pub fn handle_parser_error<T>(input: &[u8]) -> T
 where
     T: for<'a> ParseFrom<&'a [u8]>,
 {
-    match all_consuming(T::parse).parse_complete(input).finish() {
+    match all_consuming(terminated(T::parse, many0(newline)))
+        .parse_complete(input)
+        .finish()
+    {
         Ok((_, day)) => day,
         Err(e) => {
             panic!(
@@ -32,8 +35,8 @@ where
 }
 
 #[inline]
-pub fn find_many_skipping_unknown<I: Input, E: ParseError<I>, T: ParseFrom<I, E>>(
-) -> impl Parser<I, Output = Vec<T>, Error = E> {
+pub fn find_many_skipping_unknown<I: Input, E: ParseError<I>, T: ParseFrom<I, E>>()
+-> impl Parser<I, Output = Vec<T>, Error = E> {
     move |mut input: I| {
         let mut res = Vec::new();
         while input.input_len() > 0 {
