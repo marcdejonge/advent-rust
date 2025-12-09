@@ -28,7 +28,15 @@ where
         .unwrap()
 }
 
-fn calculate_part1(points: &[Point]) -> i64 { find_area(points, |_| true).0 }
+fn calculate_part1(points: &[Point]) -> i64 {
+    #[allow(unused_variables)]
+    let (area, bb) = find_area(points, |_| true);
+
+    #[cfg(feature = "generate_image")]
+    render_lines_and_bounding_box(&points, bb, "day9_1.svg").expect("Could not write file");
+
+    area
+}
 
 fn calculate_part2(points: &[Point]) -> i64 {
     let lines: Vec<_> = points
@@ -37,15 +45,13 @@ fn calculate_part2(points: &[Point]) -> i64 {
         .map_windows(|[p1, p2]| Line::from((**p1, **p2)))
         .collect();
 
-    #[cfg(feature = "generate_image")]
-    {
-        let (area, bb) = find_area(points, |bb| !lines.iter().any(|line| bb.line_crosses(line)));
-        render_lines_and_bounding_box(&lines, bb).expect("Could not write file");
-        area
-    }
+    #[allow(unused_variables)]
+    let (area, bb) = find_area(points, |bb| !lines.iter().any(|line| bb.line_crosses(line)));
 
-    #[cfg(not(feature = "generate_image"))]
-    find_area(points, |bb| !lines.iter().any(|line| bb.line_crosses(line))).0
+    #[cfg(feature = "generate_image")]
+    render_lines_and_bounding_box(&points, bb, "day9_2.svg").expect("Could not write file");
+
+    area
 }
 
 day_main!(Vec<Point>);
@@ -54,10 +60,14 @@ day_test!( 9, example => 50, 24 );
 day_test!( 9 => 4774877510, 1560475800 );
 
 #[cfg(feature = "generate_image")]
-fn render_lines_and_bounding_box(lines: &[Line], bb: BoundingBox) -> std::io::Result<()> {
+fn render_lines_and_bounding_box(
+    points: &[Point],
+    bb: BoundingBox,
+    name: &str,
+) -> std::io::Result<()> {
     use std::{fs::File, io::BufWriter, io::Write};
 
-    let mut w = BufWriter::new(File::create("day9.svg")?);
+    let mut w = BufWriter::new(File::create(name)?);
     write!(
         w,
         "<svg version=\"1.1\" viewBox=\"0 0 {} {}\" xmlns=\"http://www.w3.org/2000/svg\">",
@@ -66,20 +76,16 @@ fn render_lines_and_bounding_box(lines: &[Line], bb: BoundingBox) -> std::io::Re
     write!(
         w,
         "<style>
-        line {{ stroke: black; stroke-width: 100; }}
-        rect {{ fill: blue; }}
+        path {{ stroke: black; stroke-width: 100; fill: #e0e0e0; }}
+        rect {{ fill: rgba(0, 0, 180, .5); }}
         </style>"
     )?;
-    for line in lines {
-        write!(
-            w,
-            "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" />",
-            line.start.x(),
-            line.start.y(),
-            line.end.x(),
-            line.end.y()
-        )?;
+    write!(w, "<path d=\"M {} {}", points[0].x(), points[0].y())?;
+    for p in &points[1..] {
+        write!(w, " L {} {}", p.x(), p.y(),)?;
     }
+    write!(w, " Z\"/>")?;
+
     let size = bb.total_size();
     write!(
         w,
