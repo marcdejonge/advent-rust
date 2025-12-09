@@ -1,5 +1,4 @@
 use crate::direction::CardinalDirection;
-use crate::lines::LineSegment;
 use crate::parsing::separated_array;
 use nom::bytes::complete::tag;
 use nom::character::complete::space0;
@@ -530,17 +529,6 @@ where
             }
         }
         true
-    }
-
-    pub fn line_crosses(&self, line: &LineSegment<D, T>) -> bool
-    where
-        T: Copy + Ord,
-    {
-        (0..D).all(|ix| {
-            let coord_min = line.start.coords[ix].min(line.end.coords[ix]);
-            let coord_max = line.start.coords[ix].max(line.end.coords[ix]);
-            coord_max > self.min.coords[ix] && coord_min < self.max.coords[ix]
-        })
     }
 }
 
