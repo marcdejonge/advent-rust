@@ -1,5 +1,7 @@
 **/big_inputs/
 **/flamegraph.svg
+**/*.png
+**/*.svg
 
 # Created by https://www.toptal.com/developers/gitignore/api/rust,macos,windows,intellij+all,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust,macos,windows,intellij+all,visualstudiocode

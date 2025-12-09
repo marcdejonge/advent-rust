@@ -36,15 +36,15 @@ impl<N: PartialEq + PartialOrd> LineSegment<2, N> {
     pub fn get_direction(&self) -> Option<Direction> {
         if self.is_vertical() {
             if self.start.coords[1] < self.end.coords[1] {
-                return Some(Direction::South);
+                Some(Direction::South)
             } else {
-                return Some(Direction::North);
+                Some(Direction::North)
             }
         } else if self.is_horizontal() {
             if self.start.coords[0] < self.end.coords[0] {
-                return Some(Direction::East);
+                Some(Direction::East)
             } else {
-                return Some(Direction::West);
+                Some(Direction::West)
             }
         } else {
             None

@@ -13,6 +13,16 @@ enum Place {
     Roll = b'@',
 }
 
+#[cfg(feature = "generate_image")]
+impl Place {
+    fn to_color(&self) -> [u8; 4] {
+        match self {
+            Place::None => [0, 0, 0, 255],
+            Place::Roll => [255, 255, 255, 255],
+        }
+    }
+}
+
 fn calculate_part1(grid: &Grid<Place>) -> usize {
     grid.locations_where(|p| p == &Place::Roll)
         .filter(|loc| {
@@ -22,6 +32,9 @@ fn calculate_part1(grid: &Grid<Place>) -> usize {
 }
 
 fn calculate_part2(grid: &Grid<Place>) -> usize {
+    #[cfg(feature = "generate_image")]
+    grid.render_to_image("day4_before.png", Place::to_color);
+
     let mut locations: FxHashMap<_, _> = grid
         .locations_where(|p| p == &Place::Roll)
         .map(|loc| {
@@ -37,9 +50,17 @@ fn calculate_part2(grid: &Grid<Place>) -> usize {
         locations.iter().filter(|&(_, count)| *count < 4).map(|(loc, _)| *loc).collect();
 
     let before_count = locations.len();
+    #[cfg(feature = "generate_image")]
+    let mut grid = grid.clone();
 
     while let Some(next) = locs_to_remove.pop() {
         locations.remove(&next);
+
+        #[cfg(feature = "generate_image")]
+        {
+            *grid.get_mut(next).unwrap() = Place::None;
+        }
+
         for nb in next.cardinal_neighbours() {
             if let Entry::Occupied(mut entry) = locations.entry(nb) {
                 let count = entry.get_mut();
@@ -50,6 +71,9 @@ fn calculate_part2(grid: &Grid<Place>) -> usize {
             }
         }
     }
+
+    #[cfg(feature = "generate_image")]
+    grid.render_to_image("day4_after.png", Place::to_color);
 
     before_count - locations.len()
 }
