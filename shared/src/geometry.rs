@@ -1,4 +1,5 @@
 use crate::direction::CardinalDirection;
+use crate::lines::LineSegment;
 use crate::parsing::separated_array;
 use nom::bytes::complete::tag;
 use nom::character::complete::space0;
@@ -39,13 +40,39 @@ where
 {
     pub fn x(&self) -> T { self.coords[0] }
     pub fn y(&self) -> T { self.coords[1] }
-}
 
-impl<T> Point<2, T>
-where
-    T: Copy + Add + Neg<Output = T> + One + Zero,
-{
-    pub fn cardinal_neighbours(&self) -> [Self; 8] {
+    pub fn with_min_x(self, x: T) -> Self
+    where
+        T: Ord,
+    {
+        Point { coords: [self.coords[0].min(x), self.coords[1]] }
+    }
+
+    pub fn with_max_x(self, x: T) -> Self
+    where
+        T: Ord,
+    {
+        Point { coords: [self.coords[0].max(x), self.coords[1]] }
+    }
+
+    pub fn with_min_y(self, y: T) -> Self
+    where
+        T: Ord,
+    {
+        Point { coords: [self.coords[0], self.coords[1].min(y)] }
+    }
+
+    pub fn with_max_y(self, y: T) -> Self
+    where
+        T: Ord,
+    {
+        Point { coords: [self.coords[0], self.coords[1].max(y)] }
+    }
+
+    pub fn cardinal_neighbours(&self) -> [Self; 8]
+    where
+        T: Add + Neg<Output = T> + One + Zero,
+    {
         CardinalDirection::ALL.map(|step| *self + Vector::<2, T>::from(step))
     }
 }
@@ -392,10 +419,16 @@ impl<const D: usize, T> From<Vector<D, T>> for Point<D, T> {
     fn from(value: Vector<D, T>) -> Self { Point { coords: value.coords } }
 }
 
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct BoundingBox<const D: usize, T> {
     min: Point<D, T>,
     max: Point<D, T>,
+}
+
+impl<const D: usize, T: Debug> Debug for BoundingBox<D, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BoundingBox[{:?}, {:?}]", self.min, self.max)
+    }
 }
 
 impl<const D: usize, T> BoundingBox<D, T> {
@@ -424,6 +457,38 @@ impl<const D: usize, T> BoundingBox<D, T> {
     {
         self.min = self.min - amount;
         self.max = self.max + amount;
+    }
+
+    #[inline]
+    fn check_valid(self) -> Option<Self>
+    where
+        T: Copy + PartialOrd,
+    {
+        if self
+            .min
+            .coords
+            .iter()
+            .zip(self.max.coords.iter())
+            .all(|(min_c, max_c)| min_c <= max_c)
+        {
+            Some(self)
+        } else {
+            None
+        }
+    }
+
+    pub fn with_min(self, new_min: Point<D, T>) -> Option<Self>
+    where
+        T: Copy + PartialOrd,
+    {
+        BoundingBox { min: new_min, max: self.max }.check_valid()
+    }
+
+    pub fn with_max(self, new_max: Point<D, T>) -> Option<Self>
+    where
+        T: Copy + Add<Output = T> + PartialOrd,
+    {
+        BoundingBox { min: self.min, max: new_max }.check_valid()
     }
 
     pub fn min_point(&self) -> Point<D, T>
@@ -465,6 +530,17 @@ where
             }
         }
         true
+    }
+
+    pub fn line_crosses(&self, line: &LineSegment<D, T>) -> bool
+    where
+        T: Copy + Ord,
+    {
+        (0..D).all(|ix| {
+            let coord_min = line.start.coords[ix].min(line.end.coords[ix]);
+            let coord_max = line.start.coords[ix].max(line.end.coords[ix]);
+            coord_max > self.min.coords[ix] && coord_min < self.max.coords[ix]
+        })
     }
 }
 
