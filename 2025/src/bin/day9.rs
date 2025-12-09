@@ -46,6 +46,21 @@ fn calculate_part2(points: &[Point]) -> i64 {
         .chain(points.iter().take(1)) // Chain the first one to create the last to first line segment
         .map_windows(|[p1, p2]| Line::from((**p1, **p2)))
         .collect();
+
+    // Add lines to corners that make this polygon non-convex, to prevent us selecting boxes that
+    // are completely outside of this shape.
+    let len = lines.len() - 1;
+    for ix in 0..len {
+        if let Some(dir1) = lines[ix].get_direction()
+            && let Some(dir2) = lines[ix + 1].get_direction()
+            // ASSUMPTION: The polygon is going clockwise
+            && dir1.turn_left() == dir2
+        {
+            // Inner corner, make sure we add a line across it to make sure we don't put a box outside
+            lines.push(Line::from((lines[ix].start, lines[ix + 1].end)))
+        }
+    }
+
     // Sort the lines to check the long lines first, which have the highest change of crossing
     lines.sort_unstable_by_key(|line| Reverse((line.end - line.start).euler()));
 
@@ -69,6 +84,7 @@ fn calculate_part2(points: &[Point]) -> i64 {
 day_main!(Vec<Point>);
 
 day_test!( 9, example => 50, 24 );
+day_test!( 9, simple => 81, 27 );
 day_test!( 9 => 4774877510, 1560475800 );
 
 #[cfg(feature = "generate_image")]
@@ -77,20 +93,31 @@ fn render_lines_and_bounding_box(
     bb: BoundingBox,
     name: &str,
 ) -> std::io::Result<()> {
+    use itertools::Itertools;
     use std::{fs::File, io::BufWriter, io::Write};
+
+    let (min_x, max_x) = points.iter().map(|p| p.x()).minmax().into_option().unwrap();
+    let (min_y, max_y) = points.iter().map(|p| p.y()).minmax().into_option().unwrap();
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+    let line_width = width.max(height) as f32 / 500f32;
 
     let mut w = BufWriter::new(File::create(name)?);
     write!(
         w,
-        "<svg version=\"1.1\" viewBox=\"0 0 {} {}\" xmlns=\"http://www.w3.org/2000/svg\">",
-        100_000, 100_000
+        "<svg version=\"1.1\" viewBox=\"{} {} {} {}\" xmlns=\"http://www.w3.org/2000/svg\">",
+        min_x as f32 - 10. * line_width,
+        min_y as f32 - 10. * line_width,
+        width as f32 + 20. * line_width,
+        height as f32 + 20. * line_width
     )?;
     write!(
         w,
         "<style>
-        path {{ stroke: black; stroke-width: 100; fill: #e0e0e0; }}
+        path {{ stroke: black; stroke-width: {}; fill: #e0e0e0; }}
         rect {{ fill: rgba(0, 0, 180, .5); }}
-        </style>"
+        </style>",
+        line_width,
     )?;
     write!(w, "<path d=\"M {} {}", points[0].x(), points[0].y())?;
     for p in &points[1..] {
