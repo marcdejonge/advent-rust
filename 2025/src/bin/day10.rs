@@ -266,4 +266,5 @@ fn calculate_part2(lines: &[Line]) -> usize {
 day_main!(Vec<Line>);
 
 day_test!( 10, example => 7, 33 );
+day_test!( 10, first25 => 69, 1858 );
 day_test!( 10 => 425 ); // 15883 for the second part, but it's way too slow for testing right now
