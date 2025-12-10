@@ -119,12 +119,7 @@ fn part2_find(
         .map(|ix| {
             (
                 ix,
-                switches
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, switch)| switch.does_switch(ix))
-                    .map(|(s_ix, _)| s_ix)
-                    .collect(),
+                switches.iter().positions(|switch| switch.does_switch(ix)).collect(),
             )
         })
         .min_by_key(|(_, options): &(usize, SmallVec<[usize; 16]>)| options.len())?;
