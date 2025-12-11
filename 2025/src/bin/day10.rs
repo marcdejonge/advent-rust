@@ -1,5 +1,7 @@
 #![feature(test)]
 
+use std::fmt::Debug;
+
 use advent_lib::{parsing::*, *};
 use bit_set::BitSet;
 use itertools::{Itertools, iterate};
@@ -47,9 +49,17 @@ fn calculate_part1(lines: &[Line]) -> usize {
 #[derive(Clone)]
 struct Switch(u32);
 
+impl Debug for Switch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "🔘{}", self.0)
+    }
+}
+
 impl Switch {
+    #[inline]
     fn does_switch(&self, ix: usize) -> bool { self.0 & (1 << ix) != 0 }
 
+    #[inline]
     fn apply(&self, current: &mut [u32], count: u32) {
         if count > 0 {
             current.iter_mut().enumerate().for_each(|(ix, v)| {
@@ -60,6 +70,7 @@ impl Switch {
         }
     }
 
+    #[inline]
     fn unapply(&self, current: &mut [u32], count: u32) {
         if count > 0 {
             current.iter_mut().enumerate().for_each(|(ix, v)| {
@@ -86,11 +97,14 @@ impl SwitchFinder {
         }
     }
 
+    #[inline]
     fn hit_target(&self) -> bool { self.target == self.current }
+    #[inline]
     fn overshot_target(&self) -> bool {
         self.current.iter().zip(self.target.iter()).any(|(curr, tar)| curr > tar)
     }
 
+    #[inline]
     fn find_max_count(&self, switch: &Switch) -> u32 {
         (0..self.target.len())
             .filter(|&ix| switch.does_switch(ix))
@@ -99,6 +113,7 @@ impl SwitchFinder {
             .unwrap()
     }
 
+    #[inline]
     fn remove_switch(&mut self, ix: usize) -> Switch {
         let curr = &mut self.switches[ix];
         let switch = curr.clone();
@@ -106,7 +121,8 @@ impl SwitchFinder {
         switch
     }
 
-    fn restore_switch(&mut self, ix: usize, switch: Switch) { self.switches[ix].0 = switch.0; }
+    #[inline]
+    fn restore_switch(&mut self, ix: usize, switch: Switch) { self.switches[ix] = switch; }
 
     fn find(
         &mut self,
@@ -157,12 +173,12 @@ impl SwitchFinder {
             [selected_ix] => {
                 let selected_switch = self.remove_switch(selected_ix);
                 let count = self.target[joltage_ix] - self.current[joltage_ix];
-                selected_switch.apply(self.current.as_mut_slice(), count);
                 #[cfg(feature = "debug_print")]
                 eprintln!(
-                    "{}Found single switch to apply {} {} times to get {:?}",
-                    indent, selected_switch, count, current
+                    "{}Found single switch to apply {:?} {} times to get {:?}",
+                    indent, selected_switch, count, self.current
                 );
+                selected_switch.apply(self.current.as_mut_slice(), count);
                 let result = self.find(
                     press_count + count as usize,
                     #[cfg(feature = "debug_print")]
@@ -173,25 +189,24 @@ impl SwitchFinder {
                 result
             }
             [first_ix, second_ix] => {
-                let first_switch = self.switches[first_ix].clone();
-                let second_switch = self.switches[second_ix].clone();
+                let first_switch = self.remove_switch(first_ix);
+                let second_switch = self.remove_switch(second_ix);
+                let count = self.target[joltage_ix] - self.current[joltage_ix];
                 #[cfg(feature = "debug_print")]
                 eprintln!(
-                    "{}Try to apply 2 switches {} total {} times to get {:?}",
-                    indent, switches, count, current
+                    "{}Try to apply 2 switches {:?} total {} times to get {:?}",
+                    indent, self.switches, count, self.current
                 );
-
-                let count = self.target[joltage_ix] - self.current[joltage_ix];
                 let first_max_count = self.find_max_count(&first_switch);
                 let second_max_count = self.find_max_count(&second_switch);
                 if first_max_count + second_max_count < count {
+                    self.restore_switch(first_ix, first_switch);
+                    self.restore_switch(second_ix, second_switch);
                     return None;
                 }
 
                 first_switch.apply(self.current.as_mut_slice(), first_max_count);
                 second_switch.apply(self.current.as_mut_slice(), count - first_max_count);
-                self.switches[first_ix].0 = 0;
-                self.switches[second_ix].0 = 0;
                 let apply_count = second_max_count - (count - first_max_count);
 
                 let result = (0..=apply_count)
@@ -211,8 +226,8 @@ impl SwitchFinder {
 
                 first_switch.unapply(self.current.as_mut_slice(), first_max_count - apply_count);
                 second_switch.unapply(self.current.as_mut_slice(), second_max_count);
-                self.switches[first_ix] = first_switch;
-                self.switches[second_ix] = second_switch;
+                self.restore_switch(first_ix, first_switch);
+                self.restore_switch(second_ix, second_switch);
 
                 result
             }
@@ -222,9 +237,8 @@ impl SwitchFinder {
                     .iter()
                     .max_by_key(|&&ix| self.switches[ix].0.count_ones())
                     .unwrap();
-                let selected_switch = self.switches[selected_switch_ix].clone();
+                let selected_switch = self.remove_switch(selected_switch_ix);
                 let max_count = self.find_max_count(&selected_switch);
-                self.switches[selected_switch_ix].0 = 0;
                 selected_switch.apply(self.current.as_mut_slice(), max_count + 1);
 
                 let result = (0..=max_count)
@@ -233,8 +247,8 @@ impl SwitchFinder {
                         selected_switch.unapply(self.current.as_mut_slice(), 1);
                         #[cfg(feature = "debug_print")]
                         eprintln!(
-                            "{}Trying to apply switch {} {} times to get {:?}",
-                            indent, selected_switch, count, current
+                            "{}Trying to apply switch {:?} {} times to get {:?}",
+                            indent, selected_switch, count, self.current
                         );
                         self.find(
                             press_count + count as usize,
@@ -243,7 +257,7 @@ impl SwitchFinder {
                         )
                     })
                     .min();
-                self.switches[selected_switch_ix].0 = selected_switch.0;
+                self.restore_switch(selected_switch_ix, selected_switch);
                 result
             }
         }
