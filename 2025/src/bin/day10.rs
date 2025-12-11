@@ -10,11 +10,7 @@ use smallvec::SmallVec;
 #[parse_from((
     in_brackets(map(is_a(".#"), |input: I| {
         input.as_bytes().iter().enumerate().fold(0, |accum, (ix, b)| {
-            if *b == b'#' {
-                accum | (1 << ix)
-            } else {
-                accum
-            }
+            accum | if *b == b'#' { 1 << ix } else { 0 }
         })
     })),
     delimited(space0, separated_list1(space1, in_parens(map(separated_list1(",", u32), |nrs| {
@@ -75,165 +71,181 @@ impl Switch {
     }
 }
 
-fn find_max_count(target: &[u32], current: &[u32], switch: &Switch) -> u32 {
-    (0..target.len())
-        .filter(|&ix| switch.does_switch(ix))
-        .map(|ix| target[ix] - current[ix])
-        .min()
-        .unwrap()
+struct SwitchFinder {
+    target: Vec<u32>,
+    switches: Vec<Switch>,
+    current: Vec<u32>,
 }
 
-fn part2_find(
-    switches: &mut [Switch],
-    target: &[u32],
-    current: &mut [u32],
-    press_count: usize,
-    #[cfg(feature = "debug_print")] indent: &str,
-) -> Option<usize> {
-    assert_eq!(target.len(), current.len());
-
-    if target == current {
-        #[cfg(feature = "debug_print")]
-        eprintln!(
-            "{}Found target {:?} after {} presses",
-            indent, target, press_count
-        );
-        return Some(press_count);
-    } else if current.iter().zip(target.iter()).any(|(curr, tar)| curr > tar) {
-        #[cfg(feature = "debug_print")]
-        eprintln!(
-            "{}Overshot the target {:?} with {:?}",
-            indent, target, current
-        );
-        return None;
-    } else {
-        #[cfg(feature = "debug_print")]
-        eprintln!(
-            "{}Finding for part2({:?}, {:?}, {:?}, {})",
-            indent, switches, target, current, press_count
-        );
+impl SwitchFinder {
+    fn new(line: &Line) -> Self {
+        Self {
+            target: line.joltages.clone(),
+            switches: line.switches.iter().map(|&v| Switch(v)).collect(),
+            current: vec![0; line.joltages.len()],
+        }
     }
 
-    let (joltage_ix, selected_switch_indices) = (0..target.len())
-        .filter(|&ix| current[ix] < target[ix])
-        .map(|ix| {
-            (
-                ix,
-                switches.iter().positions(|switch| switch.does_switch(ix)).collect(),
-            )
-        })
-        .min_by_key(|(_, options): &(usize, SmallVec<[usize; 16]>)| options.len())?;
+    fn hit_target(&self) -> bool { self.target == self.current }
+    fn overshot_target(&self) -> bool {
+        self.current.iter().zip(self.target.iter()).any(|(curr, tar)| curr > tar)
+    }
 
-    match *selected_switch_indices.as_slice() {
-        [] => {
+    fn find_max_count(&self, switch: &Switch) -> u32 {
+        (0..self.target.len())
+            .filter(|&ix| switch.does_switch(ix))
+            .map(|ix| self.target[ix] - self.current[ix])
+            .min()
+            .unwrap()
+    }
+
+    fn remove_switch(&mut self, ix: usize) -> Switch {
+        let curr = &mut self.switches[ix];
+        let switch = curr.clone();
+        curr.0 = 0;
+        switch
+    }
+
+    fn restore_switch(&mut self, ix: usize, switch: Switch) { self.switches[ix].0 = switch.0; }
+
+    fn find(
+        &mut self,
+        press_count: usize,
+        #[cfg(feature = "debug_print")] indent: &str,
+    ) -> Option<usize> {
+        if self.hit_target() {
             #[cfg(feature = "debug_print")]
             eprintln!(
-                "{}There are incomplete parts, but no switch to change that",
-                indent
+                "{}Found target {:?} after {} presses",
+                indent, self.target, press_count
             );
-            None
+            return Some(press_count);
+        } else if self.overshot_target() {
+            #[cfg(feature = "debug_print")]
+            eprintln!(
+                "{}Overshot the target {:?} with {:?}",
+                indent, self.target, self.current
+            );
+            return None;
+        } else {
+            #[cfg(feature = "debug_print")]
+            eprintln!(
+                "{}Finding for part2({:?}, {:?}, {:?}, {})",
+                indent, self.switches, self.target, self.current, press_count
+            );
         }
-        [selected_ix] => {
-            let selected_switch = switches[selected_ix].clone();
-            let count = target[joltage_ix] - current[joltage_ix];
-            selected_switch.apply(current, count);
-            #[cfg(feature = "debug_print")]
-            eprintln!(
-                "{}Found single switch to apply {} {} times to get {:?}",
-                indent, selected_switch, count, current
-            );
-            switches[selected_ix].0 = 0; // Effectively disabling that switch
-            let result = part2_find(
-                switches,
-                target,
-                current,
-                press_count + count as usize,
+
+        let (joltage_ix, selected_switch_indices) = (0..self.target.len())
+            .filter(|&ix| self.current[ix] < self.target[ix])
+            .map(|ix| {
+                (
+                    ix,
+                    self.switches.iter().positions(|switch| switch.does_switch(ix)).collect(),
+                )
+            })
+            .min_by_key(|(_, options): &(usize, SmallVec<[usize; 16]>)| options.len())?;
+
+        match *selected_switch_indices.as_slice() {
+            [] => {
                 #[cfg(feature = "debug_print")]
-                &(indent.to_owned() + "  "),
-            );
-            selected_switch.unapply(current, count);
-            switches[selected_ix] = selected_switch; // And undo-ing the last step
-            result
-        }
-        [first_ix, second_ix] => {
-            let first_switch = switches[first_ix].clone();
-            let second_switch = switches[second_ix].clone();
-            #[cfg(feature = "debug_print")]
-            eprintln!(
-                "{}Try to apply 2 switches {} total {} times to get {:?}",
-                indent, switches, count, current
-            );
-
-            let count = target[joltage_ix] - current[joltage_ix];
-            let first_max_count = find_max_count(target, current, &first_switch);
-            let second_max_count = find_max_count(target, current, &second_switch);
-            if first_max_count + second_max_count < count {
-                return None;
+                eprintln!(
+                    "{}There are incomplete parts, but no switch to change that",
+                    indent
+                );
+                None
             }
-
-            first_switch.apply(current, first_max_count);
-            second_switch.apply(current, count - first_max_count);
-            switches[first_ix].0 = 0;
-            switches[second_ix].0 = 0;
-            let apply_count = second_max_count - (count - first_max_count);
-
-            let result = (0..=apply_count)
-                .filter_map(|ix| {
-                    if ix > 0 {
-                        first_switch.unapply(current, 1);
-                        second_switch.apply(current, 1);
-                    }
-
-                    part2_find(
-                        switches,
-                        target,
-                        current,
-                        press_count + count as usize,
-                        #[cfg(feature = "debug_print")]
-                        &(indent.to_owned() + "  "),
-                    )
-                })
-                .min();
-
-            first_switch.unapply(current, first_max_count - apply_count);
-            second_switch.unapply(current, second_max_count);
-            switches[first_ix] = first_switch;
-            switches[second_ix] = second_switch;
-
-            result
-        }
-        _ => {
-            // There are multiple switches we can use, try the most complicated one first
-            let &selected_switch_ix = selected_switch_indices
-                .iter()
-                .max_by_key(|&&ix| switches[ix].0.count_ones())
-                .unwrap();
-            let selected_switch = switches[selected_switch_ix].clone();
-            let max_count = find_max_count(target, current, &selected_switch);
-            switches[selected_switch_ix].0 = 0;
-            selected_switch.apply(current, max_count + 1);
-
-            let result = (0..=max_count)
-                .rev()
-                .filter_map(|count| {
-                    selected_switch.unapply(current, 1);
+            [selected_ix] => {
+                let selected_switch = self.remove_switch(selected_ix);
+                let count = self.target[joltage_ix] - self.current[joltage_ix];
+                selected_switch.apply(self.current.as_mut_slice(), count);
+                #[cfg(feature = "debug_print")]
+                eprintln!(
+                    "{}Found single switch to apply {} {} times to get {:?}",
+                    indent, selected_switch, count, current
+                );
+                let result = self.find(
+                    press_count + count as usize,
                     #[cfg(feature = "debug_print")]
-                    eprintln!(
-                        "{}Trying to apply switch {} {} times to get {:?}",
-                        indent, selected_switch, count, current
-                    );
-                    part2_find(
-                        switches,
-                        target,
-                        current,
-                        press_count + count as usize,
+                    &(indent.to_owned() + "  "),
+                );
+                selected_switch.unapply(self.current.as_mut_slice(), count);
+                self.restore_switch(selected_ix, selected_switch);
+                result
+            }
+            [first_ix, second_ix] => {
+                let first_switch = self.switches[first_ix].clone();
+                let second_switch = self.switches[second_ix].clone();
+                #[cfg(feature = "debug_print")]
+                eprintln!(
+                    "{}Try to apply 2 switches {} total {} times to get {:?}",
+                    indent, switches, count, current
+                );
+
+                let count = self.target[joltage_ix] - self.current[joltage_ix];
+                let first_max_count = self.find_max_count(&first_switch);
+                let second_max_count = self.find_max_count(&second_switch);
+                if first_max_count + second_max_count < count {
+                    return None;
+                }
+
+                first_switch.apply(self.current.as_mut_slice(), first_max_count);
+                second_switch.apply(self.current.as_mut_slice(), count - first_max_count);
+                self.switches[first_ix].0 = 0;
+                self.switches[second_ix].0 = 0;
+                let apply_count = second_max_count - (count - first_max_count);
+
+                let result = (0..=apply_count)
+                    .filter_map(|ix| {
+                        if ix > 0 {
+                            first_switch.unapply(self.current.as_mut_slice(), 1);
+                            second_switch.apply(self.current.as_mut_slice(), 1);
+                        }
+
+                        self.find(
+                            press_count + count as usize,
+                            #[cfg(feature = "debug_print")]
+                            &(indent.to_owned() + "  "),
+                        )
+                    })
+                    .min();
+
+                first_switch.unapply(self.current.as_mut_slice(), first_max_count - apply_count);
+                second_switch.unapply(self.current.as_mut_slice(), second_max_count);
+                self.switches[first_ix] = first_switch;
+                self.switches[second_ix] = second_switch;
+
+                result
+            }
+            _ => {
+                // There are multiple switches we can use, try the most complicated one first
+                let &selected_switch_ix = selected_switch_indices
+                    .iter()
+                    .max_by_key(|&&ix| self.switches[ix].0.count_ones())
+                    .unwrap();
+                let selected_switch = self.switches[selected_switch_ix].clone();
+                let max_count = self.find_max_count(&selected_switch);
+                self.switches[selected_switch_ix].0 = 0;
+                selected_switch.apply(self.current.as_mut_slice(), max_count + 1);
+
+                let result = (0..=max_count)
+                    .rev()
+                    .filter_map(|count| {
+                        selected_switch.unapply(self.current.as_mut_slice(), 1);
                         #[cfg(feature = "debug_print")]
-                        &(indent.to_owned() + "  "),
-                    )
-                })
-                .min();
-            switches[selected_switch_ix].0 = selected_switch.0;
-            result
+                        eprintln!(
+                            "{}Trying to apply switch {} {} times to get {:?}",
+                            indent, selected_switch, count, current
+                        );
+                        self.find(
+                            press_count + count as usize,
+                            #[cfg(feature = "debug_print")]
+                            &(indent.to_owned() + "  "),
+                        )
+                    })
+                    .min();
+                self.switches[selected_switch_ix].0 = selected_switch.0;
+                result
+            }
         }
     }
 }
@@ -246,16 +258,13 @@ fn calculate_part2(lines: &[Line]) -> usize {
         .map(|(ix, line)| {
             #[cfg(feature = "debug_print")]
             eprintln!("   --- Started on line {} ---", ix + 1);
-            let mut switches: Vec<_> = line.switches.iter().map(|&v| Switch(v)).collect();
-            let result = part2_find(
-                &mut switches,
-                &line.joltages,
-                &mut vec![0; line.joltages.len()],
-                0,
-                #[cfg(feature = "debug_print")]
-                "",
-            )
-            .unwrap();
+            let result = SwitchFinder::new(line)
+                .find(
+                    0,
+                    #[cfg(feature = "debug_print")]
+                    "",
+                )
+                .unwrap();
             #[cfg(feature = "debug_print")]
             eprintln!("   --- Finished on line {} ---", ix + 1);
             result
