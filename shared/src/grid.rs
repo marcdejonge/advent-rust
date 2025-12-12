@@ -1,5 +1,6 @@
 use crate::direction::Direction;
 use crate::geometry::{Point, PointIterator, Vector, point2, vector2};
+use advent_macros::FromRepr;
 use bit_vec::BitVec;
 use image::{Rgba, RgbaImage};
 use nom::Err::Error;
@@ -17,6 +18,13 @@ use std::slice::{Iter, IterMut};
 pub struct Grid<T> {
     items: Vec<T>,
     size: Size,
+}
+
+#[repr(u8)]
+#[derive(FromRepr, PartialEq, Eq, PartialOrd, Ord)]
+pub enum FillField {
+    Empty = b'.',
+    Filled = b'#',
 }
 
 pub type Location = Point<2, i32>;

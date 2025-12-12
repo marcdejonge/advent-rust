@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+advent-macros = { path = "../macros" }
 bit-vec = "0.8"
 fxhash = "0.2"
 image = "0.25.8"

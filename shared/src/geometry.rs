@@ -1,7 +1,6 @@
 use crate::direction::CardinalDirection;
 use crate::parsing::separated_array;
-use nom::bytes::complete::tag;
-use nom::character::complete::space0;
+use nom::character::complete::{one_of, space0};
 use nom::combinator::map;
 use nom::error::ParseError;
 use nom::{AsChar, Compare, IResult, Input, Parser};
@@ -139,10 +138,9 @@ where
     E: ParseError<I>,
 {
     fn parse(input: I) -> IResult<I, Self, E> {
-        map(
-            separated_array((space0, tag(b",".as_ref()), space0)),
-            |coords| Vector { coords },
-        )
+        map(separated_array((space0, one_of(",x-"), space0)), |coords| {
+            Vector { coords }
+        })
         .parse(input)
     }
 }
