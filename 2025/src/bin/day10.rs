@@ -124,6 +124,23 @@ impl SwitchFinder {
     #[inline]
     fn restore_switch(&mut self, ix: usize, switch: Switch) { self.switches[ix] = switch; }
 
+    #[inline]
+    fn optimal_switches(&self) -> Option<(usize, SmallVec<[usize; 16]>)> {
+        let joltage_ix = (0..self.target.len())
+            .filter(|&ix| self.current[ix] < self.target[ix])
+            .min_by_key(|&ix| {
+                self.switches.iter().positions(|switch| switch.does_switch(ix)).count()
+            })?;
+
+        Some((
+            joltage_ix,
+            self.switches
+                .iter()
+                .positions(|switch| switch.does_switch(joltage_ix))
+                .collect(),
+        ))
+    }
+
     fn find(
         &mut self,
         press_count: usize,
@@ -151,15 +168,7 @@ impl SwitchFinder {
             );
         }
 
-        let (joltage_ix, selected_switch_indices) = (0..self.target.len())
-            .filter(|&ix| self.current[ix] < self.target[ix])
-            .map(|ix| {
-                (
-                    ix,
-                    self.switches.iter().positions(|switch| switch.does_switch(ix)).collect(),
-                )
-            })
-            .min_by_key(|(_, options): &(usize, SmallVec<[usize; 16]>)| options.len())?;
+        let (joltage_ix, selected_switch_indices) = self.optimal_switches()?;
 
         match *selected_switch_indices.as_slice() {
             [] => {
