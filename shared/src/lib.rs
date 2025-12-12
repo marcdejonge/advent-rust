@@ -8,6 +8,7 @@ pub mod graph_utils;
 pub mod grid;
 pub mod iter_utils;
 pub mod key;
+pub mod linear_solver;
 pub mod lines;
 pub mod math;
 pub mod parsing;
