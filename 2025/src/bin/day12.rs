@@ -1,7 +1,6 @@
 #![feature(test)]
 
 use advent_lib::{geometry::Vector, grid::*, iter_utils::CountIf, parsing::*, *};
-use advent_macros::FromRepr;
 use nom_parse_macros::parse_from;
 
 #[parse_from(separated_pair(separated_list1(double_line_ending, {}), double_line_ending, {}))]
