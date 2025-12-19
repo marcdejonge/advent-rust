@@ -3,14 +3,14 @@
 #![feature(slice_as_array)]
 #![feature(array_try_from_fn)]
 
-use advent_lib::{parsing::*, *};
+use advent_lib::{builder::with, parsing::*, *};
 use bit_set::BitSet;
 use fxhash::FxHashMap;
 use itertools::{Itertools, iterate};
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use smallvec::SmallVec;
-use std::{array, fmt::Debug};
+use std::{array, fmt::Debug, simd::*};
 
 #[parse_from(({}, delimited(space0, separated_list1(space1, {}), space0), {}))]
 #[derive(Debug)]
@@ -81,7 +81,7 @@ fn calculate_part1(lines: &[Line]) -> usize {
         .sum()
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Switches(SmallVec<[Switch; 8]>);
 
 impl Switches {
@@ -96,41 +96,70 @@ impl<'a> IntoIterator for &'a Switches {
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
-fn generate_min_switches(switches: &[Switch]) -> FxHashMap<Lights, Vec<Switches>> {
-    let mut min_switches =
-        FxHashMap::with_capacity_and_hasher((1 << switches.len()) * 2, Default::default());
-    (0u32..(1 << switches.len())).for_each(|switch_mask| {
-        let mut selected_switches = Switches::default();
-        let mut lights = Lights::default();
-        for (ix, &switch) in switches.iter().enumerate() {
-            if switch_mask & 1 << ix != 0 {
-                selected_switches.push(switch);
-                lights = lights.flip(&switch);
-            }
-        }
-        min_switches.entry(lights).or_insert(Vec::new()).push(selected_switches);
-    });
-    min_switches
+fn add_min_switches(
+    switches: &[Switch],
+    map: &mut FxHashMap<Lights, Vec<Switches>>,
+    selected_switches: Switches,
+    lights: Lights,
+) {
+    if switches.is_empty() {
+        map.entry(lights).or_default().push(selected_switches);
+    } else {
+        // First, try with adding this switch
+        let next_switch = switches[0];
+        add_min_switches(
+            &switches[1..],
+            map,
+            with(selected_switches.clone(), |it| it.push(next_switch)),
+            lights.flip(&next_switch),
+        );
+        // Second try without selecting this switch
+        add_min_switches(&switches[1..], map, selected_switches, lights);
+    }
 }
 
-type Simd = std::simd::u16x16;
+fn generate_min_switches(switches: &[Switch]) -> FxHashMap<Lights, Vec<Switches>> {
+    with(
+        FxHashMap::with_capacity_and_hasher((1 << switches.len()) * 2, Default::default()),
+        |map| add_min_switches(switches, map, Default::default(), Default::default()),
+    )
+}
 
-#[parse_from(in_braces(map_opt(separated_list1(",", u16), |mut list| {
-    if list.len() >= 16 {
-        None
-    } else {
-        while list.len() < 16 {
-            list.push(0)
-        }
-        Some(Simd::from(list.as_array::<16>().unwrap().to_owned()))
-    }
-})))]
+#[parse_from(in_braces(separated_list1(",", u16)))]
 #[derive(Debug, Clone)]
-struct Joltages(Simd);
+struct Joltages(Vec<u16>);
 
 impl Joltages {
-    const ZERO: Simd = Simd::splat(0);
-    const TWO: Simd = Simd::splat(2);
+    fn as_target<const N: usize>(&self) -> JoltageTarget<N>
+    where
+        LaneCount<N>: SupportedLaneCount,
+    {
+        let mut array = [0; N];
+        self.0.iter().enumerate().for_each(|(ix, v)| array[ix] = *v);
+        JoltageTarget(Simd::from_array(array))
+    }
+
+    fn min_presses(&self, min_switches: &FxHashMap<Lights, Vec<Switches>>) -> Option<usize> {
+        match self.0.len() {
+            0..=4 => self.as_target::<4>().min_presses(min_switches),
+            5..=8 => self.as_target::<8>().min_presses(min_switches),
+            9..=16 => self.as_target::<16>().min_presses(min_switches),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct JoltageTarget<const N: usize>(Simd<u16, N>)
+where
+    LaneCount<N>: SupportedLaneCount;
+
+impl<const N: usize> JoltageTarget<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    const ZERO: Simd<u16, N> = Simd::splat(0);
+    const TWO: Simd<u16, N> = Simd::splat(2);
 
     fn to_lights(&self) -> Lights {
         Lights(
@@ -161,38 +190,31 @@ impl Joltages {
 
         Some(())
     }
-}
 
-fn min_presses(
-    target: &Joltages,
-    min_switches: &FxHashMap<Lights, Vec<Switches>>,
-) -> Option<usize> {
-    if target.is_nothing() {
-        Some(0)
-    } else {
-        min_switches
-            .get(&target.to_lights())?
-            .iter()
-            .filter_map(|selected_switches| {
-                let mut next_target = target.clone();
-                for switch in selected_switches {
-                    next_target.apply_switch(switch)?;
-                }
-                next_target.half_everything();
-                Some(2 * min_presses(&next_target, min_switches)? + selected_switches.len())
-            })
-            .min()
+    fn min_presses(&self, min_switches: &FxHashMap<Lights, Vec<Switches>>) -> Option<usize> {
+        if self.is_nothing() {
+            Some(0)
+        } else {
+            min_switches
+                .get(&self.to_lights())?
+                .iter()
+                .filter_map(|selected_switches| {
+                    let mut next_target = self.clone();
+                    for switch in selected_switches {
+                        next_target.apply_switch(switch)?;
+                    }
+                    next_target.half_everything();
+                    Some(2 * next_target.min_presses(min_switches)? + selected_switches.len())
+                })
+                .min()
+        }
     }
 }
 
 fn calculate_part2(lines: &[Line]) -> usize {
     lines
         .par_iter()
-        .map(|line| {
-            let min_switches = generate_min_switches(&line.switches);
-            let target = line.joltages.clone();
-            min_presses(&target, &min_switches).unwrap()
-        })
+        .map(|line| line.joltages.min_presses(&generate_min_switches(&line.switches)).unwrap())
         .sum()
 }
 
