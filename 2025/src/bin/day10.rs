@@ -84,22 +84,21 @@ const LANES: usize = 16;
 
 #[derive(Default)]
 struct Switches {
-    joltage_changes: Simd<u16, LANES>,
+    joltages: Simd<u16, LANES>,
     len: usize,
 }
 
 impl Switches {
     fn add(&self, switch: Switch) -> Self {
-        let mut joltage_changes = self.joltage_changes;
-        let arr = joltage_changes.as_mut_array();
-        arr.iter_mut()
+        let mut joltages = self.joltages;
+        joltages
+            .as_mut_array()
+            .iter_mut()
             .enumerate()
             .filter(|&(ix, _)| switch.switches(ix))
             .for_each(|(_, v)| *v += 1);
-        Self { joltage_changes, len: self.len + 1 }
+        Self { joltages, len: self.len + 1 }
     }
-
-    fn len(&self) -> usize { self.len }
 }
 
 struct SwitchesSelection(FxHashMap<Lights, Vec<Switches>>);
@@ -130,6 +129,7 @@ impl SwitchesSelection {
             // Second try without selecting this switch
             self.add_switch_from(rest_switches, selected_switches, lights);
         } else {
+            // No more switches to add, just push the result
             self.0.entry(lights).or_default().push(selected_switches);
         }
     }
@@ -141,13 +141,10 @@ impl SwitchesSelection {
 }
 
 #[parse_from(in_braces(map(separated_list1(",", u16), |v| Simd::load_or_default(&v))))]
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 struct Joltages(Simd<u16, LANES>);
 
 impl Joltages {
-    const ZERO: Simd<u16, LANES> = Simd::splat(0);
-    const TWO: Simd<u16, LANES> = Simd::splat(2);
-
     fn to_lights(&self) -> Lights {
         Lights(
             self.0.to_array().iter().enumerate().fold(0, |accum, (ix, joltage)| {
@@ -156,37 +153,30 @@ impl Joltages {
         )
     }
 
-    fn is_nothing(&self) -> bool { self.0 == Self::ZERO }
-    fn half_everything(&mut self) { self.0 /= Self::TWO; }
-
-    fn apply_switches(&self, switches: &Switches) -> Option<Joltages> {
-        if switches
-            .joltage_changes
-            .as_array()
-            .iter()
-            .zip(self.0.as_array().iter())
-            .all(|(left, right)| left <= right)
-        {
-            Some(Joltages(self.0 - switches.joltage_changes))
-        } else {
-            None
-        }
-    }
+    const TWO: Simd<u16, LANES> = Simd::splat(2);
 
     fn min_presses(&self, switches_selection: &SwitchesSelection) -> Option<usize> {
-        if self.is_nothing() {
-            Some(0)
-        } else {
-            switches_selection
-                .get(self.to_lights())?
-                .iter()
-                .filter_map(|selected_switches| {
-                    let mut next_target = self.apply_switches(selected_switches)?;
-                    next_target.half_everything();
-                    Some(2 * next_target.min_presses(switches_selection)? + selected_switches.len())
-                })
-                .min()
-        }
+        switches_selection
+            .get(self.to_lights())?
+            .iter()
+            .filter_map(|selected_switches| {
+                if self.0 == selected_switches.joltages {
+                    Some(selected_switches.len)
+                } else if selected_switches
+                    .joltages
+                    .as_array()
+                    .iter()
+                    .zip(self.0.as_array().iter())
+                    .any(|(left, right)| left > right)
+                {
+                    None
+                } else {
+                    let mut next_target = Joltages(self.0 - selected_switches.joltages);
+                    next_target.0 /= Self::TWO;
+                    Some(2 * next_target.min_presses(switches_selection)? + selected_switches.len)
+                }
+            })
+            .min()
     }
 }
 
