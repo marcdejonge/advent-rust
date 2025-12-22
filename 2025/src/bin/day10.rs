@@ -96,33 +96,42 @@ impl<'a> IntoIterator for &'a Switches {
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
-fn add_min_switches(
-    switches: &[Switch],
-    map: &mut FxHashMap<Lights, Vec<Switches>>,
-    selected_switches: Switches,
-    lights: Lights,
-) {
-    if switches.is_empty() {
-        map.entry(lights).or_default().push(selected_switches);
-    } else {
-        // First, try with adding this switch
-        let next_switch = switches[0];
-        add_min_switches(
-            &switches[1..],
-            map,
-            with(selected_switches.clone(), |it| it.push(next_switch)),
-            lights.flip(&next_switch),
-        );
-        // Second try without selecting this switch
-        add_min_switches(&switches[1..], map, selected_switches, lights);
-    }
-}
+struct SwitchesSelection(FxHashMap<Lights, Vec<Switches>>);
 
-fn generate_min_switches(switches: &[Switch]) -> FxHashMap<Lights, Vec<Switches>> {
-    with(
-        FxHashMap::with_capacity_and_hasher((1 << switches.len()) * 2, Default::default()),
-        |map| add_min_switches(switches, map, Default::default(), Default::default()),
-    )
+impl SwitchesSelection {
+    pub fn from(switches: &[Switch]) -> Self {
+        let mut min_switches = Self(FxHashMap::with_capacity_and_hasher(
+            (1 << switches.len()) * 2,
+            Default::default(),
+        ));
+        min_switches.add_switch_from(switches, Default::default(), Default::default());
+        min_switches
+    }
+
+    fn add_switch_from(
+        &mut self,
+        switches: &[Switch],
+        selected_switches: Switches,
+        lights: Lights,
+    ) {
+        if let [next_switch, rest_switches @ ..] = switches {
+            // First, try with adding this switch
+            self.add_switch_from(
+                rest_switches,
+                with(selected_switches.clone(), |it| it.push(*next_switch)),
+                lights.flip(next_switch),
+            );
+            // Second try without selecting this switch
+            self.add_switch_from(rest_switches, selected_switches, lights);
+        } else {
+            self.0.entry(lights).or_default().push(selected_switches);
+        }
+    }
+
+    #[inline]
+    fn get(&self, lights: Lights) -> Option<&[Switches]> {
+        self.0.get(&lights).map(|vec| vec.as_slice())
+    }
 }
 
 #[parse_from(in_braces(separated_list1(",", u16)))]
@@ -139,11 +148,11 @@ impl Joltages {
         JoltageTarget(Simd::from_array(array))
     }
 
-    fn min_presses(&self, min_switches: &FxHashMap<Lights, Vec<Switches>>) -> Option<usize> {
+    fn min_presses(&self, switches_selection: &SwitchesSelection) -> Option<usize> {
         match self.0.len() {
-            0..=4 => self.as_target::<4>().min_presses(min_switches),
-            5..=8 => self.as_target::<8>().min_presses(min_switches),
-            9..=16 => self.as_target::<16>().min_presses(min_switches),
+            0..=4 => self.as_target::<4>().min_presses(switches_selection),
+            5..=8 => self.as_target::<8>().min_presses(switches_selection),
+            9..=16 => self.as_target::<16>().min_presses(switches_selection),
             _ => None,
         }
     }
@@ -191,12 +200,12 @@ where
         Some(())
     }
 
-    fn min_presses(&self, min_switches: &FxHashMap<Lights, Vec<Switches>>) -> Option<usize> {
+    fn min_presses(&self, switches_selection: &SwitchesSelection) -> Option<usize> {
         if self.is_nothing() {
             Some(0)
         } else {
-            min_switches
-                .get(&self.to_lights())?
+            switches_selection
+                .get(self.to_lights())?
                 .iter()
                 .filter_map(|selected_switches| {
                     let mut next_target = self.clone();
@@ -204,7 +213,7 @@ where
                         next_target.apply_switch(switch)?;
                     }
                     next_target.half_everything();
-                    Some(2 * next_target.min_presses(min_switches)? + selected_switches.len())
+                    Some(2 * next_target.min_presses(switches_selection)? + selected_switches.len())
                 })
                 .min()
         }
@@ -214,7 +223,7 @@ where
 fn calculate_part2(lines: &[Line]) -> usize {
     lines
         .par_iter()
-        .map(|line| line.joltages.min_presses(&generate_min_switches(&line.switches)).unwrap())
+        .map(|line| line.joltages.min_presses(&SwitchesSelection::from(&line.switches)).unwrap())
         .sum()
 }
 
