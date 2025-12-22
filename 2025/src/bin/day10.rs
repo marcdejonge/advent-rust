@@ -6,7 +6,6 @@
 use advent_lib::{parsing::*, *};
 use bit_set::BitSet;
 use fxhash::FxHashMap;
-use itertools::{Itertools, iterate};
 use nom_parse_macros::parse_from;
 use rayon::prelude::*;
 use std::{fmt::Debug, simd::*};
@@ -43,39 +42,28 @@ impl Lights {
     fn flip(&self, switch: &Switch) -> Self { Lights(self.0 ^ switch.0) }
 }
 
-struct LightsSet(BitSet);
-
-impl LightsSet {
-    fn new() -> Self {
-        let mut bs = BitSet::new();
-        bs.insert(0);
-        Self(bs)
-    }
-
-    fn iter(&self) -> impl Iterator<Item = Lights> { self.0.iter().map(|ix| Lights(ix as u32)) }
-
-    fn contains(&self, lights: Lights) -> bool { self.0.contains(lights.0 as usize) }
-}
-
-impl FromIterator<Lights> for LightsSet {
-    fn from_iter<T: IntoIterator<Item = Lights>>(iter: T) -> Self {
-        LightsSet(iter.into_iter().map(|lights| lights.0 as usize).collect())
-    }
-}
-
 fn calculate_part1(lines: &[Line]) -> usize {
     lines
         .par_iter()
-        .filter_map(|line| {
-            let mut initial = BitSet::new();
-            initial.insert(0);
-            iterate(LightsSet::new(), |last| {
-                last.iter()
-                    .flat_map(|lights| line.switches.iter().map(move |s| lights.flip(s)))
-                    .collect()
-            })
-            .find_position(|nrs| nrs.contains(line.target_lights))
-            .map(|(depth, _)| depth)
+        .flat_map(|line| {
+            let mut curr_lights_set = BitSet::from_iter(vec![0]);
+
+            for clicks in 1..=line.switches.len() {
+                let mut next_lights_set = BitSet::new();
+
+                for curr_lights in curr_lights_set.iter().map(|ix| Lights(ix as u32)) {
+                    for switch in &line.switches {
+                        let next_lights = curr_lights.flip(switch);
+                        if next_lights == line.target_lights {
+                            return Some(clicks);
+                        }
+                        next_lights_set.insert(next_lights.0 as usize);
+                    }
+                }
+
+                curr_lights_set = next_lights_set;
+            }
+            None
         })
         .sum()
 }
